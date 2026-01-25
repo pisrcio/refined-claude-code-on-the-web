@@ -1432,10 +1432,10 @@
       return;
     }
 
-    // Find the buttons area container (flex-shrink-0) to add indicator
-    const buttonsArea = sessionEl.querySelector('.flex-shrink-0');
-    if (!buttonsArea) {
-      console.log(LOG_PREFIX, '>>> Buttons area not found for blocked indicator');
+    // Find the relative container inside buttons area (parent of hover container)
+    const relativeContainer = sessionEl.querySelector('.flex-shrink-0 .relative');
+    if (!relativeContainer) {
+      console.log(LOG_PREFIX, '>>> Relative container not found for blocked indicator');
       return;
     }
 
@@ -1461,9 +1461,9 @@
       });
     }
 
-    // Append to buttons area (same container as the hover buttons)
-    buttonsArea.appendChild(indicator);
-    console.log(LOG_PREFIX, '>>> Added blocked indicator to buttons area (hides on hover)');
+    // Append to relative container (sibling of hover buttons container)
+    relativeContainer.appendChild(indicator);
+    console.log(LOG_PREFIX, '>>> Added blocked indicator to relative container (hides on hover)');
   }
 
   /**
