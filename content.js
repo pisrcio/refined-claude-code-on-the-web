@@ -1112,92 +1112,22 @@
   function watchForMergeBranchButton() {
     console.log(LOG_PREFIX, '👀 Setting up Merge Branch button watcher...');
 
-    // Function to get the current project name from the page
-    function getCurrentProjectName() {
-      // Try multiple approaches to find the project name
-
-      // 1. Look for GitHub repo links on the page
-      const githubLinks = document.querySelectorAll('a[href*="github.com"]');
-      for (const link of githubLinks) {
-        const href = link.getAttribute('href');
-        // Match github.com/owner/repo pattern
-        const repoMatch = href.match(/github\.com\/[^\/]+\/([^\/\?#]+)/);
-        if (repoMatch) {
-          console.log(LOG_PREFIX, `Found project name from GitHub link: ${repoMatch[1]}`);
-          return repoMatch[1];
-        }
-      }
-
-      // 2. Look for repo name in page text (near branch info)
-      const pageText = document.body.innerText || '';
-      // Look for patterns like "repo-name" followed by branch info
-      const repoPatterns = [
-        /pisrcio\/([a-zA-Z0-9_-]+)/,  // GitHub org/repo pattern
-        /([a-zA-Z0-9_-]+)\/claude\//,  // repo/claude/ pattern
-      ];
-      for (const pattern of repoPatterns) {
-        const match = pageText.match(pattern);
-        if (match && match[1]) {
-          console.log(LOG_PREFIX, `Found project name from page text: ${match[1]}`);
-          return match[1];
-        }
-      }
-
-      // 3. Try standard selectors
-      const activeProject = document.querySelector('[data-testid="project-name"]') ||
-                           document.querySelector('.truncate[title]') ||
-                           document.querySelector('nav .truncate');
-
-      if (activeProject) {
-        const name = activeProject.textContent?.trim() || activeProject.getAttribute('title');
-        if (name) return name;
-      }
-
-      // 4. Try to get from URL if it contains project info
-      const urlMatch = window.location.pathname.match(/\/project\/([^\/]+)/);
-      if (urlMatch) {
-        return decodeURIComponent(urlMatch[1]);
-      }
-
-      // 5. Try to find from page title
-      const title = document.title;
-      if (title && !title.includes('Claude')) {
-        return title.split(' ')[0]; // First word of title
-      }
-
-      return null;
-    }
-
-    // Function to get main branch from settings (returns 'main' as default)
+    // Function to get main branch from settings
+    // Simply checks if any configured project name appears in the page text
     function getMainBranchFromSettings() {
       const projectMainBranch = currentSettings.projectMainBranch || {};
-      const currentProject = getCurrentProjectName();
+      const pageText = document.body.innerText || '';
 
-      console.log(LOG_PREFIX, `Detected project name: "${currentProject}"`);
-      console.log(LOG_PREFIX, `Full currentSettings:`, JSON.stringify(currentSettings));
-      console.log(LOG_PREFIX, `projectMainBranch:`, JSON.stringify(projectMainBranch));
-      console.log(LOG_PREFIX, `Configured projects:`, Object.keys(projectMainBranch));
-
-      if (currentProject) {
-        // Try exact match first
-        if (projectMainBranch[currentProject]) {
-          console.log(LOG_PREFIX, `Found main branch for project "${currentProject}": ${projectMainBranch[currentProject]}`);
-          return projectMainBranch[currentProject];
-        }
-
-        // Try partial match (case-insensitive)
-        for (const [projectName, branch] of Object.entries(projectMainBranch)) {
-          const projectLower = currentProject.toLowerCase();
-          const configLower = projectName.toLowerCase();
-          if (projectLower.includes(configLower) || configLower.includes(projectLower)) {
-            console.log(LOG_PREFIX, `Found main branch via partial match "${projectName}": ${branch}`);
-            return branch;
-          }
+      // Check each configured project name
+      for (const [projectName, branch] of Object.entries(projectMainBranch)) {
+        if (pageText.includes(projectName)) {
+          console.log(LOG_PREFIX, `Found project "${projectName}" in page, using branch: ${branch}`);
+          return branch;
         }
       }
 
-      // Default to 'main' if no project-specific config found
-      console.log(LOG_PREFIX, 'No project-specific main branch found, using default "main"');
+      // Default to 'main' if no match found
+      console.log(LOG_PREFIX, 'No configured project found in page, using default "main"');
       return 'main';
     }
 
