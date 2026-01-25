@@ -1,5 +1,6 @@
 // Better Claude Code on the Web - Show Actual Model Name
 // This script replaces the "..." button with the actual selected model name
+// Also enhances the copy branch button to copy full git command
 
 (function() {
   'use strict';
@@ -575,6 +576,153 @@
     return true;
   }
 
+  // Watch for copy branch button clicks and copy full git command
+  function watchForCopyBranchButton() {
+    console.log(LOG_PREFIX, '👀 Setting up copy branch button watcher...');
+
+    // Track already-processed buttons to avoid duplicate listeners
+    const processedButtons = new WeakSet();
+
+    // Function to find and enhance copy buttons in the dropdown
+    function enhanceCopyButtons() {
+      // Look for the dropdown menu that contains repo/branch info
+      // The copy button is typically an SVG icon or button next to the branch text
+      const dropdowns = document.querySelectorAll('[role="menu"], [role="dialog"], [data-radix-popper-content-wrapper]');
+
+      for (const dropdown of dropdowns) {
+        // Find elements that contain branch-like text (claude/... pattern)
+        const allElements = dropdown.querySelectorAll('*');
+
+        for (const element of allElements) {
+          // Look for copy buttons - they typically have specific patterns
+          // Check for button/clickable elements with copy-related attributes or SVG icons
+          const copyButtons = dropdown.querySelectorAll('button, [role="button"], svg, [class*="copy"], [aria-label*="copy" i], [aria-label*="Copy" i]');
+
+          for (const btn of copyButtons) {
+            if (processedButtons.has(btn)) continue;
+
+            // Check if this button is near text that looks like a branch name
+            const parent = btn.closest('div, span, li, [role="menuitem"]');
+            if (!parent) continue;
+
+            const parentText = parent.textContent || '';
+            // Match patterns like "claude/some-branch-name" or typical git branch formats
+            const branchMatch = parentText.match(/(claude\/[a-zA-Z0-9_-]+)/);
+
+            if (branchMatch) {
+              const branchName = branchMatch[1];
+              console.log(LOG_PREFIX, `📋 Found copy button near branch: ${branchName}`);
+
+              processedButtons.add(btn);
+
+              // Add click interceptor
+              btn.addEventListener('click', async (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+
+                const gitCommand = `git co ${branchName} && git pull`;
+                console.log(LOG_PREFIX, `📋 Copying git command: ${gitCommand}`);
+
+                try {
+                  await navigator.clipboard.writeText(gitCommand);
+                  console.log(LOG_PREFIX, '✅ Git command copied to clipboard!');
+
+                  // Show visual feedback
+                  showCopyFeedback(btn, 'Copied git command!');
+                } catch (err) {
+                  console.error(LOG_PREFIX, '❌ Failed to copy:', err);
+                  // Fallback: try execCommand
+                  try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = gitCommand;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-9999px';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    console.log(LOG_PREFIX, '✅ Git command copied via fallback!');
+                    showCopyFeedback(btn, 'Copied git command!');
+                  } catch (fallbackErr) {
+                    console.error(LOG_PREFIX, '❌ Fallback copy failed:', fallbackErr);
+                  }
+                }
+              }, true); // Use capture phase to intercept before original handler
+            }
+          }
+        }
+      }
+    }
+
+    // Show visual feedback when copy succeeds
+    function showCopyFeedback(element, message) {
+      const feedback = document.createElement('div');
+      feedback.textContent = message;
+      feedback.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #059669;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 99999;
+        animation: fadeInOut 2s ease-in-out;
+      `;
+
+      // Add animation keyframes if not already present
+      if (!document.querySelector('#better-claude-animations')) {
+        const style = document.createElement('style');
+        style.id = 'better-claude-animations';
+        style.textContent = `
+          @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
+      document.body.appendChild(feedback);
+      setTimeout(() => feedback.remove(), 2000);
+    }
+
+    // Watch for dropdown menus appearing
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+          for (const node of mutation.addedNodes) {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              // Check if a dropdown/menu appeared
+              const isDropdown = node.matches?.('[role="menu"], [role="dialog"], [data-radix-popper-content-wrapper]') ||
+                                node.querySelector?.('[role="menu"], [role="dialog"]');
+              if (isDropdown) {
+                console.log(LOG_PREFIX, '📋 Dropdown appeared, checking for copy buttons...');
+                // Delay slightly to ensure dropdown content is fully rendered
+                setTimeout(enhanceCopyButtons, 50);
+                setTimeout(enhanceCopyButtons, 150);
+                setTimeout(enhanceCopyButtons, 300);
+              }
+            }
+          }
+        }
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    console.log(LOG_PREFIX, '✅ Copy branch button watcher active');
+    return observer;
+  }
+
   // Initialize
   function init() {
     console.log(LOG_PREFIX, '🎬 Initializing...');
@@ -605,6 +753,9 @@
       console.log(LOG_PREFIX, 'Delayed Better label check (1s)');
       addBetterLabel();
     }, 1000);
+
+    // Watch for copy branch button clicks
+    watchForCopyBranchButton();
 
     console.log(LOG_PREFIX, '✅ Initialization complete');
   }
