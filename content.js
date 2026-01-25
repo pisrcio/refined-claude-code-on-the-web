@@ -957,6 +957,274 @@
   }
 
   // ============================================
+  // Session Detection Feature
+  // ============================================
+
+  /**
+   * Session detection utilities for reliably finding sessions and their action buttons.
+   *
+   * Structure of a session item in the sidebar:
+   * - Wrapper: div[data-index="N"] (N = 0, 1, 2, ...)
+   * - Inside: div.group > div.cursor-pointer > ...
+   * - Title: span.font-base.text-text-100.leading-relaxed
+   * - Buttons container: div.group-hover:opacity-100 (appears on hover)
+   * - Delete button: contains trash icon SVG (viewBox="0 0 256 256")
+   * - Archive button: contains archive/box icon SVG (viewBox="0 0 20 20")
+   */
+
+  // SVG path fragments for identifying button types
+  const DELETE_ICON_PATH_START = 'M216,48H176V40a24';  // Trash icon path
+  const ARCHIVE_ICON_PATH_FRAGMENT = 'M11.5 9.5C11.7761';  // Archive/box icon path
+
+  /**
+   * Get all session elements from the sidebar
+   * @returns {NodeListOf<Element>} All session wrapper elements
+   */
+  function getAllSessions() {
+    // Sessions are in elements with data-index attribute
+    // They're inside the scrollable session list container
+    const sessions = document.querySelectorAll('[data-index]');
+    console.log(LOG_PREFIX, `Found ${sessions.length} sessions`);
+    return sessions;
+  }
+
+  /**
+   * Get session data from a session element
+   * @param {Element} sessionEl - The session element (with data-index)
+   * @returns {Object|null} Session data or null if not parseable
+   */
+  function getSessionData(sessionEl) {
+    if (!sessionEl || !sessionEl.hasAttribute('data-index')) {
+      return null;
+    }
+
+    const index = parseInt(sessionEl.getAttribute('data-index'), 10);
+
+    // Find the title span
+    const titleSpan = sessionEl.querySelector('span.font-base.text-text-100.leading-relaxed');
+    const title = titleSpan ? titleSpan.textContent.trim() : null;
+
+    // Find metadata (repo name, date, diff stats)
+    const metaSpan = sessionEl.querySelector('span.text-xs.text-text-500');
+    const metadata = metaSpan ? metaSpan.textContent.trim() : null;
+
+    // Check if this session is currently selected (has bg-bg-300 class on the row)
+    const row = sessionEl.querySelector('.cursor-pointer');
+    const isSelected = row ? row.classList.contains('bg-bg-300') : false;
+
+    // Check if session is currently running (has the spinner animation)
+    const spinner = sessionEl.querySelector('.code-spinner-animate');
+    const isRunning = !!spinner;
+
+    return {
+      element: sessionEl,
+      index,
+      title,
+      metadata,
+      isSelected,
+      isRunning
+    };
+  }
+
+  /**
+   * Get all sessions with their data
+   * @returns {Array<Object>} Array of session data objects
+   */
+  function getAllSessionsWithData() {
+    const sessions = getAllSessions();
+    const sessionData = [];
+
+    sessions.forEach(sessionEl => {
+      const data = getSessionData(sessionEl);
+      if (data) {
+        sessionData.push(data);
+      }
+    });
+
+    return sessionData;
+  }
+
+  /**
+   * Find a session by its title
+   * @param {string} title - The session title to search for
+   * @returns {Object|null} Session data or null if not found
+   */
+  function findSessionByTitle(title) {
+    const sessions = getAllSessions();
+
+    for (const sessionEl of sessions) {
+      const data = getSessionData(sessionEl);
+      if (data && data.title === title) {
+        return data;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Find the delete button for a session element
+   * @param {Element} sessionEl - The session element
+   * @returns {Element|null} The delete button or null
+   */
+  function findDeleteButton(sessionEl) {
+    if (!sessionEl) return null;
+
+    // Find all buttons in the session
+    const buttons = sessionEl.querySelectorAll('button');
+
+    for (const button of buttons) {
+      // Look for the trash icon SVG
+      const svg = button.querySelector('svg');
+      if (!svg) continue;
+
+      // Check viewBox for the trash icon (256x256)
+      const viewBox = svg.getAttribute('viewBox');
+      if (viewBox !== '0 0 256 256') continue;
+
+      // Check path for trash icon pattern
+      const path = svg.querySelector('path');
+      if (path) {
+        const d = path.getAttribute('d') || '';
+        if (d.startsWith(DELETE_ICON_PATH_START)) {
+          console.log(LOG_PREFIX, 'Found delete button for session');
+          return button;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Find the archive button for a session element
+   * @param {Element} sessionEl - The session element
+   * @returns {Element|null} The archive button or null
+   */
+  function findArchiveButton(sessionEl) {
+    if (!sessionEl) return null;
+
+    // Find all buttons in the session
+    const buttons = sessionEl.querySelectorAll('button');
+
+    for (const button of buttons) {
+      // Look for the archive icon SVG
+      const svg = button.querySelector('svg');
+      if (!svg) continue;
+
+      // Check viewBox for the archive icon (20x20)
+      const viewBox = svg.getAttribute('viewBox');
+      if (viewBox !== '0 0 20 20') continue;
+
+      // Check paths for archive icon pattern
+      const paths = svg.querySelectorAll('path');
+      for (const path of paths) {
+        const d = path.getAttribute('d') || '';
+        if (d.includes(ARCHIVE_ICON_PATH_FRAGMENT)) {
+          console.log(LOG_PREFIX, 'Found archive button for session');
+          return button;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Get action buttons for a session
+   * @param {Element} sessionEl - The session element
+   * @returns {Object} Object with deleteButton and archiveButton properties
+   */
+  function getSessionButtons(sessionEl) {
+    return {
+      deleteButton: findDeleteButton(sessionEl),
+      archiveButton: findArchiveButton(sessionEl)
+    };
+  }
+
+  /**
+   * Trigger hover state on a session to reveal buttons
+   * The buttons are hidden by default and only appear on hover
+   * @param {Element} sessionEl - The session element
+   * @returns {Promise<void>} Resolves when hover events are dispatched
+   */
+  function triggerSessionHover(sessionEl) {
+    return new Promise((resolve) => {
+      if (!sessionEl) {
+        resolve();
+        return;
+      }
+
+      // Find the group container that has hover effects
+      const groupEl = sessionEl.querySelector('.group');
+      if (groupEl) {
+        // Dispatch mouseenter to trigger hover state
+        groupEl.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      }
+
+      // Give time for CSS transitions
+      setTimeout(resolve, 100);
+    });
+  }
+
+  /**
+   * Clear hover state on a session
+   * @param {Element} sessionEl - The session element
+   */
+  function clearSessionHover(sessionEl) {
+    if (!sessionEl) return;
+
+    const groupEl = sessionEl.querySelector('.group');
+    if (groupEl) {
+      groupEl.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+    }
+  }
+
+  /**
+   * Find the currently selected/active session
+   * @returns {Object|null} Session data for the active session or null
+   */
+  function getActiveSession() {
+    const sessions = getAllSessions();
+
+    for (const sessionEl of sessions) {
+      const row = sessionEl.querySelector('.cursor-pointer');
+      if (row && row.classList.contains('bg-bg-300')) {
+        return getSessionData(sessionEl);
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Find sessions that are currently running (have the spinner)
+   * @returns {Array<Object>} Array of running session data objects
+   */
+  function getRunningSessions() {
+    const sessions = getAllSessionsWithData();
+    return sessions.filter(session => session.isRunning);
+  }
+
+  // Expose session utilities for debugging and external use
+  window.BetterClaudeCode = window.BetterClaudeCode || {};
+  window.BetterClaudeCode.sessions = {
+    getAll: getAllSessions,
+    getAllWithData: getAllSessionsWithData,
+    findByTitle: findSessionByTitle,
+    getData: getSessionData,
+    getActive: getActiveSession,
+    getRunning: getRunningSessions,
+    findDeleteButton,
+    findArchiveButton,
+    getButtons: getSessionButtons,
+    triggerHover: triggerSessionHover,
+    clearHover: clearSessionHover
+  };
+
+  console.log(LOG_PREFIX, 'Session detection utilities loaded. Access via window.BetterClaudeCode.sessions');
+
+  // ============================================
   // Initialization
   // ============================================
 
