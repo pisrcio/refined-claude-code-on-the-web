@@ -6,6 +6,7 @@ const DEFAULT_SETTINGS = {
   showModel: true,
   betterLabel: true,
   pullBranch: true,
+  mergeBranch: true,
   projectColors: true,
   projectColorMap: {} // { "project-name": "#hexcolor" }
 };

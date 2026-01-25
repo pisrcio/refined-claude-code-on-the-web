@@ -20,6 +20,7 @@
     showModel: true,
     betterLabel: true,
     pullBranch: true,
+    mergeBranch: true,
     projectColors: true,
     projectColorMap: {} // { "project-name": "#hexcolor" }
   };
@@ -103,6 +104,12 @@
     const pullBranchBtn = document.querySelector('.better-pull-branch-btn');
     if (pullBranchBtn) {
       pullBranchBtn.style.display = isFeatureEnabled('pullBranch') ? 'flex' : 'none';
+    }
+
+    // Toggle merge branch button
+    const mergeBranchBtn = document.querySelector('.better-merge-branch-btn');
+    if (mergeBranchBtn) {
+      mergeBranchBtn.style.display = isFeatureEnabled('mergeBranch') ? 'flex' : 'none';
     }
 
     // Handle model display - revert or update
@@ -1097,6 +1104,179 @@
   }
 
   // ============================================
+  // Merge Branch Feature
+  // ============================================
+
+  // Add "Merge [main]" button next to View PR button
+  function watchForMergeBranchButton() {
+    console.log(LOG_PREFIX, '👀 Setting up Merge Branch button watcher...');
+
+    // Function to detect the main branch name
+    function detectMainBranch() {
+      // Common main branch names
+      const commonMainBranches = ['main', 'master', 'develop', 'dev'];
+
+      // Try to find from the page content
+      const pageText = document.body.textContent || '';
+
+      // Look for references to main branches in merge context
+      for (const branch of commonMainBranches) {
+        // Look for patterns like "merge main" or "into main" or "from main"
+        const pattern = new RegExp(`(merge|into|from)\\s+${branch}\\b`, 'i');
+        if (pattern.test(pageText)) {
+          return branch;
+        }
+      }
+
+      // Default to 'main' as it's most common nowadays
+      return 'main';
+    }
+
+    // Function to add the Merge Branch button
+    function addMergeBranchButton() {
+      // Check if button already exists
+      if (document.querySelector('.better-merge-branch-btn')) {
+        return;
+      }
+
+      // Find the View PR button or Open in CLI button to place our button near them
+      const allButtons = document.querySelectorAll('button');
+      let targetButton = null;
+
+      for (const btn of allButtons) {
+        const text = btn.textContent.trim();
+        if (text.includes('View PR') || text.includes('Open in CLI')) {
+          targetButton = btn;
+          break;
+        }
+      }
+
+      if (!targetButton) {
+        console.log(LOG_PREFIX, 'View PR / Open in CLI button not found yet');
+        return;
+      }
+
+      // Detect main branch
+      const mainBranch = detectMainBranch();
+
+      console.log(LOG_PREFIX, `📋 Found target button and main branch: ${mainBranch}`);
+
+      // Create the Merge Branch button with similar styling
+      const mergeBranchBtn = document.createElement('button');
+      mergeBranchBtn.type = 'button';
+      mergeBranchBtn.className = 'group flex items-center gap-[6px] px-[10px] py-2 bg-bg-000 border-0.5 border-border-300 rounded-[6px] shadow-sm hover:bg-bg-100 transition-colors better-merge-branch-btn';
+      mergeBranchBtn.title = `Copy: git fetch origin ${mainBranch} && git merge origin/${mainBranch}`;
+      mergeBranchBtn.style.marginRight = '8px';
+
+      // Match exact HTML structure with merge icon
+      mergeBranchBtn.innerHTML = `
+        <span class="text-xs font-medium text-text-100 group-disabled:text-text-500">Merge ${mainBranch}</span>
+        <div class="group-disabled:text-text-500" style="width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; color: #8b5cf6;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" class="group-disabled:text-text-500" aria-hidden="true" style="flex-shrink: 0; color: #8b5cf6;">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M5 3.25a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm1.416.483a3.751 3.751 0 1 0-1.416 1.416c.16.235.335.46.526.671.611.673 1.386 1.18 2.474 1.18h.5v3.75l-.096.016a3.75 3.75 0 1 0 1.596 0l-.096-.016V7a2.5 2.5 0 0 0 2.5-2.5h1.5a.75.75 0 0 0 0-1.5h-1.5A2.5 2.5 0 0 0 9.5 5.5h-.5c-1.382 0-2.286-.671-2.584-1.767ZM11.5 12.75a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"></path>
+          </svg>
+        </div>
+      `;
+
+      mergeBranchBtn.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        // Re-detect main branch in case context changed
+        const branch = detectMainBranch();
+        const gitCommand = `git fetch origin ${branch} && git merge origin/${branch}`;
+        console.log(LOG_PREFIX, `📋 Copying merge command: ${gitCommand}`);
+
+        try {
+          await navigator.clipboard.writeText(gitCommand);
+          console.log(LOG_PREFIX, '✅ Merge command copied to clipboard!');
+          showMergeCopyFeedback('Merge command copied to clipboard');
+        } catch (err) {
+          console.error(LOG_PREFIX, '❌ Failed to copy:', err);
+          // Fallback: try execCommand
+          try {
+            const textArea = document.createElement('textarea');
+            textArea.value = gitCommand;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            console.log(LOG_PREFIX, '✅ Merge command copied via fallback!');
+            showMergeCopyFeedback('Merge command copied to clipboard');
+          } catch (fallbackErr) {
+            console.error(LOG_PREFIX, '❌ Fallback copy failed:', fallbackErr);
+          }
+        }
+      });
+
+      // Insert button before the target button
+      targetButton.parentNode.insertBefore(mergeBranchBtn, targetButton);
+      console.log(LOG_PREFIX, '✅ Merge Branch button added');
+    }
+
+    // Show visual feedback when copy succeeds
+    function showMergeCopyFeedback(message) {
+      const feedback = document.createElement('div');
+      feedback.textContent = message;
+      feedback.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #8b5cf6;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 99999;
+        animation: fadeInOut 2s ease-in-out;
+        max-width: 400px;
+        word-break: break-all;
+      `;
+
+      // Add animation keyframes if not already present
+      if (!document.querySelector('#better-claude-animations')) {
+        const style = document.createElement('style');
+        style.id = 'better-claude-animations';
+        style.textContent = `
+          @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
+      document.body.appendChild(feedback);
+      setTimeout(() => feedback.remove(), 2000);
+    }
+
+    // Watch for DOM changes to detect when View PR button appears
+    const observer = new MutationObserver((mutations) => {
+      // Check periodically for the View PR button
+      addMergeBranchButton();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    // Also try immediately and after delays
+    addMergeBranchButton();
+    setTimeout(addMergeBranchButton, 500);
+    setTimeout(addMergeBranchButton, 1000);
+    setTimeout(addMergeBranchButton, 2000);
+
+    console.log(LOG_PREFIX, 'Merge Branch button watcher active');
+    return observer;
+  }
+
+  // ============================================
   // Project Colors Feature
   // ============================================
 
@@ -1227,6 +1407,11 @@
       watchForCopyBranchButton();
     }
 
+    // Watch for merge branch button (only if enabled)
+    if (isFeatureEnabled('mergeBranch')) {
+      watchForMergeBranchButton();
+    }
+
     // Watch for DOM changes (SPA navigation)
     const observer = new MutationObserver((mutations) => {
       // Re-inject mode button if missing and enabled
@@ -1239,6 +1424,11 @@
 
       // Re-add pull branch button if missing and enabled
       if (isFeatureEnabled('pullBranch') && !document.querySelector('.better-pull-branch-btn')) {
+        // The watcher handles this, but we can trigger a check
+      }
+
+      // Re-add merge branch button if missing and enabled
+      if (isFeatureEnabled('mergeBranch') && !document.querySelector('.better-merge-branch-btn')) {
         // The watcher handles this, but we can trigger a check
       }
 
