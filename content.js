@@ -1443,16 +1443,16 @@
       return;
     }
 
-    // Find the flex row container to add indicator at the end
-    const row = sessionEl.querySelector('.cursor-pointer');
-    if (!row) {
-      console.log(LOG_PREFIX, '>>> Row container not found for blocked indicator');
+    // Find the buttons area container (flex-shrink-0) to add indicator
+    const buttonsArea = sessionEl.querySelector('.flex-shrink-0');
+    if (!buttonsArea) {
+      console.log(LOG_PREFIX, '>>> Buttons area not found for blocked indicator');
       return;
     }
 
-    // Create the indicator (same size as button icon: 14x14)
+    // Create the indicator (same size as button: h-6 w-6 = 24x24, with 14x14 icon inside)
     const indicator = document.createElement('span');
-    indicator.className = 'bcc-blocked-indicator';
+    indicator.className = 'bcc-blocked-indicator inline-flex items-center justify-center h-6 w-6';
     indicator.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"></path></svg>`;
     indicator.title = 'Session is blocked';
 
@@ -1461,7 +1461,7 @@
 
     // Check if currently hovering (indicator should be hidden if so)
     const isCurrentlyHovering = groupEl && groupEl.matches(':hover');
-    indicator.style.cssText = `color: #f59e0b; display: ${isCurrentlyHovering ? 'none' : 'inline-flex'}; align-items: center; flex-shrink: 0; margin-left: auto; margin-right: 8px;`;
+    indicator.style.cssText = `color: #f59e0b; display: ${isCurrentlyHovering ? 'none' : 'inline-flex'};`;
 
     if (groupEl) {
       groupEl.addEventListener('mouseenter', () => {
@@ -1472,9 +1472,9 @@
       });
     }
 
-    // Append to row (will be at flex end due to margin-left: auto)
-    row.appendChild(indicator);
-    console.log(LOG_PREFIX, '>>> Added blocked indicator to session (flex end, hides on hover)');
+    // Append to buttons area (same container as the hover buttons)
+    buttonsArea.appendChild(indicator);
+    console.log(LOG_PREFIX, '>>> Added blocked indicator to buttons area (hides on hover)');
   }
 
   /**
