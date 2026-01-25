@@ -6,10 +6,6 @@
 
   const LOG_PREFIX = '[BCC]';
 
-  console.log(LOG_PREFIX, 'Script loaded');
-  console.log(LOG_PREFIX, 'URL:', window.location.href);
-  console.log(LOG_PREFIX, 'Document readyState:', document.readyState);
-
   // ============================================
   // Settings Management
   // ============================================
@@ -32,20 +28,16 @@
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
           chrome.storage.sync.get(DEFAULT_SETTINGS, (result) => {
             if (chrome.runtime.lastError) {
-              console.log(LOG_PREFIX, 'Storage error, using defaults:', chrome.runtime.lastError);
               resolve(currentSettings);
             } else {
               currentSettings = result;
-              console.log(LOG_PREFIX, 'Settings loaded:', currentSettings);
               resolve(currentSettings);
             }
           });
         } else {
-          console.log(LOG_PREFIX, 'Chrome storage not available, using defaults');
           resolve(currentSettings);
         }
       } catch (e) {
-        console.log(LOG_PREFIX, 'Error loading settings, using defaults:', e);
         resolve(currentSettings);
       }
     });
@@ -57,7 +49,6 @@
       if (typeof chrome !== 'undefined' && chrome.storage) {
         chrome.storage.sync.set(settings, () => {
           currentSettings = { ...currentSettings, ...settings };
-          console.log(LOG_PREFIX, 'Settings saved:', settings);
           resolve();
         });
       } else {
@@ -76,7 +67,6 @@
   if (typeof chrome !== 'undefined' && chrome.storage) {
     chrome.storage.onChanged.addListener((changes, namespace) => {
       if (namespace === 'sync') {
-        console.log(LOG_PREFIX, 'Settings changed:', changes);
         for (const [key, { newValue }] of Object.entries(changes)) {
           currentSettings[key] = newValue;
         }
@@ -87,7 +77,6 @@
 
   // Apply current settings to the page
   function applySettings() {
-    console.log(LOG_PREFIX, 'Applying settings:', currentSettings);
 
     // Update Better label appearance
     updateBetterLabelState();
@@ -174,20 +163,13 @@
   let currentMode = 'Agent';
 
   function createModeButton() {
-    console.log(LOG_PREFIX, 'createModeButton() called');
-
-    // Create container
     const container = document.createElement('div');
     container.className = 'bcc-mode-container';
-    // Apply inline styles to override page CSS
     container.style.cssText = 'position: relative !important; display: inline-flex !important; flex-direction: row !important; align-items: center !important; margin-right: 8px !important; z-index: 1000 !important;';
-    console.log(LOG_PREFIX, 'Created container:', container);
 
-    // Create button
     modeButton = document.createElement('button');
     modeButton.className = 'bcc-mode-button';
-    modeButton.type = 'button'; // Prevent form submission
-    // Apply inline styles to override page CSS
+    modeButton.type = 'button';
     modeButton.style.cssText = 'display: inline-flex !important; flex-direction: row !important; align-items: center !important; gap: 6px !important; padding: 6px 10px !important; background: transparent !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; border-radius: 8px !important; cursor: pointer !important; font-size: 13px !important; white-space: nowrap !important;';
     modeButton.innerHTML = `
       <span class="bcc-mode-label" style="display: inline !important; font-weight: 500 !important;">${currentMode}</span>
@@ -195,13 +177,10 @@
         <path d="m6 9 6 6 6-6"></path>
       </svg>
     `;
-    console.log(LOG_PREFIX, 'Created modeButton:', modeButton);
     modeButton.addEventListener('click', toggleDropdown);
 
-    // Create dropdown
     dropdown = document.createElement('div');
     dropdown.className = 'bcc-mode-dropdown';
-    // Apply inline styles for dropdown
     dropdown.style.cssText = 'position: absolute !important; bottom: calc(100% + 4px) !important; left: 0 !important; min-width: 120px !important; background: #ffffff !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; opacity: 0 !important; visibility: hidden !important; transform: translateY(4px) !important; transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s !important; overflow: hidden !important;';
     dropdown.innerHTML = `
       <div class="bcc-mode-option" data-mode="Agent" style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 8px !important; padding: 10px 12px !important; cursor: pointer !important; font-size: 13px !important;">
@@ -213,11 +192,9 @@
         <span>Plan</span>
       </div>
     `;
-    console.log(LOG_PREFIX, 'Created dropdown:', dropdown);
 
     dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
       option.addEventListener('click', (e) => {
-        console.log(LOG_PREFIX, 'Option clicked:', option.dataset.mode);
         e.preventDefault();
         e.stopPropagation();
         selectMode(option.dataset.mode);
@@ -226,35 +203,19 @@
 
     container.appendChild(modeButton);
     container.appendChild(dropdown);
-
-    console.log(LOG_PREFIX, 'Final container:', container);
-
-    // Log computed styles after a tick
-    setTimeout(() => {
-      const containerStyle = window.getComputedStyle(container);
-      const buttonStyle = window.getComputedStyle(modeButton);
-      console.log(LOG_PREFIX, 'Container computed style - display:', containerStyle.display, 'flexDirection:', containerStyle.flexDirection);
-      console.log(LOG_PREFIX, 'Button computed style - display:', buttonStyle.display, 'flexDirection:', buttonStyle.flexDirection);
-    }, 100);
-
     return container;
   }
 
   function toggleDropdown(e) {
-    console.log(LOG_PREFIX, 'toggleDropdown() called');
     e.stopPropagation();
     e.preventDefault();
     const isVisible = dropdown.style.visibility === 'visible';
-    console.log(LOG_PREFIX, 'Current visibility:', isVisible);
-
     if (isVisible) {
       closeDropdown();
     } else {
       dropdown.style.opacity = '1';
       dropdown.style.visibility = 'visible';
       dropdown.style.transform = 'translateY(0)';
-      console.log(LOG_PREFIX, 'Dropdown now visible');
-      // Close on outside click
       setTimeout(() => {
         document.addEventListener('click', closeDropdown, { once: true });
       }, 0);
@@ -262,17 +223,14 @@
   }
 
   function closeDropdown() {
-    console.log(LOG_PREFIX, 'closeDropdown() called');
     dropdown.style.opacity = '0';
     dropdown.style.visibility = 'hidden';
     dropdown.style.transform = 'translateY(4px)';
   }
 
   function selectMode(mode) {
-    console.log(LOG_PREFIX, 'selectMode() called with:', mode);
     currentMode = mode;
     modeButton.querySelector('.bcc-mode-label').textContent = mode;
-    console.log(LOG_PREFIX, 'Updated label to:', mode);
 
     // Update checkmarks
     dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
@@ -282,34 +240,25 @@
 
     closeDropdown();
 
-    // Handle mode change
     if (mode === 'Plan') {
-      console.log(LOG_PREFIX, 'Calling addPlanPrefix()');
       addPlanPrefix();
     } else if (mode === 'Agent') {
-      console.log(LOG_PREFIX, 'Calling removePlanPrefix()');
       removePlanPrefix();
     }
   }
 
   function addPlanPrefix() {
-    console.log(LOG_PREFIX, 'addPlanPrefix() called');
     const textField = document.querySelector('div[contenteditable="true"]') ||
                       document.querySelector('textarea') ||
                       document.querySelector('[data-placeholder]');
-
-    console.log(LOG_PREFIX, 'Found textField:', textField);
-
     if (textField) {
       const prefix = 'use @agent-plan : ';
-
       if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
         if (!textField.value.startsWith(prefix)) {
           textField.value = prefix + textField.value;
           textField.focus();
           textField.setSelectionRange(textField.value.length, textField.value.length);
           textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log(LOG_PREFIX, 'Added prefix, new value:', textField.value);
         }
       } else {
         const currentText = textField.innerText || textField.textContent || '';
@@ -323,30 +272,23 @@
           sel.removeAllRanges();
           sel.addRange(range);
           textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log(LOG_PREFIX, 'Added prefix, new text:', textField.innerText);
         }
       }
     }
   }
 
   function removePlanPrefix() {
-    console.log(LOG_PREFIX, 'removePlanPrefix() called');
     const textField = document.querySelector('div[contenteditable="true"]') ||
                       document.querySelector('textarea') ||
                       document.querySelector('[data-placeholder]');
-
-    console.log(LOG_PREFIX, 'Found textField:', textField);
-
     if (textField) {
       const prefix = 'use @agent-plan : ';
-
       if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
         if (textField.value.startsWith(prefix)) {
           textField.value = textField.value.slice(prefix.length);
           textField.focus();
           textField.setSelectionRange(textField.value.length, textField.value.length);
           textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log(LOG_PREFIX, 'Removed prefix, new value:', textField.value);
         }
       } else {
         const currentText = textField.innerText || textField.textContent || '';
@@ -360,14 +302,13 @@
           sel.removeAllRanges();
           sel.addRange(range);
           textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log(LOG_PREFIX, 'Removed prefix, new text:', textField.innerText);
         }
       }
     }
   }
 
   function findAndInjectModeButton() {
-    console.log(LOG_PREFIX, 'findAndInjectModeButton() called');
+    if (document.querySelector('.bcc-mode-container')) return;
 
     const possibleContainers = [
       'form button[aria-label*="ttach"]',
@@ -382,50 +323,32 @@
     let targetButton = null;
     for (const selector of possibleContainers) {
       targetButton = document.querySelector(selector);
-      console.log(LOG_PREFIX, 'Trying selector:', selector, '- Found:', targetButton);
       if (targetButton) break;
     }
 
     let insertionPoint = null;
-
     if (targetButton) {
       insertionPoint = targetButton.closest('div');
-      console.log(LOG_PREFIX, 'Found insertionPoint via targetButton:', insertionPoint);
     } else {
       const form = document.querySelector('form');
-      console.log(LOG_PREFIX, 'Found form:', form);
       if (form) {
         const buttonContainers = form.querySelectorAll('button');
-        console.log(LOG_PREFIX, 'Found buttons in form:', buttonContainers.length);
         if (buttonContainers.length > 0) {
           insertionPoint = buttonContainers[0].parentElement;
-          console.log(LOG_PREFIX, 'Using first button parent as insertionPoint:', insertionPoint);
         }
       }
     }
 
-    if (document.querySelector('.bcc-mode-container')) {
-      console.log(LOG_PREFIX, 'Already injected, skipping');
-      return;
-    }
-
     if (insertionPoint) {
-      console.log(LOG_PREFIX, 'Injecting into insertionPoint');
       const modeContainer = createModeButton();
       insertionPoint.insertBefore(modeContainer, insertionPoint.firstChild);
-      console.log(LOG_PREFIX, 'Injection complete');
     } else {
       const form = document.querySelector('form') || document.querySelector('[contenteditable="true"]')?.closest('div');
-      console.log(LOG_PREFIX, 'Fallback - form:', form);
       if (form && !document.querySelector('.bcc-mode-container')) {
-        console.log(LOG_PREFIX, 'Using floating fallback');
         const modeContainer = createModeButton();
         modeContainer.classList.add('bcc-floating');
         form.style.position = 'relative';
         form.insertBefore(modeContainer, form.firstChild);
-        console.log(LOG_PREFIX, 'Floating injection complete');
-      } else {
-        console.log(LOG_PREFIX, 'No injection point found!');
       }
     }
   }
@@ -443,14 +366,11 @@
   let lastKnownModel = null;
   let modelButtonObserver = null;
 
-  function parseModelId(modelId, quiet = false) {
+  function parseModelId(modelId) {
     if (!modelId) return null;
     const modelIdLower = modelId.toLowerCase();
     for (const [key, name] of Object.entries(MODEL_NAMES)) {
       if (modelIdLower.includes(key)) {
-        if (!quiet) {
-          console.log(LOG_PREFIX, `Parsed model ID "${modelId}" -> "${name}"`);
-        }
         return name;
       }
     }
@@ -484,7 +404,7 @@
     try {
       const stickyModel = localStorage.getItem('ccr-sticky-model-selector');
       if (stickyModel) {
-        const parsed = parseModelId(stickyModel, true);
+        const parsed = parseModelId(stickyModel);
         if (parsed) return parsed;
       }
     } catch (e) {}
@@ -492,7 +412,7 @@
     try {
       const defaultModel = localStorage.getItem('default-model');
       if (defaultModel) {
-        const parsed = parseModelId(defaultModel, true);
+        const parsed = parseModelId(defaultModel);
         if (parsed) return parsed;
       }
     } catch (e) {}
@@ -512,11 +432,8 @@
 
   function updateModelDisplay(button, modelName) {
     if (!button || !modelName) return;
-
     const currentText = button.textContent.trim();
     if (currentText === modelName) return;
-
-    console.log(LOG_PREFIX, 'Updating button to show:', modelName);
     button.innerHTML = `<span style="font-size: 12px; font-weight: 500;">${modelName}</span>`;
     button.style.minWidth = 'auto';
     button.style.paddingLeft = '8px';
@@ -533,7 +450,7 @@
     modelButtonObserver = new MutationObserver((mutations) => {
       const currentText = button.textContent.trim();
       if (currentText !== modelName && currentText !== lastKnownModel) {
-        const currentModel = parseModelId(localStorage.getItem('default-model'), true);
+        const currentModel = parseModelId(localStorage.getItem('default-model'));
         if (currentModel) {
           button.innerHTML = `<span style="font-size: 12px; font-weight: 500;">${currentModel}</span>`;
           button.style.minWidth = 'auto';
@@ -563,9 +480,7 @@
     const originalSetItem = localStorage.setItem.bind(localStorage);
     localStorage.setItem = function(key, value) {
       originalSetItem(key, value);
-
       if (key === 'ccr-sticky-model-selector' || key === 'default-model') {
-        console.log(LOG_PREFIX, `localStorage ${key} changed to:`, value);
         const newModel = parseModelId(value);
         if (newModel && newModel !== lastKnownModel) {
           lastKnownModel = newModel;
@@ -582,7 +497,7 @@
         const stickyModel = localStorage.getItem('ccr-sticky-model-selector');
         const defaultModel = localStorage.getItem('default-model');
         const currentModelId = stickyModel || defaultModel;
-        const parsedModel = parseModelId(currentModelId, true);
+        const parsedModel = parseModelId(currentModelId);
 
         if (parsedModel) {
           if (parsedModel !== lastKnownModel) {
@@ -604,11 +519,7 @@
   // ============================================
 
   function addBetterLabel() {
-    console.log(LOG_PREFIX, 'addBetterLabel() called');
-
-    // Check if betterLabel feature is enabled (but we always show the label itself)
     if (!isFeatureEnabled('betterLabel') && !currentSettings.allEnabled === false) {
-      // Only hide label if betterLabel specifically disabled but allEnabled is true
       const existingLabel = document.querySelector('.better-label');
       if (existingLabel && currentSettings.allEnabled && !currentSettings.betterLabel) {
         existingLabel.style.display = 'none';
@@ -617,26 +528,14 @@
     }
 
     const claudeCodeLink = document.querySelector('a[href="/code"]');
-
-    if (!claudeCodeLink) {
-      console.log(LOG_PREFIX, 'No a[href="/code"] found yet');
-      return false;
-    }
-
-    console.log(LOG_PREFIX, 'Found Claude Code link:', {
-      tagName: claudeCodeLink.tagName,
-      className: claudeCodeLink.className,
-      href: claudeCodeLink.href
-    });
+    if (!claudeCodeLink) return false;
 
     const parent = claudeCodeLink.parentElement;
     if (parent?.querySelector('.better-label')) {
-      console.log(LOG_PREFIX, 'Better label already exists in parent, updating state');
       updateBetterLabelState();
       return true;
     }
     if (claudeCodeLink.nextElementSibling?.classList?.contains('better-label')) {
-      console.log(LOG_PREFIX, 'Better label already exists as sibling, updating state');
       updateBetterLabelState();
       return true;
     }
@@ -685,26 +584,17 @@
       `;
     }
 
-    // Add click handler to toggle all features
     betterLabel.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
-
       const newAllEnabled = !currentSettings.allEnabled;
-      console.log(LOG_PREFIX, 'Toggling all features:', newAllEnabled);
-
       await saveSettings({ allEnabled: newAllEnabled });
-
-      // Show feedback then reload
       showToggleFeedback(newAllEnabled ? 'Features enabled - Reloading...' : 'Features disabled - Reloading...');
-
-      // Reload the page after a short delay to show the feedback
       setTimeout(() => {
         window.location.reload();
       }, 500);
     });
 
-    // Add hover effect
     betterLabel.addEventListener('mouseenter', () => {
       betterLabel.style.opacity = '0.8';
     });
@@ -712,10 +602,7 @@
       betterLabel.style.opacity = '1';
     });
 
-    console.log(LOG_PREFIX, 'Inserting Better label');
     claudeCodeLink.parentNode.insertBefore(betterLabel, claudeCodeLink.nextSibling);
-    console.log(LOG_PREFIX, 'Better label inserted successfully');
-
     return true;
   }
 
@@ -760,64 +647,39 @@
   // Pull Branch in CLI Feature
   // ============================================
 
-  // Add "Pull Branch in CLI" button next to Create PR button
   function watchForCopyBranchButton() {
-    console.log(LOG_PREFIX, '👀 Setting up Pull Branch in CLI button watcher...');
-
-    // Store the current branch name
     let currentBranchName = null;
 
-    // Function to extract branch name from the page
     function extractBranchName() {
-      // Look for elements that likely contain branch info (near GitHub icons, repo info, etc.)
-      // First, try to find elements with specific patterns
       const candidates = document.querySelectorAll('span, div, p, a');
-
       for (const el of candidates) {
-        // Skip elements with too much text (likely containers)
         const text = el.textContent || '';
         if (text.length > 100) continue;
-
-        // Look for branch name pattern: claude/something-with-dashes
-        // Must end at a word boundary (space, end of string, or non-alphanumeric)
         const branchMatch = text.match(/\b(claude\/[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9])\b/);
         if (branchMatch) {
-          // Verify it looks like a real branch (has at least one hyphen and reasonable length)
           const branch = branchMatch[1];
           if (branch.includes('-') && branch.length > 10 && branch.length < 80) {
-            console.log(LOG_PREFIX, `Found branch in element: "${branch}"`);
             return branch;
           }
         }
       }
-
-      // Fallback: search page text more carefully
       const pageText = document.body.textContent || '';
-      // Match branch pattern followed by whitespace or end
       const matches = pageText.match(/claude\/[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9](?=\s|$|Context|Rename|Archive|Delete)/g);
       if (matches && matches.length > 0) {
-        // Return the first valid-looking branch
         for (const match of matches) {
           if (match.includes('-') && match.length > 10) {
             return match;
           }
         }
       }
-
       return null;
     }
 
-    // Function to add the Pull Branch in CLI button
     function addPullBranchButton() {
-      // Check if button already exists
-      if (document.querySelector('.better-pull-branch-btn')) {
-        return;
-      }
+      if (document.querySelector('.better-pull-branch-btn')) return;
 
-      // Find the Create PR button
       const allButtons = document.querySelectorAll('button');
       let createPRButton = null;
-
       for (const btn of allButtons) {
         const text = btn.textContent.trim();
         if (text.includes('Create PR') || text.includes('Create pull request')) {
@@ -825,20 +687,10 @@
           break;
         }
       }
+      if (!createPRButton) return;
 
-      if (!createPRButton) {
-        console.log(LOG_PREFIX, 'Create PR button not found yet');
-        return;
-      }
-
-      // Extract branch name
       currentBranchName = extractBranchName();
-      if (!currentBranchName) {
-        console.log(LOG_PREFIX, 'Branch name not found');
-        return;
-      }
-
-      console.log(LOG_PREFIX, `📋 Found Create PR button and branch: ${currentBranchName}`);
+      if (!currentBranchName) return;
 
       // Create the Pull Branch in CLI button with exact same structure as Open in CLI
       const pullBranchBtn = document.createElement('button');
@@ -862,19 +714,12 @@
       pullBranchBtn.addEventListener('click', async (event) => {
         event.preventDefault();
         event.stopPropagation();
-
-        // Re-extract branch name in case it changed
         const branchName = extractBranchName() || currentBranchName;
         const gitCommand = `git fetch && git co ${branchName} && git pull`;
-        console.log(LOG_PREFIX, `📋 Copying git command: ${gitCommand}`);
-
         try {
           await navigator.clipboard.writeText(gitCommand);
-          console.log(LOG_PREFIX, '✅ Git command copied to clipboard!');
           showCopyFeedback('Command copied to clipboard');
         } catch (err) {
-          console.error(LOG_PREFIX, '❌ Failed to copy:', err);
-          // Fallback: try execCommand
           try {
             const textArea = document.createElement('textarea');
             textArea.value = gitCommand;
@@ -884,17 +729,12 @@
             textArea.select();
             document.execCommand('copy');
             document.body.removeChild(textArea);
-            console.log(LOG_PREFIX, '✅ Git command copied via fallback!');
             showCopyFeedback('Command copied to clipboard');
-          } catch (fallbackErr) {
-            console.error(LOG_PREFIX, '❌ Fallback copy failed:', fallbackErr);
-          }
+          } catch (fallbackErr) {}
         }
       });
 
-      // Insert button before the Create PR button
       createPRButton.parentNode.insertBefore(pullBranchBtn, createPRButton);
-      console.log(LOG_PREFIX, '✅ Pull Branch in CLI button added');
     }
 
     // Show visual feedback when copy succeeds
@@ -936,24 +776,12 @@
       setTimeout(() => feedback.remove(), 2000);
     }
 
-    // Watch for DOM changes to detect when Create PR button appears
-    const observer = new MutationObserver((mutations) => {
-      // Check periodically for the Create PR button
-      addPullBranchButton();
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-
-    // Also try immediately and after delays
+    const observer = new MutationObserver(() => addPullBranchButton());
+    observer.observe(document.body, { childList: true, subtree: true });
     addPullBranchButton();
     setTimeout(addPullBranchButton, 500);
     setTimeout(addPullBranchButton, 1000);
     setTimeout(addPullBranchButton, 2000);
-
-    console.log(LOG_PREFIX, 'Pull Branch in CLI button watcher active');
     return observer;
   }
 
@@ -961,7 +789,6 @@
   // Session Dot Feature
   // ============================================
 
-  // Track sessions: "running" = has spinner, "viewed" = user has seen the completed session
   const RUNNING_SESSIONS_KEY = 'bcc-running-sessions';
   const VIEWED_SESSIONS_KEY = 'bcc-viewed-sessions';
 
@@ -977,9 +804,7 @@
   function saveStoredSessions(key, sessions) {
     try {
       localStorage.setItem(key, JSON.stringify(sessions));
-    } catch (e) {
-      console.log(LOG_PREFIX, 'Failed to save sessions:', e);
-    }
+    } catch (e) {}
   }
 
   function markSessionAsRunning(sessionId) {
@@ -987,38 +812,37 @@
     if (!running.includes(sessionId)) {
       running.push(sessionId);
       saveStoredSessions(RUNNING_SESSIONS_KEY, running);
-      console.log(LOG_PREFIX, 'Marked session as running:', sessionId);
+      console.log(LOG_PREFIX, '🏃 RUNNING: Marked session as running:', sessionId);
+      console.log(LOG_PREFIX, '🏃 RUNNING: All running sessions now:', running);
     }
   }
 
   function markSessionAsViewed(sessionId) {
-    // Add to viewed
     const viewed = getStoredSessions(VIEWED_SESSIONS_KEY);
     if (!viewed.includes(sessionId)) {
       viewed.push(sessionId);
       saveStoredSessions(VIEWED_SESSIONS_KEY, viewed);
-      console.log(LOG_PREFIX, 'Marked session as viewed:', sessionId);
+      console.log(LOG_PREFIX, '👁️ VIEWED: Marked session as viewed:', sessionId);
     }
-    // Remove from running (it's been seen now)
     const running = getStoredSessions(RUNNING_SESSIONS_KEY);
     const idx = running.indexOf(sessionId);
     if (idx > -1) {
       running.splice(idx, 1);
       saveStoredSessions(RUNNING_SESSIONS_KEY, running);
+      console.log(LOG_PREFIX, '👁️ VIEWED: Removed from running list:', sessionId);
     }
   }
 
   function wasSessionRunning(sessionId) {
-    return getStoredSessions(RUNNING_SESSIONS_KEY).includes(sessionId);
+    const result = getStoredSessions(RUNNING_SESSIONS_KEY).includes(sessionId);
+    return result;
   }
 
   function isSessionViewed(sessionId) {
     return getStoredSessions(VIEWED_SESSIONS_KEY).includes(sessionId);
   }
 
-  // Extract session ID from a session link element
   function getSessionIdFromElement(element) {
-    // Look for a link with /code/ pattern
     const link = element.querySelector('a[href*="/code/"]') || element.closest('a[href*="/code/"]');
     if (link) {
       const href = link.getAttribute('href');
@@ -1030,7 +854,6 @@
     return null;
   }
 
-  // Create a green dot indicator
   function createGreenDot() {
     const dot = document.createElement('span');
     dot.className = 'bcc-session-dot';
@@ -1046,72 +869,106 @@
   }
 
   function watchSessionDots() {
-    console.log(LOG_PREFIX, '👀 Setting up session dot watcher...');
+    console.log(LOG_PREFIX, '🟢 SESSION DOT: Initializing...');
+    console.log(LOG_PREFIX, '🟢 SESSION DOT: Current URL:', window.location.href);
+    console.log(LOG_PREFIX, '🟢 SESSION DOT: Running sessions in storage:', getStoredSessions(RUNNING_SESSIONS_KEY));
+    console.log(LOG_PREFIX, '🟢 SESSION DOT: Viewed sessions in storage:', getStoredSessions(VIEWED_SESSIONS_KEY));
 
-    // Get current session from URL
     function getCurrentSessionId() {
       const match = window.location.pathname.match(/\/code\/([^/?]+)/);
       return match ? match[1] : null;
     }
 
-    // Mark current session as viewed on page load
     const currentSessionId = getCurrentSessionId();
+    console.log(LOG_PREFIX, '🟢 SESSION DOT: Current session ID from URL:', currentSessionId);
     if (currentSessionId) {
       markSessionAsViewed(currentSessionId);
     }
 
-    // Process a single session item
     function processSessionItem(sessionItem) {
       const sessionId = getSessionIdFromElement(sessionItem);
-      if (!sessionId) return;
+      if (!sessionId) {
+        console.log(LOG_PREFIX, '🔍 PROCESS: No session ID found in element:', sessionItem.outerHTML.slice(0, 200));
+        return;
+      }
 
       const spinnerContainer = sessionItem.querySelector('.code-spinner-animate');
       const hasSpinner = !!spinnerContainer;
       const existingDot = sessionItem.querySelector('.bcc-session-dot');
 
+      console.log(LOG_PREFIX, '🔍 PROCESS: Session', sessionId, '| hasSpinner:', hasSpinner, '| existingDot:', !!existingDot);
+
       if (hasSpinner) {
-        // Spinner is present - mark this session as running (persisted to localStorage)
+        console.log(LOG_PREFIX, '⚡ SPINNER FOUND for session:', sessionId);
         markSessionAsRunning(sessionId);
-        // Remove dot if present while spinner is active
         if (existingDot) {
           existingDot.remove();
         }
       } else {
-        // No spinner - check if this session was previously running and not yet viewed
-        if (wasSessionRunning(sessionId) && !isSessionViewed(sessionId) && !existingDot) {
-          // Find the icon container to add the green dot
-          const iconContainer = sessionItem.querySelector('.w-6.h-6.flex.items-center.justify-center');
+        const wasRunning = wasSessionRunning(sessionId);
+        const isViewed = isSessionViewed(sessionId);
+        console.log(LOG_PREFIX, '🔍 NO SPINNER for session:', sessionId, '| wasRunning:', wasRunning, '| isViewed:', isViewed);
+
+        if (wasRunning && !isViewed && !existingDot) {
+          console.log(LOG_PREFIX, '🟢 ADDING GREEN DOT for session:', sessionId);
+
+          // Try multiple selectors for the icon container
+          let iconContainer = sessionItem.querySelector('.w-6.h-6.flex.items-center.justify-center');
+          console.log(LOG_PREFIX, '🟢 Icon container (.w-6.h-6...):', iconContainer);
+
+          if (!iconContainer) {
+            iconContainer = sessionItem.querySelector('.relative.flex.items-center');
+            console.log(LOG_PREFIX, '🟢 Icon container (.relative.flex...):', iconContainer);
+          }
+
+          if (!iconContainer) {
+            // Try to find any container that might hold the icon
+            const allDivs = sessionItem.querySelectorAll('div');
+            console.log(LOG_PREFIX, '🟢 All divs in session item:', allDivs.length);
+            for (const div of allDivs) {
+              console.log(LOG_PREFIX, '🟢 Div classes:', div.className);
+            }
+            iconContainer = allDivs[0];
+          }
+
           if (iconContainer) {
             const dot = createGreenDot();
             iconContainer.innerHTML = '';
             iconContainer.appendChild(dot);
-            console.log(LOG_PREFIX, 'Added green dot for completed session:', sessionId);
+            console.log(LOG_PREFIX, '✅ GREEN DOT ADDED for session:', sessionId);
+          } else {
+            console.log(LOG_PREFIX, '❌ Could not find icon container for session:', sessionId);
+            console.log(LOG_PREFIX, '❌ Session item HTML:', sessionItem.outerHTML.slice(0, 500));
           }
         }
       }
     }
 
-    // Process all visible session items
     function processAllSessions() {
-      // Find all session links in the sidebar
       const allSessionLinks = document.querySelectorAll('a[href*="/code/"]');
+      console.log(LOG_PREFIX, '🔄 PROCESS ALL: Found', allSessionLinks.length, 'session links');
+
       const processedItems = new Set();
 
-      allSessionLinks.forEach(link => {
-        // Find the session item container by traversing up
+      allSessionLinks.forEach((link, index) => {
         let sessionItem = link.closest('[class*="group"]');
         if (!sessionItem) {
-          // Try alternative: find parent with relative positioning (common pattern)
           sessionItem = link.closest('.relative') || link.parentElement?.parentElement?.parentElement;
         }
+
+        if (index < 5) {
+          console.log(LOG_PREFIX, '🔄 Link', index, ':', link.getAttribute('href'), '| sessionItem:', sessionItem ? 'found' : 'null');
+        }
+
         if (sessionItem && !processedItems.has(sessionItem)) {
           processedItems.add(sessionItem);
           processSessionItem(sessionItem);
         }
       });
+
+      console.log(LOG_PREFIX, '🔄 PROCESS ALL: Processed', processedItems.size, 'unique session items');
     }
 
-    // Watch for navigation/clicks on session links
     document.addEventListener('click', (e) => {
       const link = e.target.closest('a[href*="/code/"]');
       if (link) {
@@ -1119,39 +976,36 @@
         const match = href.match(/\/code\/([^/?]+)/);
         if (match) {
           const sessionId = match[1];
+          console.log(LOG_PREFIX, '👆 CLICK: Session clicked:', sessionId);
           markSessionAsViewed(sessionId);
-          // Remove the dot immediately
           const sessionItem = link.closest('[class*="group"]') || link.parentElement?.parentElement;
           if (sessionItem) {
             const dot = sessionItem.querySelector('.bcc-session-dot');
             if (dot) {
               dot.remove();
-              console.log(LOG_PREFIX, 'Removed green dot for viewed session:', sessionId);
+              console.log(LOG_PREFIX, '👆 CLICK: Removed green dot for:', sessionId);
             }
           }
         }
       }
     }, true);
 
-    // Watch for URL changes (SPA navigation)
     let lastUrl = window.location.href;
     const urlObserver = new MutationObserver(() => {
       if (window.location.href !== lastUrl) {
+        console.log(LOG_PREFIX, '🔄 URL CHANGED:', lastUrl, '->', window.location.href);
         lastUrl = window.location.href;
         const newSessionId = getCurrentSessionId();
         if (newSessionId) {
           markSessionAsViewed(newSessionId);
         }
-        // Re-process sessions after navigation
         setTimeout(processAllSessions, 100);
       }
     });
 
     urlObserver.observe(document.body, { childList: true, subtree: true });
 
-    // Watch for DOM changes to detect spinner additions/removals
     const sessionObserver = new MutationObserver((mutations) => {
-      // Debounce processing
       clearTimeout(sessionObserver._debounceTimer);
       sessionObserver._debounceTimer = setTimeout(() => {
         processAllSessions();
@@ -1165,12 +1019,12 @@
       attributeFilter: ['class']
     });
 
-    // Initial processing
     processAllSessions();
     setTimeout(processAllSessions, 500);
     setTimeout(processAllSessions, 1000);
+    setTimeout(processAllSessions, 3000);
 
-    console.log(LOG_PREFIX, 'Session dot watcher active');
+    console.log(LOG_PREFIX, '🟢 SESSION DOT: Watcher active');
     return { sessionObserver, urlObserver };
   }
 
@@ -1187,89 +1041,53 @@
   }
 
   async function init() {
-    console.log(LOG_PREFIX, 'init() called, readyState:', document.readyState);
-
     try {
-      // Load settings first
       await loadSettings();
-      console.log(LOG_PREFIX, 'Settings loaded in init:', currentSettings);
-    } catch (e) {
-      console.log(LOG_PREFIX, 'Failed to load settings, using defaults:', e);
-    }
+    } catch (e) {}
 
-    // Set up model display watchers (only if enabled)
     if (isFeatureEnabled('showModel')) {
       watchLocalStorage();
       pollForModelChanges();
-
-      // Store initial model
       lastKnownModel = getSelectedModel();
-      console.log(LOG_PREFIX, 'Initial model:', lastKnownModel);
     }
 
-    // Function to inject UI elements
     function injectUI() {
       try {
         if (isFeatureEnabled('modeButton')) {
           setTimeout(findAndInjectModeButton, 1000);
         }
-        addBetterLabel(); // Always add the label (it's the toggle)
+        addBetterLabel();
         if (isFeatureEnabled('showModel')) {
           updateModelSelector();
         }
-      } catch (e) {
-        console.error(LOG_PREFIX, 'Error injecting UI:', e);
-      }
+      } catch (e) {}
     }
 
-    // Wait for page to load
     if (document.readyState === 'loading') {
-      console.log(LOG_PREFIX, 'Document still loading, adding DOMContentLoaded listener');
-      document.addEventListener('DOMContentLoaded', () => {
-        console.log(LOG_PREFIX, 'DOMContentLoaded fired');
-        injectUI();
-      });
+      document.addEventListener('DOMContentLoaded', () => injectUI());
     } else {
-      console.log(LOG_PREFIX, 'Document already loaded, scheduling injection');
       injectUI();
     }
 
-    // Watch for copy branch button clicks (only if enabled)
     if (isFeatureEnabled('pullBranch')) {
       watchForCopyBranchButton();
     }
 
-    // Watch for session completion and add green dots (only if enabled)
     if (isFeatureEnabled('sessionDot')) {
       watchSessionDots();
     }
 
-    // Watch for DOM changes (SPA navigation)
-    const observer = new MutationObserver((mutations) => {
-      // Re-inject mode button if missing and enabled
+    const observer = new MutationObserver(() => {
       if (isFeatureEnabled('modeButton') && !document.querySelector('.bcc-mode-container')) {
-        console.log(LOG_PREFIX, 'MutationObserver: mode container missing, re-injecting');
         findAndInjectModeButton();
       }
-      // Re-add better label if missing (always, since it's the toggle control)
       debouncedAddBetterLabel();
-
-      // Re-add pull branch button if missing and enabled
-      if (isFeatureEnabled('pullBranch') && !document.querySelector('.better-pull-branch-btn')) {
-        // The watcher handles this, but we can trigger a check
-      }
     });
 
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-    console.log(LOG_PREFIX, 'Initialization complete');
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 
-  init().catch(e => {
-    console.error(LOG_PREFIX, 'Init failed:', e);
-    // Fallback: try to add the better label anyway
+  init().catch(() => {
     setTimeout(() => addBetterLabel(), 1000);
   });
 })();
