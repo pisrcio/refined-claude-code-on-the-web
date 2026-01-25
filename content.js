@@ -87,6 +87,49 @@
     }
   }
 
+  // Check if an element is within a session list item
+  // Session items have specific patterns: repo name, timestamp (pm/am or day names), optionally diff stats
+  function isWithinSessionItem(element) {
+    // Walk up the tree to find a potential session item container
+    let current = element;
+    for (let i = 0; i < 10 && current; i++) {
+      const text = current.textContent || '';
+
+      // Look for session item patterns:
+      // - Timestamps like "9:40 pm", "Thu", "Wed", etc.
+      // - Diff stats like "+376 -3"
+      // - Should NOT be in the main input area (which has contenteditable or textarea)
+
+      const hasTimestamp = /\d{1,2}:\d{2}\s*(am|pm)/i.test(text) ||
+                          /\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/i.test(text);
+      const hasDiffStats = /\+\d+\s+-\d+/.test(text);
+      const hasRepoPattern = text.includes('·'); // Session items use · as separator
+
+      // Check if we're in an input area (avoid these)
+      const isInputArea = current.querySelector('textarea, [contenteditable="true"]') ||
+                         current.closest('textarea, [contenteditable="true"]');
+
+      if (isInputArea) {
+        log('Skipping - found input area ancestor');
+        return false;
+      }
+
+      // Session items typically have timestamp and separator
+      if (hasTimestamp && hasRepoPattern) {
+        log('Found session item pattern in ancestor:', {
+          hasTimestamp,
+          hasDiffStats,
+          hasRepoPattern,
+          textPreview: text.substring(0, 100)
+        });
+        return true;
+      }
+
+      current = current.parentElement;
+    }
+    return false;
+  }
+
   // Find and process session items with delete buttons
   function processTaskItems() {
     logGroup('Processing task items');
@@ -94,75 +137,63 @@
     const allButtons = document.querySelectorAll('button');
     log('Total buttons found on page:', allButtons.length);
 
-    let processedCount = 0;
-    let skippedAlreadyProcessed = 0;
-    let skippedNoSvg = 0;
-    let skippedNotTrash = 0;
-    let addedButtons = 0;
+    let stats = {
+      alreadyProcessed: 0,
+      noSvg: 0,
+      notInSession: 0,
+      notDeleteButton: 0,
+      alreadyHasBlocked: 0,
+      added: 0
+    };
 
     allButtons.forEach((button, index) => {
       // Skip if already processed
       if (button.hasAttribute(PROCESSED_MARKER)) {
-        skippedAlreadyProcessed++;
+        stats.alreadyProcessed++;
         return;
       }
 
-      // Check if this button contains an SVG
+      // Check if this button contains an SVG (icon button)
       const svg = button.querySelector('svg');
       if (!svg) {
-        skippedNoSvg++;
+        stats.noSvg++;
         return;
       }
 
-      // Log every button with SVG for debugging
-      const svgContent = svg.outerHTML;
-      const buttonParent = button.parentElement;
-      const siblingButtons = buttonParent ? buttonParent.querySelectorAll('button') : [];
+      // CRITICAL: First check if this button is within a session list item
+      if (!isWithinSessionItem(button)) {
+        stats.notInSession++;
+        return;
+      }
 
-      logGroup(`Button #${index} analysis`);
+      const buttonParent = button.parentElement;
+      const siblingButtons = buttonParent ? buttonParent.querySelectorAll('button:not(.bcotw-blocked-btn)') : [];
+
+      logGroup(`Button #${index} analysis (in session item)`);
       log('Button element:', button);
       log('Button classes:', button.className);
-      log('Button aria-label:', button.getAttribute('aria-label'));
-      log('Button title:', button.title);
-      log('SVG content preview:', svgContent.substring(0, 200));
-      log('Parent element:', buttonParent);
-      log('Parent tag:', buttonParent?.tagName);
-      log('Parent classes:', buttonParent?.className);
       log('Sibling buttons count:', siblingButtons.length);
 
-      // Check for trash icon - look for common patterns
-      const svgLower = svgContent.toLowerCase();
-      const hasTrashPath =
-        svgLower.includes('m19') ||
-        svgLower.includes('polyline') ||
-        svgLower.includes('trash') ||
-        svgLower.includes('delete');
-
+      // Within a session item, look for the delete button
+      // It's typically the last button, or has delete in aria-label/title
       const ariaLabel = (button.getAttribute('aria-label') || '').toLowerCase();
       const title = (button.title || '').toLowerCase();
       const isDeleteByAttr = ariaLabel.includes('delete') || title.includes('delete');
+      const isLastOfTwo = siblingButtons.length === 2 && siblingButtons[1] === button;
 
-      log('Has trash-like SVG path:', hasTrashPath);
-      log('Has delete in aria-label/title:', isDeleteByAttr);
-
-      // More permissive: if there are exactly 2 sibling buttons, assume the last one is delete
-      const isLastButton = siblingButtons.length === 2 && siblingButtons[1] === button;
-      log('Is last of 2 buttons:', isLastButton);
-
+      log('Is delete by attr:', isDeleteByAttr);
+      log('Is last of 2 buttons:', isLastOfTwo);
       logGroupEnd();
 
-      // Decide if this is a delete button
-      const isDeleteButton = isDeleteByAttr || isLastButton;
+      const isDeleteButton = isDeleteByAttr || isLastOfTwo;
 
       if (!isDeleteButton) {
-        skippedNotTrash++;
+        stats.notDeleteButton++;
         return;
       }
 
-      processedCount++;
-      log('>>> Found potential delete button #' + index);
+      log('>>> Found delete button in session item #' + index);
 
-      // Check parent
       const parent = button.parentElement;
       if (!parent) {
         log('No parent element, skipping');
@@ -171,17 +202,18 @@
 
       // Check if there's already a blocked button
       if (parent.querySelector('.bcotw-blocked-btn')) {
-        log('Blocked button already exists in parent, skipping');
+        stats.alreadyHasBlocked++;
+        log('Blocked button already exists, skipping');
         return;
       }
 
       // Mark as processed
       button.setAttribute(PROCESSED_MARKER, 'true');
 
-      // Create and insert the blocked button
+      // Create and insert the blocked button BEFORE the delete button
       const blockedButton = createBlockedButton();
       parent.insertBefore(blockedButton, button);
-      addedButtons++;
+      stats.added++;
       log('>>> INSERTED blocked button before delete button');
 
       // Check if this task was previously blocked
@@ -198,11 +230,7 @@
     });
 
     log('--- Summary ---');
-    log('Skipped (already processed):', skippedAlreadyProcessed);
-    log('Skipped (no SVG):', skippedNoSvg);
-    log('Skipped (not trash icon):', skippedNotTrash);
-    log('Processed as potential delete buttons:', processedCount);
-    log('Blocked buttons added:', addedButtons);
+    log('Stats:', stats);
     logGroupEnd();
   }
 
