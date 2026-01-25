@@ -576,87 +576,133 @@
     return true;
   }
 
-  // Watch for copy branch button clicks and copy full git command
+  // Add a "copy git command" button next to the branch/repo title in dropdowns
   function watchForCopyBranchButton() {
-    console.log(LOG_PREFIX, '👀 Setting up copy branch button watcher...');
+    console.log(LOG_PREFIX, '👀 Setting up git command button watcher...');
 
-    // Track already-processed buttons to avoid duplicate listeners
-    const processedButtons = new WeakSet();
+    // Track already-processed containers to avoid duplicate buttons
+    const processedContainers = new WeakSet();
 
-    // Function to find and enhance copy buttons in the dropdown
-    function enhanceCopyButtons() {
+    // Function to add git command button to dropdown
+    function addGitCommandButton() {
       // Look for the dropdown menu that contains repo/branch info
-      // The copy button is typically an SVG icon or button next to the branch text
       const dropdowns = document.querySelectorAll('[role="menu"], [role="dialog"], [data-radix-popper-content-wrapper]');
 
       for (const dropdown of dropdowns) {
-        // Find elements that contain branch-like text (claude/... pattern)
-        const allElements = dropdown.querySelectorAll('*');
+        if (processedContainers.has(dropdown)) continue;
 
-        for (const element of allElements) {
-          // Look for copy buttons - they typically have specific patterns
-          // Check for button/clickable elements with copy-related attributes or SVG icons
-          const copyButtons = dropdown.querySelectorAll('button, [role="button"], svg, [class*="copy"], [aria-label*="copy" i], [aria-label*="Copy" i]');
+        // Find the branch name text in the dropdown
+        const allText = dropdown.textContent || '';
+        // Match patterns like "claude/some-branch-name" or typical git branch formats
+        const branchMatch = allText.match(/(claude\/[a-zA-Z0-9_-]+)/);
 
-          for (const btn of copyButtons) {
-            if (processedButtons.has(btn)) continue;
+        if (!branchMatch) continue;
 
-            // Check if this button is near text that looks like a branch name
-            const parent = btn.closest('div, span, li, [role="menuitem"]');
-            if (!parent) continue;
+        const branchName = branchMatch[1];
 
-            const parentText = parent.textContent || '';
-            // Match patterns like "claude/some-branch-name" or typical git branch formats
-            const branchMatch = parentText.match(/(claude\/[a-zA-Z0-9_-]+)/);
+        // Find the element containing the branch name to insert our button nearby
+        // Look for the row that has the GitHub icon and repo/branch info
+        const textElements = dropdown.querySelectorAll('*');
+        let targetRow = null;
 
-            if (branchMatch) {
-              const branchName = branchMatch[1];
-              console.log(LOG_PREFIX, `📋 Found copy button near branch: ${branchName}`);
-
-              processedButtons.add(btn);
-
-              // Add click interceptor
-              btn.addEventListener('click', async (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                event.stopImmediatePropagation();
-
-                const gitCommand = `git co ${branchName} && git pull`;
-                console.log(LOG_PREFIX, `📋 Copying git command: ${gitCommand}`);
-
-                try {
-                  await navigator.clipboard.writeText(gitCommand);
-                  console.log(LOG_PREFIX, '✅ Git command copied to clipboard!');
-
-                  // Show visual feedback
-                  showCopyFeedback(btn, 'Copied git command!');
-                } catch (err) {
-                  console.error(LOG_PREFIX, '❌ Failed to copy:', err);
-                  // Fallback: try execCommand
-                  try {
-                    const textArea = document.createElement('textarea');
-                    textArea.value = gitCommand;
-                    textArea.style.position = 'fixed';
-                    textArea.style.left = '-9999px';
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    console.log(LOG_PREFIX, '✅ Git command copied via fallback!');
-                    showCopyFeedback(btn, 'Copied git command!');
-                  } catch (fallbackErr) {
-                    console.error(LOG_PREFIX, '❌ Fallback copy failed:', fallbackErr);
-                  }
-                }
-              }, true); // Use capture phase to intercept before original handler
+        for (const el of textElements) {
+          if (el.childNodes.length > 0 && el.textContent.includes(branchName)) {
+            // Find the closest row/container
+            const row = el.closest('div');
+            if (row && !row.querySelector('.better-git-cmd-btn')) {
+              targetRow = row;
+              break;
             }
           }
         }
+
+        if (!targetRow) continue;
+
+        processedContainers.add(dropdown);
+        console.log(LOG_PREFIX, `📋 Found branch in dropdown: ${branchName}`);
+
+        // Create the git command button
+        const gitCmdBtn = document.createElement('button');
+        gitCmdBtn.className = 'better-git-cmd-btn';
+        gitCmdBtn.title = 'Copy git command';
+        gitCmdBtn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 17 10 11 4 5"></polyline>
+            <line x1="12" y1="19" x2="20" y2="19"></line>
+          </svg>
+        `;
+        gitCmdBtn.style.cssText = `
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          margin-left: 4px;
+          padding: 4px;
+          background: transparent;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          color: inherit;
+          opacity: 0.7;
+          transition: opacity 0.2s, background 0.2s;
+        `;
+
+        gitCmdBtn.addEventListener('mouseenter', () => {
+          gitCmdBtn.style.opacity = '1';
+          gitCmdBtn.style.background = 'rgba(128, 128, 128, 0.2)';
+        });
+
+        gitCmdBtn.addEventListener('mouseleave', () => {
+          gitCmdBtn.style.opacity = '0.7';
+          gitCmdBtn.style.background = 'transparent';
+        });
+
+        gitCmdBtn.addEventListener('click', async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+
+          const gitCommand = `git fetch && git co ${branchName} && git pull`;
+          console.log(LOG_PREFIX, `📋 Copying git command: ${gitCommand}`);
+
+          try {
+            await navigator.clipboard.writeText(gitCommand);
+            console.log(LOG_PREFIX, '✅ Git command copied to clipboard!');
+            showCopyFeedback('Copied git command!');
+          } catch (err) {
+            console.error(LOG_PREFIX, '❌ Failed to copy:', err);
+            // Fallback: try execCommand
+            try {
+              const textArea = document.createElement('textarea');
+              textArea.value = gitCommand;
+              textArea.style.position = 'fixed';
+              textArea.style.left = '-9999px';
+              document.body.appendChild(textArea);
+              textArea.select();
+              document.execCommand('copy');
+              document.body.removeChild(textArea);
+              console.log(LOG_PREFIX, '✅ Git command copied via fallback!');
+              showCopyFeedback('Copied git command!');
+            } catch (fallbackErr) {
+              console.error(LOG_PREFIX, '❌ Fallback copy failed:', fallbackErr);
+            }
+          }
+        });
+
+        // Insert the button after the existing copy button or at the end of the row
+        const existingCopyBtn = targetRow.querySelector('button, [role="button"], svg');
+        if (existingCopyBtn && existingCopyBtn.parentElement) {
+          existingCopyBtn.parentElement.insertBefore(gitCmdBtn, existingCopyBtn.nextSibling);
+        } else {
+          targetRow.appendChild(gitCmdBtn);
+        }
+
+        console.log(LOG_PREFIX, '✅ Git command button added');
       }
     }
 
     // Show visual feedback when copy succeeds
-    function showCopyFeedback(element, message) {
+    function showCopyFeedback(message) {
       const feedback = document.createElement('div');
       feedback.textContent = message;
       feedback.style.cssText = `
@@ -702,11 +748,11 @@
               const isDropdown = node.matches?.('[role="menu"], [role="dialog"], [data-radix-popper-content-wrapper]') ||
                                 node.querySelector?.('[role="menu"], [role="dialog"]');
               if (isDropdown) {
-                console.log(LOG_PREFIX, '📋 Dropdown appeared, checking for copy buttons...');
+                console.log(LOG_PREFIX, '📋 Dropdown appeared, checking for branch info...');
                 // Delay slightly to ensure dropdown content is fully rendered
-                setTimeout(enhanceCopyButtons, 50);
-                setTimeout(enhanceCopyButtons, 150);
-                setTimeout(enhanceCopyButtons, 300);
+                setTimeout(addGitCommandButton, 50);
+                setTimeout(addGitCommandButton, 150);
+                setTimeout(addGitCommandButton, 300);
               }
             }
           }
@@ -719,7 +765,7 @@
       subtree: true
     });
 
-    console.log(LOG_PREFIX, '✅ Copy branch button watcher active');
+    console.log(LOG_PREFIX, '✅ Git command button watcher active');
     return observer;
   }
 
