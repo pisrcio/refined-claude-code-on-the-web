@@ -1482,6 +1482,51 @@
       handleBlockedClick(sessionEl, blockedButton);
     });
 
+    // Add hover handler to show tooltip
+    blockedButton.addEventListener('mouseenter', () => {
+      getBlockedReason(sessionData).then((message) => {
+        if (message) {
+          // Create tooltip if it doesn't exist
+          let tooltip = blockedButton.querySelector('.bcc-blocked-tooltip');
+          if (!tooltip) {
+            tooltip = document.createElement('div');
+            tooltip.className = 'bcc-blocked-tooltip';
+            tooltip.style.cssText = `
+              position: absolute;
+              bottom: calc(100% + 8px);
+              left: 50%;
+              transform: translateX(-50%);
+              background: #1f2937;
+              color: white;
+              padding: 8px 12px;
+              border-radius: 6px;
+              font-size: 13px;
+              white-space: normal;
+              max-width: 250px;
+              word-wrap: break-word;
+              z-index: 100001;
+              line-height: 1.4;
+              cursor: pointer;
+              pointer-events: auto;
+            `;
+            tooltip.textContent = message;
+
+            // Edit on click
+            tooltip.addEventListener('click', (e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              showBlockedReasonModal(sessionData, (newMessage) => {
+                tooltip.textContent = newMessage;
+              });
+            });
+
+            blockedButton.style.position = 'relative';
+            blockedButton.appendChild(tooltip);
+          }
+        }
+      });
+    });
+
     // Also add mousedown for debugging
     blockedButton.addEventListener('mousedown', (e) => {
       console.log(LOG_PREFIX, '>>> MOUSEDOWN EVENT on blocked button');
@@ -1821,7 +1866,6 @@
       console.log(LOG_PREFIX, '>>> Showing modal for reason input...');
       // Show modal for entering reason
       showBlockedReasonModal(sessionData, (message) => {
-        updateBlockedIndicatorWithTooltip(sessionEl, sessionData);
         showBlockedFeedback(`Session "${sessionData?.title}" marked as blocked`, true);
       });
     } else {
@@ -1950,9 +1994,6 @@
     // Append to relative container (sibling of hover buttons container)
     relativeContainer.appendChild(indicator);
     console.log(LOG_PREFIX, '>>> Added blocked indicator to relative container (hides on hover)');
-
-    // Add tooltip if there's a reason message
-    updateBlockedIndicatorWithTooltip(sessionEl, sessionData);
   }
 
   /**
