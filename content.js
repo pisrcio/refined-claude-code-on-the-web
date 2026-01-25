@@ -1,5 +1,5 @@
 // Better Claude Code on the Web - Content Script
-// Features: Mode Button, Show Actual Model, Better Label
+// Features: Mode Button, Show Actual Model, Better Label, Pull Branch in CLI
 
 (function() {
   'use strict';
@@ -500,6 +500,207 @@
   }
 
   // ============================================
+  // Pull Branch in CLI Feature
+  // ============================================
+
+  // Add "Pull Branch in CLI" button next to Create PR button
+  function watchForCopyBranchButton() {
+    console.log(LOG_PREFIX, '👀 Setting up Pull Branch in CLI button watcher...');
+
+    // Store the current branch name
+    let currentBranchName = null;
+
+    // Function to extract branch name from the page
+    function extractBranchName() {
+      // Look for elements that likely contain branch info (near GitHub icons, repo info, etc.)
+      // First, try to find elements with specific patterns
+      const candidates = document.querySelectorAll('span, div, p, a');
+
+      for (const el of candidates) {
+        // Skip elements with too much text (likely containers)
+        const text = el.textContent || '';
+        if (text.length > 100) continue;
+
+        // Look for branch name pattern: claude/something-with-dashes
+        // Must end at a word boundary (space, end of string, or non-alphanumeric)
+        const branchMatch = text.match(/\b(claude\/[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9])\b/);
+        if (branchMatch) {
+          // Verify it looks like a real branch (has at least one hyphen and reasonable length)
+          const branch = branchMatch[1];
+          if (branch.includes('-') && branch.length > 10 && branch.length < 80) {
+            console.log(LOG_PREFIX, `Found branch in element: "${branch}"`);
+            return branch;
+          }
+        }
+      }
+
+      // Fallback: search page text more carefully
+      const pageText = document.body.textContent || '';
+      // Match branch pattern followed by whitespace or end
+      const matches = pageText.match(/claude\/[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9](?=\s|$|Context|Rename|Archive|Delete)/g);
+      if (matches && matches.length > 0) {
+        // Return the first valid-looking branch
+        for (const match of matches) {
+          if (match.includes('-') && match.length > 10) {
+            return match;
+          }
+        }
+      }
+
+      return null;
+    }
+
+    // Function to add the Pull Branch in CLI button
+    function addPullBranchButton() {
+      // Check if button already exists
+      if (document.querySelector('.better-pull-branch-btn')) {
+        return;
+      }
+
+      // Find the Create PR button
+      const allButtons = document.querySelectorAll('button');
+      let createPRButton = null;
+
+      for (const btn of allButtons) {
+        const text = btn.textContent.trim();
+        if (text.includes('Create PR') || text.includes('Create pull request')) {
+          createPRButton = btn;
+          break;
+        }
+      }
+
+      if (!createPRButton) {
+        console.log(LOG_PREFIX, 'Create PR button not found yet');
+        return;
+      }
+
+      // Extract branch name
+      currentBranchName = extractBranchName();
+      if (!currentBranchName) {
+        console.log(LOG_PREFIX, 'Branch name not found');
+        return;
+      }
+
+      console.log(LOG_PREFIX, `📋 Found Create PR button and branch: ${currentBranchName}`);
+
+      // Create the Pull Branch in CLI button with exact same structure as Open in CLI
+      const pullBranchBtn = document.createElement('button');
+      pullBranchBtn.type = 'button';
+      pullBranchBtn.className = 'group flex items-center gap-[6px] px-[10px] py-2 bg-bg-000 border-0.5 border-border-300 rounded-[6px] shadow-sm hover:bg-bg-100 transition-colors better-pull-branch-btn';
+      pullBranchBtn.title = `Copy: git fetch && git co ${currentBranchName} && git pull`;
+      pullBranchBtn.style.marginRight = '8px';
+
+      // Match exact HTML structure: text span first, then icon in wrapper div
+      pullBranchBtn.innerHTML = `
+        <span class="text-xs font-medium text-text-100 group-disabled:text-text-500">Pull Branch in CLI</span>
+        <div class="group-disabled:text-text-500" style="width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; color: #3b82f6;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg" class="group-disabled:text-text-500" aria-hidden="true" style="flex-shrink: 0; color: #3b82f6;">
+            <path d="M5.14648 7.14648C5.34175 6.95122 5.65825 6.95122 5.85352 7.14648L8.35352 9.64648C8.44728 9.74025 8.5 9.86739 8.5 10C8.5 10.0994 8.47037 10.1958 8.41602 10.2773L8.35352 10.3535L5.85352 12.8535C5.65825 13.0488 5.34175 13.0488 5.14648 12.8535C4.95122 12.6583 4.95122 12.3417 5.14648 12.1465L7.29297 10L5.14648 7.85352C4.95122 7.65825 4.95122 7.34175 5.14648 7.14648Z"></path>
+            <path d="M14.5 12C14.7761 12 15 12.2239 15 12.5C15 12.7761 14.7761 13 14.5 13H9.5C9.22386 13 9 12.7761 9 12.5C9 12.2239 9.22386 12 9.5 12H14.5Z"></path>
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M16.5 4C17.3284 4 18 4.67157 18 5.5V14.5C18 15.3284 17.3284 16 16.5 16H3.5C2.67157 16 2 15.3284 2 14.5V5.5C2 4.67157 2.67157 4 3.5 4H16.5ZM3.5 5C3.22386 5 3 5.22386 3 5.5V14.5C3 14.7761 3.22386 15 3.5 15H16.5C16.7761 15 17 14.7761 17 14.5V5.5C17 5.22386 16.7761 5 16.5 5H3.5Z"></path>
+          </svg>
+        </div>
+      `;
+
+      pullBranchBtn.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        // Re-extract branch name in case it changed
+        const branchName = extractBranchName() || currentBranchName;
+        const gitCommand = `git fetch && git co ${branchName} && git pull`;
+        console.log(LOG_PREFIX, `📋 Copying git command: ${gitCommand}`);
+
+        try {
+          await navigator.clipboard.writeText(gitCommand);
+          console.log(LOG_PREFIX, '✅ Git command copied to clipboard!');
+          showCopyFeedback('Command copied to clipboard');
+        } catch (err) {
+          console.error(LOG_PREFIX, '❌ Failed to copy:', err);
+          // Fallback: try execCommand
+          try {
+            const textArea = document.createElement('textarea');
+            textArea.value = gitCommand;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            console.log(LOG_PREFIX, '✅ Git command copied via fallback!');
+            showCopyFeedback('Command copied to clipboard');
+          } catch (fallbackErr) {
+            console.error(LOG_PREFIX, '❌ Fallback copy failed:', fallbackErr);
+          }
+        }
+      });
+
+      // Insert button before the Create PR button
+      createPRButton.parentNode.insertBefore(pullBranchBtn, createPRButton);
+      console.log(LOG_PREFIX, '✅ Pull Branch in CLI button added');
+    }
+
+    // Show visual feedback when copy succeeds
+    function showCopyFeedback(message) {
+      const feedback = document.createElement('div');
+      feedback.textContent = message;
+      feedback.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #059669;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 99999;
+        animation: fadeInOut 2s ease-in-out;
+        max-width: 400px;
+        word-break: break-all;
+      `;
+
+      // Add animation keyframes if not already present
+      if (!document.querySelector('#better-claude-animations')) {
+        const style = document.createElement('style');
+        style.id = 'better-claude-animations';
+        style.textContent = `
+          @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
+      document.body.appendChild(feedback);
+      setTimeout(() => feedback.remove(), 2000);
+    }
+
+    // Watch for DOM changes to detect when Create PR button appears
+    const observer = new MutationObserver((mutations) => {
+      // Check periodically for the Create PR button
+      addPullBranchButton();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    // Also try immediately and after delays
+    addPullBranchButton();
+    setTimeout(addPullBranchButton, 500);
+    setTimeout(addPullBranchButton, 1000);
+    setTimeout(addPullBranchButton, 2000);
+
+    console.log(LOG_PREFIX, 'Pull Branch in CLI button watcher active');
+    return observer;
+  }
+
+  // ============================================
   // Initialization
   // ============================================
 
@@ -538,6 +739,9 @@
       updateModelSelector();
     }
 
+    // Watch for copy branch button clicks
+    watchForCopyBranchButton();
+
     // Watch for DOM changes (SPA navigation)
     const observer = new MutationObserver((mutations) => {
       // Re-inject mode button if missing
@@ -553,7 +757,7 @@
       childList: true,
       subtree: true
     });
-    console.log(LOG_PREFIX, 'MutationObserver started');
+    console.log(LOG_PREFIX, 'Initialization complete');
   }
 
   init();
