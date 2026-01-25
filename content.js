@@ -812,8 +812,6 @@
     if (!running.includes(sessionId)) {
       running.push(sessionId);
       saveStoredSessions(RUNNING_SESSIONS_KEY, running);
-      console.log(LOG_PREFIX, '🏃 RUNNING: Marked session as running:', sessionId);
-      console.log(LOG_PREFIX, '🏃 RUNNING: All running sessions now:', running);
     }
   }
 
@@ -822,14 +820,12 @@
     if (!viewed.includes(sessionId)) {
       viewed.push(sessionId);
       saveStoredSessions(VIEWED_SESSIONS_KEY, viewed);
-      console.log(LOG_PREFIX, '👁️ VIEWED: Marked session as viewed:', sessionId);
     }
     const running = getStoredSessions(RUNNING_SESSIONS_KEY);
     const idx = running.indexOf(sessionId);
     if (idx > -1) {
       running.splice(idx, 1);
       saveStoredSessions(RUNNING_SESSIONS_KEY, running);
-      console.log(LOG_PREFIX, '👁️ VIEWED: Removed from running list:', sessionId);
     }
   }
 
@@ -870,9 +866,6 @@
 
   function watchSessionDots() {
     console.log(LOG_PREFIX, '🟢 SESSION DOT: Initializing...');
-    console.log(LOG_PREFIX, '🟢 SESSION DOT: Current URL:', window.location.href);
-    console.log(LOG_PREFIX, '🟢 SESSION DOT: Running sessions in storage:', getStoredSessions(RUNNING_SESSIONS_KEY));
-    console.log(LOG_PREFIX, '🟢 SESSION DOT: Viewed sessions in storage:', getStoredSessions(VIEWED_SESSIONS_KEY));
 
     function getCurrentSessionId() {
       const match = window.location.pathname.match(/\/code\/([^/?]+)/);
@@ -888,7 +881,6 @@
     function processSessionItem(sessionItem) {
       const sessionId = getSessionIdFromElement(sessionItem);
       if (!sessionId) {
-        console.log(LOG_PREFIX, '🔍 PROCESS: No session ID found in element:', sessionItem.outerHTML.slice(0, 200));
         return;
       }
 
@@ -896,10 +888,7 @@
       const hasSpinner = !!spinnerContainer;
       const existingDot = sessionItem.querySelector('.bcc-session-dot');
 
-      console.log(LOG_PREFIX, '🔍 PROCESS: Session', sessionId, '| hasSpinner:', hasSpinner, '| existingDot:', !!existingDot);
-
       if (hasSpinner) {
-        console.log(LOG_PREFIX, '⚡ SPINNER FOUND for session:', sessionId);
         markSessionAsRunning(sessionId);
         if (existingDot) {
           existingDot.remove();
@@ -907,27 +896,17 @@
       } else {
         const wasRunning = wasSessionRunning(sessionId);
         const isViewed = isSessionViewed(sessionId);
-        console.log(LOG_PREFIX, '🔍 NO SPINNER for session:', sessionId, '| wasRunning:', wasRunning, '| isViewed:', isViewed);
 
         if (wasRunning && !isViewed && !existingDot) {
-          console.log(LOG_PREFIX, '🟢 ADDING GREEN DOT for session:', sessionId);
-
           // Try multiple selectors for the icon container
           let iconContainer = sessionItem.querySelector('.w-6.h-6.flex.items-center.justify-center');
-          console.log(LOG_PREFIX, '🟢 Icon container (.w-6.h-6...):', iconContainer);
 
           if (!iconContainer) {
             iconContainer = sessionItem.querySelector('.relative.flex.items-center');
-            console.log(LOG_PREFIX, '🟢 Icon container (.relative.flex...):', iconContainer);
           }
 
           if (!iconContainer) {
-            // Try to find any container that might hold the icon
             const allDivs = sessionItem.querySelectorAll('div');
-            console.log(LOG_PREFIX, '🟢 All divs in session item:', allDivs.length);
-            for (const div of allDivs) {
-              console.log(LOG_PREFIX, '🟢 Div classes:', div.className);
-            }
             iconContainer = allDivs[0];
           }
 
@@ -938,7 +917,6 @@
             console.log(LOG_PREFIX, '✅ GREEN DOT ADDED for session:', sessionId);
           } else {
             console.log(LOG_PREFIX, '❌ Could not find icon container for session:', sessionId);
-            console.log(LOG_PREFIX, '❌ Session item HTML:', sessionItem.outerHTML.slice(0, 500));
           }
         }
       }
@@ -946,18 +924,12 @@
 
     function processAllSessions() {
       const allSessionLinks = document.querySelectorAll('a[href*="/code/"]');
-      console.log(LOG_PREFIX, '🔄 PROCESS ALL: Found', allSessionLinks.length, 'session links');
-
       const processedItems = new Set();
 
-      allSessionLinks.forEach((link, index) => {
+      allSessionLinks.forEach((link) => {
         let sessionItem = link.closest('[class*="group"]');
         if (!sessionItem) {
           sessionItem = link.closest('.relative') || link.parentElement?.parentElement?.parentElement;
-        }
-
-        if (index < 5) {
-          console.log(LOG_PREFIX, '🔄 Link', index, ':', link.getAttribute('href'), '| sessionItem:', sessionItem ? 'found' : 'null');
         }
 
         if (sessionItem && !processedItems.has(sessionItem)) {
@@ -965,8 +937,6 @@
           processSessionItem(sessionItem);
         }
       });
-
-      console.log(LOG_PREFIX, '🔄 PROCESS ALL: Processed', processedItems.size, 'unique session items');
     }
 
     document.addEventListener('click', (e) => {
@@ -976,14 +946,12 @@
         const match = href.match(/\/code\/([^/?]+)/);
         if (match) {
           const sessionId = match[1];
-          console.log(LOG_PREFIX, '👆 CLICK: Session clicked:', sessionId);
           markSessionAsViewed(sessionId);
           const sessionItem = link.closest('[class*="group"]') || link.parentElement?.parentElement;
           if (sessionItem) {
             const dot = sessionItem.querySelector('.bcc-session-dot');
             if (dot) {
               dot.remove();
-              console.log(LOG_PREFIX, '👆 CLICK: Removed green dot for:', sessionId);
             }
           }
         }
@@ -993,7 +961,6 @@
     let lastUrl = window.location.href;
     const urlObserver = new MutationObserver(() => {
       if (window.location.href !== lastUrl) {
-        console.log(LOG_PREFIX, '🔄 URL CHANGED:', lastUrl, '->', window.location.href);
         lastUrl = window.location.href;
         const newSessionId = getCurrentSessionId();
         if (newSessionId) {
@@ -1024,7 +991,6 @@
     setTimeout(processAllSessions, 1000);
     setTimeout(processAllSessions, 3000);
 
-    console.log(LOG_PREFIX, '🟢 SESSION DOT: Watcher active');
     return { sessionObserver, urlObserver };
   }
 
