@@ -1717,12 +1717,22 @@
     getBlockedReason(sessionData).then((message) => {
       if (!message) return;
 
+      console.log(LOG_PREFIX, '>>> Creating tooltip for blocked indicator with message:', message);
+
+      // Create tooltip wrapper that will position correctly
+      const tooltipWrapper = document.createElement('div');
+      tooltipWrapper.className = 'bcc-tooltip-wrapper';
+      tooltipWrapper.style.cssText = `
+        position: relative;
+        display: inline-flex;
+      `;
+
       // Create tooltip
       const tooltip = document.createElement('div');
       tooltip.className = 'bcc-blocked-tooltip';
       tooltip.style.cssText = `
         position: absolute;
-        bottom: 100%;
+        bottom: calc(100% + 8px);
         left: 50%;
         transform: translateX(-50%);
         background: #1f2937;
@@ -1730,49 +1740,56 @@
         padding: 8px 12px;
         border-radius: 6px;
         font-size: 13px;
-        white-space: normal;
-        max-width: 200px;
-        word-wrap: break-word;
+        white-space: nowrap;
         z-index: 100001;
-        margin-bottom: 8px;
         opacity: 0;
         visibility: hidden;
-        transition: opacity 0.2s, visibility 0.2s;
-        pointer-events: auto;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+        pointer-events: none;
         cursor: pointer;
+        max-width: 250px;
+        word-wrap: break-word;
+        white-space: normal;
+        line-height: 1.4;
       `;
       tooltip.textContent = message;
 
-      // Add arrow to tooltip
-      tooltip.style.cssText += `
-        position: absolute;
-        bottom: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-      `;
-
-      // Show tooltip on hover
-      indicator.addEventListener('mouseenter', () => {
+      // Show tooltip on hover over indicator
+      const showTooltip = () => {
         tooltip.style.opacity = '1';
         tooltip.style.visibility = 'visible';
-      });
+        tooltip.style.pointerEvents = 'auto';
+      };
 
-      indicator.addEventListener('mouseleave', () => {
+      const hideTooltip = () => {
         tooltip.style.opacity = '0';
         tooltip.style.visibility = 'hidden';
-      });
+        tooltip.style.pointerEvents = 'none';
+      };
+
+      indicator.addEventListener('mouseenter', showTooltip);
+      indicator.addEventListener('mouseleave', hideTooltip);
 
       // Edit on click
       tooltip.addEventListener('click', (e) => {
         e.stopPropagation();
+        e.preventDefault();
+        hideTooltip();
         showBlockedReasonModal(sessionData, (newMessage) => {
           tooltip.textContent = newMessage;
+          if (newMessage) {
+            // Update display after editing
+            setTimeout(showTooltip, 100);
+          }
         });
       });
 
-      // Add tooltip to indicator
-      indicator.style.position = 'relative';
+      tooltip.addEventListener('mouseenter', showTooltip);
+      tooltip.addEventListener('mouseleave', hideTooltip);
+
+      // Append tooltip to indicator
       indicator.appendChild(tooltip);
+      console.log(LOG_PREFIX, '>>> Tooltip added to indicator');
     });
   }
 
