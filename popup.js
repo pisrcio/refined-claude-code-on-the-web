@@ -5,7 +5,8 @@ const DEFAULT_SETTINGS = {
   modeButton: true,
   showModel: true,
   betterLabel: true,
-  pullBranch: true
+  pullBranch: true,
+  sessionDot: true
 };
 
 // Load settings from storage

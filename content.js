@@ -19,7 +19,8 @@
     modeButton: true,
     showModel: true,
     betterLabel: true,
-    pullBranch: true
+    pullBranch: true,
+    sessionDot: true
   };
 
   let currentSettings = { ...DEFAULT_SETTINGS };
@@ -957,6 +958,247 @@
   }
 
   // ============================================
+  // Session Dot Feature
+  // ============================================
+
+  // Track sessions that were running but haven't been viewed yet
+  const VIEWED_SESSIONS_KEY = 'bcc-viewed-sessions';
+  const COMPLETED_SESSIONS_KEY = 'bcc-completed-sessions';
+
+  function getViewedSessions() {
+    try {
+      const data = localStorage.getItem(VIEWED_SESSIONS_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveViewedSessions(sessions) {
+    try {
+      localStorage.setItem(VIEWED_SESSIONS_KEY, JSON.stringify(sessions));
+    } catch (e) {
+      console.log(LOG_PREFIX, 'Failed to save viewed sessions:', e);
+    }
+  }
+
+  function getCompletedSessions() {
+    try {
+      const data = localStorage.getItem(COMPLETED_SESSIONS_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveCompletedSessions(sessions) {
+    try {
+      localStorage.setItem(COMPLETED_SESSIONS_KEY, JSON.stringify(sessions));
+    } catch (e) {
+      console.log(LOG_PREFIX, 'Failed to save completed sessions:', e);
+    }
+  }
+
+  function markSessionAsViewed(sessionId) {
+    const viewed = getViewedSessions();
+    if (!viewed.includes(sessionId)) {
+      viewed.push(sessionId);
+      saveViewedSessions(viewed);
+      console.log(LOG_PREFIX, 'Marked session as viewed:', sessionId);
+    }
+  }
+
+  function markSessionAsCompleted(sessionId) {
+    const completed = getCompletedSessions();
+    if (!completed.includes(sessionId)) {
+      completed.push(sessionId);
+      saveCompletedSessions(completed);
+      console.log(LOG_PREFIX, 'Marked session as completed:', sessionId);
+    }
+  }
+
+  function isSessionViewed(sessionId) {
+    return getViewedSessions().includes(sessionId);
+  }
+
+  function isSessionCompleted(sessionId) {
+    return getCompletedSessions().includes(sessionId);
+  }
+
+  // Extract session ID from a session link element
+  function getSessionIdFromElement(element) {
+    // Look for a link with /code/ pattern
+    const link = element.querySelector('a[href*="/code/"]') || element.closest('a[href*="/code/"]');
+    if (link) {
+      const href = link.getAttribute('href');
+      const match = href.match(/\/code\/([^/?]+)/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  }
+
+  // Create a green dot indicator
+  function createGreenDot() {
+    const dot = document.createElement('span');
+    dot.className = 'bcc-session-dot';
+    dot.style.cssText = `
+      display: inline-block !important;
+      width: 8px !important;
+      height: 8px !important;
+      background-color: #22c55e !important;
+      border-radius: 50% !important;
+      flex-shrink: 0 !important;
+    `;
+    return dot;
+  }
+
+  // Track sessions with spinners (running sessions)
+  let runningSessions = new Set();
+
+  function watchSessionDots() {
+    console.log(LOG_PREFIX, '👀 Setting up session dot watcher...');
+
+    // Get current session from URL
+    function getCurrentSessionId() {
+      const match = window.location.pathname.match(/\/code\/([^/?]+)/);
+      return match ? match[1] : null;
+    }
+
+    // Mark current session as viewed on page load
+    const currentSessionId = getCurrentSessionId();
+    if (currentSessionId) {
+      markSessionAsViewed(currentSessionId);
+    }
+
+    // Process a single session item
+    function processSessionItem(sessionItem) {
+      const sessionId = getSessionIdFromElement(sessionItem);
+      if (!sessionId) return;
+
+      const spinnerContainer = sessionItem.querySelector('.code-spinner-animate');
+      const hasSpinner = !!spinnerContainer;
+      const existingDot = sessionItem.querySelector('.bcc-session-dot');
+
+      // Track running sessions
+      if (hasSpinner) {
+        if (!runningSessions.has(sessionId)) {
+          console.log(LOG_PREFIX, 'Session started running:', sessionId);
+          runningSessions.add(sessionId);
+        }
+        // Remove dot if present while spinner is active
+        if (existingDot) {
+          existingDot.remove();
+        }
+      } else {
+        // Session no longer has spinner
+        if (runningSessions.has(sessionId)) {
+          // This session was running and is now complete
+          console.log(LOG_PREFIX, 'Session completed:', sessionId);
+          runningSessions.delete(sessionId);
+          markSessionAsCompleted(sessionId);
+        }
+
+        // Add green dot if session is completed but not viewed
+        if (isSessionCompleted(sessionId) && !isSessionViewed(sessionId) && !existingDot) {
+          // Find the spinner container's parent to replace it
+          const iconContainer = sessionItem.querySelector('.w-6.h-6.flex.items-center.justify-center');
+          if (iconContainer) {
+            // Clear the container and add the green dot
+            const dot = createGreenDot();
+            iconContainer.innerHTML = '';
+            iconContainer.appendChild(dot);
+            console.log(LOG_PREFIX, 'Added green dot for completed session:', sessionId);
+          }
+        }
+      }
+    }
+
+    // Process all visible session items
+    function processAllSessions() {
+      // Find all session links in the sidebar
+      const allSessionLinks = document.querySelectorAll('a[href*="/code/"]');
+      const processedItems = new Set();
+
+      allSessionLinks.forEach(link => {
+        // Find the session item container by traversing up
+        let sessionItem = link.closest('[class*="group"]');
+        if (!sessionItem) {
+          // Try alternative: find parent with relative positioning (common pattern)
+          sessionItem = link.closest('.relative') || link.parentElement?.parentElement?.parentElement;
+        }
+        if (sessionItem && !processedItems.has(sessionItem)) {
+          processedItems.add(sessionItem);
+          processSessionItem(sessionItem);
+        }
+      });
+    }
+
+    // Watch for navigation/clicks on session links
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a[href*="/code/"]');
+      if (link) {
+        const href = link.getAttribute('href');
+        const match = href.match(/\/code\/([^/?]+)/);
+        if (match) {
+          const sessionId = match[1];
+          markSessionAsViewed(sessionId);
+          // Remove the dot immediately
+          const sessionItem = link.closest('[class*="group"]') || link.parentElement?.parentElement;
+          if (sessionItem) {
+            const dot = sessionItem.querySelector('.bcc-session-dot');
+            if (dot) {
+              dot.remove();
+              console.log(LOG_PREFIX, 'Removed green dot for viewed session:', sessionId);
+            }
+          }
+        }
+      }
+    }, true);
+
+    // Watch for URL changes (SPA navigation)
+    let lastUrl = window.location.href;
+    const urlObserver = new MutationObserver(() => {
+      if (window.location.href !== lastUrl) {
+        lastUrl = window.location.href;
+        const newSessionId = getCurrentSessionId();
+        if (newSessionId) {
+          markSessionAsViewed(newSessionId);
+        }
+        // Re-process sessions after navigation
+        setTimeout(processAllSessions, 100);
+      }
+    });
+
+    urlObserver.observe(document.body, { childList: true, subtree: true });
+
+    // Watch for DOM changes to detect spinner additions/removals
+    const sessionObserver = new MutationObserver((mutations) => {
+      // Debounce processing
+      clearTimeout(sessionObserver._debounceTimer);
+      sessionObserver._debounceTimer = setTimeout(() => {
+        processAllSessions();
+      }, 100);
+    });
+
+    sessionObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    // Initial processing
+    processAllSessions();
+    setTimeout(processAllSessions, 500);
+    setTimeout(processAllSessions, 1000);
+
+    console.log(LOG_PREFIX, 'Session dot watcher active');
+    return { sessionObserver, urlObserver };
+  }
+
+  // ============================================
   // Initialization
   // ============================================
 
@@ -1019,6 +1261,11 @@
     // Watch for copy branch button clicks (only if enabled)
     if (isFeatureEnabled('pullBranch')) {
       watchForCopyBranchButton();
+    }
+
+    // Watch for session completion and add green dots (only if enabled)
+    if (isFeatureEnabled('sessionDot')) {
+      watchSessionDots();
     }
 
     // Watch for DOM changes (SPA navigation)
