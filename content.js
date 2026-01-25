@@ -22,7 +22,8 @@
     pullBranch: true,
     mergeBranch: true,
     projectColors: true,
-    projectColorMap: {} // { "project-name": "#hexcolor" }
+    projectColorMap: {}, // { "project-name": "#hexcolor" }
+    projectMainBranch: {} // { "project-name": "main" }
   };
 
   let currentSettings = { ...DEFAULT_SETTINGS };
@@ -1111,24 +1112,57 @@
   function watchForMergeBranchButton() {
     console.log(LOG_PREFIX, '👀 Setting up Merge Branch button watcher...');
 
-    // Function to detect the main branch name
-    function detectMainBranch() {
-      // Common main branch names
-      const commonMainBranches = ['main', 'master', 'develop', 'dev'];
+    // Function to get the current project name from the page
+    function getCurrentProjectName() {
+      // Try to find the project name from the sidebar or page
+      // Look for the active/selected project in the sidebar
+      const activeProject = document.querySelector('[data-testid="project-name"]') ||
+                           document.querySelector('.truncate[title]') ||
+                           document.querySelector('nav .truncate');
 
-      // Try to find from the page content
-      const pageText = document.body.textContent || '';
+      if (activeProject) {
+        const name = activeProject.textContent?.trim() || activeProject.getAttribute('title');
+        if (name) return name;
+      }
 
-      // Look for references to main branches in merge context
-      for (const branch of commonMainBranches) {
-        // Look for patterns like "merge main" or "into main" or "from main"
-        const pattern = new RegExp(`(merge|into|from)\\s+${branch}\\b`, 'i');
-        if (pattern.test(pageText)) {
-          return branch;
+      // Try to get from URL if it contains project info
+      const urlMatch = window.location.pathname.match(/\/project\/([^\/]+)/);
+      if (urlMatch) {
+        return decodeURIComponent(urlMatch[1]);
+      }
+
+      // Try to find from page title or header
+      const header = document.querySelector('h1, [role="heading"]');
+      if (header) {
+        return header.textContent?.trim();
+      }
+
+      return null;
+    }
+
+    // Function to get main branch from settings
+    function getMainBranchFromSettings() {
+      const projectMainBranch = currentSettings.projectMainBranch || {};
+      const currentProject = getCurrentProjectName();
+
+      if (currentProject) {
+        // Try exact match first
+        if (projectMainBranch[currentProject]) {
+          console.log(LOG_PREFIX, `Found main branch for project "${currentProject}": ${projectMainBranch[currentProject]}`);
+          return projectMainBranch[currentProject];
+        }
+
+        // Try partial match
+        for (const [projectName, branch] of Object.entries(projectMainBranch)) {
+          if (currentProject.includes(projectName) || projectName.includes(currentProject)) {
+            console.log(LOG_PREFIX, `Found main branch via partial match "${projectName}": ${branch}`);
+            return branch;
+          }
         }
       }
 
-      // Default to 'main' as it's most common nowadays
+      // Default to 'main'
+      console.log(LOG_PREFIX, 'No project-specific main branch found, defaulting to "main"');
       return 'main';
     }
 
@@ -1149,8 +1183,8 @@
 
       const targetButton = pullBranchBtn;
 
-      // Detect main branch
-      const mainBranch = detectMainBranch();
+      // Get main branch from settings
+      const mainBranch = getMainBranchFromSettings();
 
       console.log(LOG_PREFIX, `📋 Found target button and main branch: ${mainBranch}`);
 
@@ -1175,8 +1209,8 @@
         event.preventDefault();
         event.stopPropagation();
 
-        // Re-detect main branch in case context changed
-        const branch = detectMainBranch();
+        // Get main branch from settings
+        const branch = getMainBranchFromSettings();
         const mergeMessage = `Merge in ${branch} branch and fix merge conflicts.`;
         console.log(LOG_PREFIX, `📋 Inserting merge message: ${mergeMessage}`);
 
