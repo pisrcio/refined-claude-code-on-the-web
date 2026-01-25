@@ -1237,19 +1237,8 @@
     button.title = 'Mark as blocked';
     button.innerHTML = BLOCKED_ICON_SVG;
 
-    // Add hover color style (warning/amber color)
-    // Only change color on hover if NOT in blocked state
-    button.addEventListener('mouseenter', () => {
-      if (!button.classList.contains('bcc-blocked-active')) {
-        button.style.color = '#f59e0b';
-      }
-    });
-    button.addEventListener('mouseleave', () => {
-      // Only reset color if NOT in blocked state
-      if (!button.classList.contains('bcc-blocked-active')) {
-        button.style.color = '';
-      }
-    });
+    // No hover color change when not active - stays default color
+    // Only maintain amber color when in blocked state
 
     return button;
   }
