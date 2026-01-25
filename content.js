@@ -1179,10 +1179,21 @@
         const mergeMessage = `Merge in ${branch} branch and fix merge conflicts.`;
         console.log(LOG_PREFIX, `📋 Inserting merge message: ${mergeMessage}`);
 
-        // Find the text field and insert the message
-        const textField = document.querySelector('div[contenteditable="true"]') ||
-                          document.querySelector('textarea') ||
-                          document.querySelector('[data-placeholder]');
+        // Find the main chat text field (not sidebar fields)
+        // Priority: form textarea/contenteditable > main area contenteditable > any contenteditable
+        const textField = document.querySelector('form div[contenteditable="true"]') ||
+                          document.querySelector('form textarea') ||
+                          document.querySelector('main div[contenteditable="true"]') ||
+                          document.querySelector('[data-placeholder="Reply..."] div[contenteditable="true"]') ||
+                          document.querySelector('[data-placeholder="Reply to Claude\u2026"] div[contenteditable="true"]') ||
+                          document.querySelector('.ProseMirror[contenteditable="true"]') ||
+                          // Avoid sidebar: look for contenteditable in the main content area
+                          Array.from(document.querySelectorAll('div[contenteditable="true"]')).find(el => {
+                            // Skip if it's in the sidebar (typically narrow width or specific parent classes)
+                            const rect = el.getBoundingClientRect();
+                            const parent = el.closest('nav, aside, [role="navigation"], [data-testid*="sidebar"]');
+                            return !parent && rect.width > 300; // Main input is typically wider
+                          });
 
         if (textField) {
           if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
