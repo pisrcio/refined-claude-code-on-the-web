@@ -98,25 +98,35 @@ console.log('🚀🚀🚀 [BetterClaude] URL:', window.location.href, '🚀🚀�
   function isWithinSessionItem(element, buttonIndex) {
     log(`[Button #${buttonIndex}] isWithinSessionItem check started`);
     let current = element;
+
+    // First check: reject if in input area
+    const inputCheck = element.closest('form, textarea, [contenteditable="true"]');
+    if (inputCheck) {
+      log(`[Button #${buttonIndex}] REJECTED: within input area`);
+      return false;
+    }
+
     for (let i = 0; i < 10 && current; i++) {
       const text = current.textContent || '';
       const textPreview = text.substring(0, 80).replace(/\n/g, ' ');
 
+      // Look for session item patterns (more permissive - any ONE of these)
       const hasTimestamp = /\d{1,2}:\d{2}\s*(am|pm)/i.test(text) ||
-                          /\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/i.test(text);
-      const hasRepoPattern = text.includes('·');
+                          /\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/i.test(text) ||
+                          /\b(Yesterday|Today)\b/i.test(text) ||
+                          /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/i.test(text);
+      const hasRepoPattern = text.includes('·') || text.includes('/');
 
-      const isInputArea = current.querySelector('textarea, [contenteditable="true"]') ||
-                         current.closest('textarea, [contenteditable="true"]');
+      // Check if this looks like a sidebar/nav element
+      const isSidebar = current.tagName === 'NAV' ||
+                       current.getAttribute('role') === 'navigation' ||
+                       current.classList.contains('sidebar') ||
+                       current.id?.includes('sidebar');
 
-      log(`[Button #${buttonIndex}] Level ${i}: tag=${current.tagName}, hasTimestamp=${hasTimestamp}, hasRepoPattern=${hasRepoPattern}, isInputArea=${!!isInputArea}, text="${textPreview}..."`);
+      log(`[Button #${buttonIndex}] Level ${i}: tag=${current.tagName}, hasTimestamp=${hasTimestamp}, hasRepoPattern=${hasRepoPattern}, isSidebar=${isSidebar}, text="${textPreview}..."`);
 
-      if (isInputArea) {
-        log(`[Button #${buttonIndex}] REJECTED: input area found`);
-        return false;
-      }
-
-      if (hasTimestamp && hasRepoPattern) {
+      // Accept if has timestamp OR is in sidebar
+      if (hasTimestamp || isSidebar) {
         log(`[Button #${buttonIndex}] ACCEPTED: found session item pattern`);
         return true;
       }
