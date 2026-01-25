@@ -18,6 +18,7 @@
 
   // Track the last known model to detect changes
   let lastKnownModel = null;
+  let buttonObserver = null;
 
   // Parse model ID from localStorage format (e.g., "claude-opus-4-5-20251101" -> "Opus 4.5")
   function parseModelId(modelId, quiet = false) {
@@ -163,29 +164,56 @@
       return;
     }
 
-    // Check if we've already modified this button
-    if (button.dataset.modelDisplayUpdated === 'true' &&
-        button.dataset.currentModel === modelName) {
-      console.log(LOG_PREFIX, 'Button already updated with this model');
+    // Check if button already shows the correct model name
+    const currentText = button.textContent.trim();
+    if (currentText === modelName) {
+      console.log(LOG_PREFIX, 'Button already shows correct model');
       return;
-    }
-
-    // Store original content if not already stored
-    if (!button.dataset.originalContent) {
-      button.dataset.originalContent = button.innerHTML;
-      console.log(LOG_PREFIX, 'Stored original content:', button.innerHTML.substring(0, 100));
     }
 
     // Update button to show model name
     console.log(LOG_PREFIX, '✅ Updating button to show:', modelName);
     button.innerHTML = `<span style="font-size: 12px; font-weight: 500;">${modelName}</span>`;
-    button.dataset.modelDisplayUpdated = 'true';
-    button.dataset.currentModel = modelName;
 
     // Adjust button styling to accommodate text
     button.style.minWidth = 'auto';
     button.style.paddingLeft = '8px';
     button.style.paddingRight = '8px';
+
+    // Watch this button for React re-renders
+    watchButtonForChanges(button, modelName);
+  }
+
+  // Watch the button element for changes (React re-renders)
+  function watchButtonForChanges(button, modelName) {
+    // Disconnect previous observer if any
+    if (buttonObserver) {
+      buttonObserver.disconnect();
+    }
+
+    buttonObserver = new MutationObserver((mutations) => {
+      const currentText = button.textContent.trim();
+      // If React re-rendered and reverted our changes, re-apply
+      if (currentText !== modelName && currentText !== lastKnownModel) {
+        console.log(LOG_PREFIX, `🔄 Button content changed to "${currentText}", re-applying model name`);
+        // Get the current model from localStorage (it might have changed)
+        const currentModel = parseModelId(localStorage.getItem('default-model'), true);
+        if (currentModel) {
+          button.innerHTML = `<span style="font-size: 12px; font-weight: 500;">${currentModel}</span>`;
+          button.style.minWidth = 'auto';
+          button.style.paddingLeft = '8px';
+          button.style.paddingRight = '8px';
+        }
+      }
+    });
+
+    buttonObserver.observe(button, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+
+    console.log(LOG_PREFIX, '👀 Watching button for React re-renders');
   }
 
   // Main function to find and update the model display
@@ -201,47 +229,48 @@
     }
   }
 
-  // Watch for dropdown opening to detect model selection
+  // Watch for dropdown opening/closing to detect model selection
   function watchForModelDropdown() {
     console.log(LOG_PREFIX, '👀 Setting up MutationObserver...');
 
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
+        // Watch for dropdown being removed (closed) - this is when React re-renders
+        if (mutation.type === 'childList' && mutation.removedNodes.length > 0) {
+          for (const node of mutation.removedNodes) {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const wasDropdown = node.matches?.('[role="menu"], [role="listbox"], [role="dialog"]') ||
+                                  node.querySelector?.('[role="menu"], [role="listbox"]');
+              if (wasDropdown) {
+                console.log(LOG_PREFIX, '📋 Dropdown closed, updating model display...');
+                // Multiple updates to catch React re-renders
+                setTimeout(updateModelSelector, 50);
+                setTimeout(updateModelSelector, 150);
+                setTimeout(updateModelSelector, 300);
+                setTimeout(updateModelSelector, 500);
+              }
+            }
+          }
+        }
+
         if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
           // Check if a dropdown/menu appeared
           const addedNodes = Array.from(mutation.addedNodes);
           for (const node of addedNodes) {
             if (node.nodeType === Node.ELEMENT_NODE) {
-              // Log significant DOM additions
-              if (node.querySelector?.('[role="menu"], [role="listbox"], [role="dialog"]') ||
-                  node.matches?.('[role="menu"], [role="listbox"], [role="dialog"]')) {
-                console.log(LOG_PREFIX, '🆕 Dropdown/menu detected:', {
-                  tagName: node.tagName,
-                  className: node.className,
-                  role: node.getAttribute('role'),
-                  innerHTML: node.innerHTML.substring(0, 500)
-                });
-              }
-
               // If a dropdown with model options appeared, watch for selection
               const isDropdown = node.matches?.('[role="menu"], [role="listbox"], [role="dialog"]') ||
                                 node.querySelector?.('[role="menu"], [role="listbox"]');
               if (isDropdown) {
-                console.log(LOG_PREFIX, '📋 Dropdown appeared, checking for model...');
-
-                // Delay to let the dropdown fully render
-                setTimeout(() => {
-                  const model = getSelectedModel();
-                  if (model) {
-                    const button = findModelSelectorButton();
-                    updateModelDisplay(button, model);
-                  }
-                }, 100);
+                console.log(LOG_PREFIX, '📋 Dropdown appeared');
 
                 // Watch for clicks within the dropdown
                 node.addEventListener('click', () => {
                   console.log(LOG_PREFIX, '🖱️ Click in dropdown detected');
+                  // Multiple updates to catch React re-renders after selection
+                  setTimeout(updateModelSelector, 100);
                   setTimeout(updateModelSelector, 200);
+                  setTimeout(updateModelSelector, 400);
                 });
               }
             }
@@ -394,24 +423,34 @@
     console.log(LOG_PREFIX, '✅ Click watcher active');
   }
 
-  // Poll localStorage for changes (fallback for /model command)
+  // Poll localStorage for changes AND ensure button shows correct model
   function pollForModelChanges() {
     console.log(LOG_PREFIX, '👀 Setting up model change polling...');
 
     setInterval(() => {
       try {
-        const currentModel = localStorage.getItem('default-model');
-        const parsedModel = parseModelId(currentModel, true); // quiet mode
+        const currentModelId = localStorage.getItem('default-model');
+        const parsedModel = parseModelId(currentModelId, true); // quiet mode
 
-        if (parsedModel && parsedModel !== lastKnownModel) {
-          console.log(LOG_PREFIX, `🔄 Model changed from "${lastKnownModel}" to "${parsedModel}"`);
-          lastKnownModel = parsedModel;
-          updateModelSelector();
+        if (parsedModel) {
+          // Check if model changed
+          if (parsedModel !== lastKnownModel) {
+            console.log(LOG_PREFIX, `🔄 Model changed from "${lastKnownModel}" to "${parsedModel}"`);
+            lastKnownModel = parsedModel;
+            updateModelSelector();
+          } else {
+            // Even if model didn't change, ensure button shows it (React might have re-rendered)
+            const button = document.querySelector('button[aria-label="More options"]');
+            if (button && button.textContent.trim() !== parsedModel) {
+              console.log(LOG_PREFIX, `🔄 Button shows wrong text, fixing...`);
+              updateModelDisplay(button, parsedModel);
+            }
+          }
         }
       } catch (e) {
         // Ignore errors
       }
-    }, 500); // Check every 500ms for responsive updates
+    }, 250); // Check every 250ms for more responsive updates
 
     console.log(LOG_PREFIX, '✅ Model change polling active');
   }
