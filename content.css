@@ -1,6 +1,9 @@
-/* Better Claude Code on the Web - Styles */
+/* Better Claude Code on the Web - All Styles */
 
-/* Blocked button styling */
+/* ============================================ */
+/* Blocked Button Styles */
+/* ============================================ */
+
 .bcotw-blocked-btn {
   display: inline-flex;
   align-items: center;
@@ -27,7 +30,6 @@
   transform: scale(0.95);
 }
 
-/* Active blocked state */
 .bcotw-blocked-btn.bcotw-blocked-active {
   color: #dc2626;
   opacity: 1;
@@ -38,7 +40,6 @@
   background: rgba(220, 38, 38, 0.15);
 }
 
-/* Task item blocked state */
 .bcotw-blocked {
   opacity: 0.6;
   position: relative;
@@ -59,8 +60,118 @@
   letter-spacing: 0.5px;
 }
 
-/* Dark mode support */
+/* ============================================ */
+/* Mode Button Styles */
+/* ============================================ */
+
+.bcc-mode-container {
+  position: relative !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  margin-right: 8px !important;
+  z-index: 1000 !important;
+}
+
+.bcc-mode-container.bcc-floating {
+  position: absolute !important;
+  left: 8px !important;
+  bottom: 8px !important;
+}
+
+.bcc-mode-button {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 10px !important;
+  background: transparent !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-size: 13px !important;
+  font-family: inherit !important;
+  color: inherit !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease !important;
+  white-space: nowrap !important;
+}
+
+.bcc-mode-button:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+.bcc-mode-button svg {
+  display: inline-block !important;
+  flex-shrink: 0 !important;
+  vertical-align: middle !important;
+}
+
+.bcc-mode-label {
+  display: inline !important;
+  font-weight: 500 !important;
+}
+
+.bcc-chevron {
+  display: inline-block !important;
+  opacity: 0.6 !important;
+  transition: transform 0.15s ease !important;
+}
+
+.bcc-mode-button:hover .bcc-chevron {
+  opacity: 1 !important;
+}
+
+.bcc-mode-dropdown {
+  position: absolute !important;
+  bottom: calc(100% + 4px) !important;
+  left: 0 !important;
+  min-width: 120px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transform: translateY(4px) !important;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s !important;
+  overflow: hidden !important;
+}
+
+.bcc-mode-dropdown.bcc-show {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) !important;
+}
+
+.bcc-mode-option {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 12px !important;
+  cursor: pointer !important;
+  font-size: 13px !important;
+  transition: background-color 0.1s ease !important;
+}
+
+.bcc-mode-option:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.bcc-check {
+  display: inline-block !important;
+  width: 16px !important;
+  color: #10a37f !important;
+  font-weight: bold !important;
+}
+
+/* ============================================ */
+/* Dark Mode Support */
+/* ============================================ */
+
 @media (prefers-color-scheme: dark) {
+  /* Blocked button dark mode */
   .bcotw-blocked-btn:hover {
     background: rgba(255, 255, 255, 0.1);
   }
@@ -78,22 +189,70 @@
     color: #f87171;
     background: rgba(248, 113, 113, 0.15);
   }
+
+  /* Mode button dark mode */
+  .bcc-mode-button {
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .bcc-mode-button:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+  }
+
+  .bcc-mode-dropdown {
+    background: #2d2d2d !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  .bcc-mode-option:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
 }
 
-/* Handle Claude's dark theme class if different from system preference */
+/* Claude's dark theme class support */
 [data-theme="dark"] .bcotw-blocked-btn:hover,
-.dark .bcotw-blocked-btn:hover {
+.dark .bcotw-blocked-btn:hover,
+html.dark .bcotw-blocked-btn:hover {
   background: rgba(255, 255, 255, 0.1);
 }
 
 [data-theme="dark"] .bcotw-blocked-btn.bcotw-blocked-active,
-.dark .bcotw-blocked-btn.bcotw-blocked-active {
+.dark .bcotw-blocked-btn.bcotw-blocked-active,
+html.dark .bcotw-blocked-btn.bcotw-blocked-active {
   color: #f87171;
   background: rgba(248, 113, 113, 0.15);
 }
 
 [data-theme="dark"] .bcotw-blocked::before,
-.dark .bcotw-blocked::before {
+.dark .bcotw-blocked::before,
+html.dark .bcotw-blocked::before {
   color: #f87171;
   background: rgba(248, 113, 113, 0.15);
+}
+
+html.dark .bcc-mode-button,
+[data-theme="dark"] .bcc-mode-button {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.dark .bcc-mode-button:hover,
+[data-theme="dark"] .bcc-mode-button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+html.dark .bcc-mode-dropdown,
+[data-theme="dark"] .bcc-mode-dropdown {
+  background: #2d2d2d !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .bcc-mode-option:hover,
+[data-theme="dark"] .bcc-mode-option:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
 }
