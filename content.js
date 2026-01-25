@@ -32,7 +32,7 @@
     event.stopPropagation();
 
     const button = event.currentTarget;
-    const taskItem = button.closest('[data-testid]') || button.closest('div[class*="flex"]');
+    const taskItem = findSessionItem(button);
 
     if (taskItem) {
       // Toggle blocked state
@@ -74,39 +74,55 @@
     }
   }
 
-  // Find and process task items with delete buttons
+  // Find and process session items with delete buttons
   function processTaskItems() {
-    // Look for button containers that contain delete buttons (trash icon)
-    // The delete button typically has a trash/delete icon
+    // Look for delete buttons specifically within session list items
+    // Session items have a specific structure with title, metadata, and action buttons
     const allButtons = document.querySelectorAll('button');
 
     allButtons.forEach(button => {
-      // Check if this is a delete button by looking for trash icon SVG or aria-label
-      const isDeleteButton =
-        button.querySelector('svg path[d*="M19"]') || // Common trash icon path
-        button.getAttribute('aria-label')?.toLowerCase().includes('delete') ||
-        button.title?.toLowerCase().includes('delete') ||
-        button.innerHTML.includes('M19 7l-.867 12.142') || // Trash icon path
-        (button.querySelector('svg') && button.closest('div')?.querySelectorAll('button').length >= 1);
+      // Skip if already processed
+      if (button.hasAttribute(PROCESSED_MARKER)) return;
 
-      if (!isDeleteButton) return;
+      // Check if this button contains a trash/delete icon (SVG with specific path)
+      const svg = button.querySelector('svg');
+      if (!svg) return;
 
-      // Find the parent container that holds the action buttons
-      const buttonContainer = button.parentElement;
-      if (!buttonContainer || buttonContainer.hasAttribute(PROCESSED_MARKER)) return;
+      // Look for trash icon characteristics
+      const svgContent = svg.innerHTML || '';
+      const isTrashIcon =
+        svgContent.includes('M19 7') || // Common trash icon path start
+        svgContent.includes('polyline points="3 6 5 6 21 6"') || // Another trash variant
+        button.getAttribute('aria-label')?.toLowerCase().includes('delete');
 
-      // Check if there's already a blocked button
-      if (buttonContainer.querySelector('.bcotw-blocked-btn')) return;
+      if (!isTrashIcon) return;
 
-      // Mark as processed
-      buttonContainer.setAttribute(PROCESSED_MARKER, 'true');
+      // Verify this is within a session/task list item by checking for sibling structure
+      // Session items typically have: text content + timestamp + buttons
+      const parent = button.parentElement;
+      if (!parent) return;
+
+      // Check if this is in a list-like context with multiple items
+      const grandparent = parent.parentElement;
+      if (!grandparent) return;
+
+      // The button container should have exactly 2 buttons (copy and delete)
+      // or we should be adding to make it 3 (blocked, copy, delete)
+      const siblingButtons = parent.querySelectorAll('button:not(.bcotw-blocked-btn)');
+      if (siblingButtons.length > 3) return; // Too many buttons, probably not a session item
+
+      // Check if there's already a blocked button in this container
+      if (parent.querySelector('.bcotw-blocked-btn')) return;
+
+      // Mark button as processed
+      button.setAttribute(PROCESSED_MARKER, 'true');
 
       // Create and insert the blocked button before the delete button
       const blockedButton = createBlockedButton();
-      button.parentElement.insertBefore(blockedButton, button);
+      parent.insertBefore(blockedButton, button);
 
       // Check if this task was previously blocked
-      const taskItem = button.closest('[data-testid]') || button.closest('div[class*="flex"]');
+      const taskItem = findSessionItem(button);
       if (taskItem) {
         const taskId = getTaskId(taskItem);
         if (taskId && getBlockedTasks()[taskId]) {
@@ -116,6 +132,20 @@
         }
       }
     });
+  }
+
+  // Find the parent session item element
+  function findSessionItem(button) {
+    let element = button.parentElement;
+    // Walk up to find a reasonable container (but not too far)
+    for (let i = 0; i < 5 && element; i++) {
+      // Session items typically have clickable behavior and contain text + timestamp
+      if (element.textContent && element.textContent.length > 20) {
+        return element;
+      }
+      element = element.parentElement;
+    }
+    return null;
   }
 
   // Set up MutationObserver to watch for new task items
