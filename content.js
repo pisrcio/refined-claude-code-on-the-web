@@ -19,7 +19,9 @@
     modeButton: true,
     showModel: true,
     betterLabel: true,
-    pullBranch: true
+    pullBranch: true,
+    projectColors: true,
+    projectColorMap: {} // { "project-name": "#hexcolor" }
   };
 
   let currentSettings = { ...DEFAULT_SETTINGS };
@@ -116,6 +118,9 @@
         button.style.paddingRight = '';
       }
     }
+
+    // Apply project colors
+    applyProjectColors();
   }
 
   // Update Better label appearance based on settings
@@ -957,6 +962,70 @@
   }
 
   // ============================================
+  // Project Colors Feature
+  // ============================================
+
+  function applyProjectColors() {
+    if (!isFeatureEnabled('projectColors')) {
+      // Remove any applied colors
+      document.querySelectorAll('[data-bcc-colored]').forEach(el => {
+        el.style.removeProperty('color');
+        el.style.removeProperty('font-weight');
+        el.removeAttribute('data-bcc-colored');
+      });
+      return;
+    }
+
+    const projectColorMap = currentSettings.projectColorMap || {};
+    if (Object.keys(projectColorMap).length === 0) return;
+
+    // Find project name elements in the sidebar
+    // Look for span.truncate elements that contain project names
+    const truncateSpans = document.querySelectorAll('span.truncate');
+
+    truncateSpans.forEach(span => {
+      const projectName = span.textContent.trim();
+
+      // Check if this project has a configured color
+      // Support both exact match and partial match
+      let matchedColor = null;
+
+      // First try exact match
+      if (projectColorMap[projectName]) {
+        matchedColor = projectColorMap[projectName];
+      } else {
+        // Try partial match (project name contains or is contained by config)
+        for (const [configName, color] of Object.entries(projectColorMap)) {
+          if (projectName.includes(configName) || configName.includes(projectName)) {
+            matchedColor = color;
+            break;
+          }
+        }
+      }
+
+      if (matchedColor) {
+        span.style.color = matchedColor;
+        span.style.fontWeight = '600';
+        span.setAttribute('data-bcc-colored', 'true');
+      } else if (span.hasAttribute('data-bcc-colored')) {
+        // Remove color if previously applied but no longer matches
+        span.style.removeProperty('color');
+        span.style.removeProperty('font-weight');
+        span.removeAttribute('data-bcc-colored');
+      }
+    });
+  }
+
+  // Debounced version to avoid excessive calls
+  let projectColorDebounceTimer = null;
+  function debouncedApplyProjectColors() {
+    if (projectColorDebounceTimer) clearTimeout(projectColorDebounceTimer);
+    projectColorDebounceTimer = setTimeout(() => {
+      applyProjectColors();
+    }, 100);
+  }
+
+  // ============================================
   // Initialization
   // ============================================
 
@@ -999,6 +1068,8 @@
         if (isFeatureEnabled('showModel')) {
           updateModelSelector();
         }
+        // Apply project colors
+        applyProjectColors();
       } catch (e) {
         console.error(LOG_PREFIX, 'Error injecting UI:', e);
       }
@@ -1035,6 +1106,9 @@
       if (isFeatureEnabled('pullBranch') && !document.querySelector('.better-pull-branch-btn')) {
         // The watcher handles this, but we can trigger a check
       }
+
+      // Re-apply project colors on DOM changes
+      debouncedApplyProjectColors();
     });
 
     observer.observe(document.body, {
