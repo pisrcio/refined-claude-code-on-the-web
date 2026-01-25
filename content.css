@@ -1,0 +1,138 @@
+/* Better Claude Code on the Web - Mode Button Styles */
+
+.bcc-mode-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 8px;
+  z-index: 1000;
+}
+
+.bcc-mode-container.bcc-floating {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+}
+
+.bcc-mode-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  color: inherit;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.bcc-mode-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .bcc-mode-button {
+    border-color: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .bcc-mode-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  .bcc-mode-dropdown {
+    background: #2d2d2d;
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .bcc-mode-option:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.bcc-mode-label {
+  font-weight: 500;
+}
+
+.bcc-chevron {
+  opacity: 0.6;
+  transition: transform 0.15s ease;
+}
+
+.bcc-mode-button:hover .bcc-chevron {
+  opacity: 1;
+}
+
+.bcc-mode-dropdown {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  min-width: 120px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  overflow: hidden;
+}
+
+.bcc-mode-dropdown.bcc-show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.bcc-mode-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background-color 0.1s ease;
+}
+
+.bcc-mode-option:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.bcc-check {
+  width: 16px;
+  color: #10a37f;
+  font-weight: bold;
+}
+
+/* Handle Claude's specific dark mode class if present */
+html.dark .bcc-mode-button,
+[data-theme="dark"] .bcc-mode-button {
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+html.dark .bcc-mode-button:hover,
+[data-theme="dark"] .bcc-mode-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+html.dark .bcc-mode-dropdown,
+[data-theme="dark"] .bcc-mode-dropdown {
+  background: #2d2d2d;
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+html.dark .bcc-mode-option:hover,
+[data-theme="dark"] .bcc-mode-option:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
