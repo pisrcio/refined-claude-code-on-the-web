@@ -195,7 +195,12 @@
       </svg>
     `;
     console.log(LOG_PREFIX, 'Created modeButton:', modeButton);
-    modeButton.addEventListener('click', toggleDropdown);
+    console.log(LOG_PREFIX, 'Attaching click event listener to modeButton...');
+    modeButton.addEventListener('click', (e) => {
+      console.log(LOG_PREFIX, '*** CLICK EVENT FIRED ON MODE BUTTON ***');
+      toggleDropdown(e);
+    });
+    console.log(LOG_PREFIX, 'Click event listener attached successfully');
 
     // Create dropdown - append to body to avoid overflow clipping
     dropdown = document.createElement('div');
@@ -248,45 +253,104 @@
   }
 
   function toggleDropdown(e) {
-    console.log(LOG_PREFIX, 'toggleDropdown() called');
+    console.log(LOG_PREFIX, '=== toggleDropdown() START ===');
+    console.log(LOG_PREFIX, 'Event:', e);
+    console.log(LOG_PREFIX, 'Event type:', e.type);
+    console.log(LOG_PREFIX, 'Event target:', e.target);
+    console.log(LOG_PREFIX, 'modeButton reference:', modeButton);
+    console.log(LOG_PREFIX, 'dropdown reference:', dropdown);
+    console.log(LOG_PREFIX, 'dropdown in DOM?:', document.body.contains(dropdown));
+    console.log(LOG_PREFIX, 'modeButton in DOM?:', document.body.contains(modeButton));
+
     e.stopPropagation();
     e.preventDefault();
+
+    if (!dropdown) {
+      console.error(LOG_PREFIX, 'ERROR: dropdown is null or undefined!');
+      return;
+    }
+
     const isVisible = dropdown.style.visibility === 'visible';
-    console.log(LOG_PREFIX, 'Current visibility:', isVisible);
+    console.log(LOG_PREFIX, 'Current dropdown.style.visibility:', dropdown.style.visibility);
+    console.log(LOG_PREFIX, 'isVisible check result:', isVisible);
 
     if (isVisible) {
+      console.log(LOG_PREFIX, 'Dropdown is visible, closing...');
       closeDropdown();
     } else {
+      console.log(LOG_PREFIX, 'Dropdown is hidden, opening...');
+
       // Position dropdown above the button
       const buttonRect = modeButton.getBoundingClientRect();
-      dropdown.style.left = buttonRect.left + 'px';
-      dropdown.style.top = (buttonRect.top - dropdown.offsetHeight - 4) + 'px';
+      console.log(LOG_PREFIX, 'Button rect:', JSON.stringify(buttonRect));
+      console.log(LOG_PREFIX, 'Button rect values - top:', buttonRect.top, 'left:', buttonRect.left, 'width:', buttonRect.width, 'height:', buttonRect.height);
 
-      // Make visible first to get offsetHeight, then reposition
+      // First, make dropdown visible but transparent to measure its height
       dropdown.style.visibility = 'hidden';
       dropdown.style.opacity = '0';
       dropdown.style.display = 'block';
+      dropdown.style.left = buttonRect.left + 'px';
+      dropdown.style.top = '0px'; // Temporary position
 
-      // Now position correctly with actual height
-      const dropdownHeight = dropdown.offsetHeight || 80; // fallback height
-      dropdown.style.top = (buttonRect.top - dropdownHeight - 4) + 'px';
+      // Force reflow to get accurate measurements
+      void dropdown.offsetHeight;
 
+      const dropdownHeight = dropdown.offsetHeight || 80;
+      const dropdownWidth = dropdown.offsetWidth;
+      console.log(LOG_PREFIX, 'Dropdown dimensions - height:', dropdownHeight, 'width:', dropdownWidth);
+
+      const finalTop = buttonRect.top - dropdownHeight - 4;
+      const finalLeft = buttonRect.left;
+      console.log(LOG_PREFIX, 'Final position - top:', finalTop, 'left:', finalLeft);
+
+      dropdown.style.top = finalTop + 'px';
+      dropdown.style.left = finalLeft + 'px';
       dropdown.style.opacity = '1';
       dropdown.style.visibility = 'visible';
       dropdown.style.transform = 'translateY(0)';
-      console.log(LOG_PREFIX, 'Dropdown now visible at', buttonRect.left, buttonRect.top - dropdownHeight - 4);
+
+      console.log(LOG_PREFIX, 'Dropdown styles after update:');
+      console.log(LOG_PREFIX, '  - display:', dropdown.style.display);
+      console.log(LOG_PREFIX, '  - visibility:', dropdown.style.visibility);
+      console.log(LOG_PREFIX, '  - opacity:', dropdown.style.opacity);
+      console.log(LOG_PREFIX, '  - top:', dropdown.style.top);
+      console.log(LOG_PREFIX, '  - left:', dropdown.style.left);
+      console.log(LOG_PREFIX, '  - position:', dropdown.style.position);
+      console.log(LOG_PREFIX, '  - zIndex:', dropdown.style.zIndex);
+
+      // Check computed styles
+      const computedStyle = window.getComputedStyle(dropdown);
+      console.log(LOG_PREFIX, 'Computed styles:');
+      console.log(LOG_PREFIX, '  - display:', computedStyle.display);
+      console.log(LOG_PREFIX, '  - visibility:', computedStyle.visibility);
+      console.log(LOG_PREFIX, '  - opacity:', computedStyle.opacity);
+      console.log(LOG_PREFIX, '  - top:', computedStyle.top);
+      console.log(LOG_PREFIX, '  - left:', computedStyle.left);
+      console.log(LOG_PREFIX, '  - position:', computedStyle.position);
+      console.log(LOG_PREFIX, '  - zIndex:', computedStyle.zIndex);
+
+      console.log(LOG_PREFIX, '=== Dropdown should now be visible ===');
+
       // Close on outside click
       setTimeout(() => {
         document.addEventListener('click', closeDropdown, { once: true });
       }, 0);
     }
+    console.log(LOG_PREFIX, '=== toggleDropdown() END ===');
   }
 
-  function closeDropdown() {
-    console.log(LOG_PREFIX, 'closeDropdown() called');
+  function closeDropdown(e) {
+    console.log(LOG_PREFIX, '=== closeDropdown() called ===');
+    console.log(LOG_PREFIX, 'Called from event:', e);
+    if (e) {
+      console.log(LOG_PREFIX, 'Event target:', e.target);
+      console.log(LOG_PREFIX, 'Event type:', e.type);
+    }
+    console.log(LOG_PREFIX, 'Stack trace:', new Error().stack);
     dropdown.style.opacity = '0';
     dropdown.style.visibility = 'hidden';
     dropdown.style.transform = 'translateY(4px)';
+    console.log(LOG_PREFIX, 'Dropdown hidden');
   }
 
   function selectMode(mode) {
