@@ -1614,18 +1614,14 @@
       const editor = document.createElement('div');
       editor.className = 'bcc-reason-editor';
       editor.style.cssText = `
-        position: absolute;
-        bottom: calc(100% + 8px);
-        left: 50%;
-        transform: translateX(-50%);
+        position: fixed;
         background: white;
         border: 1px solid #d1d5db;
         border-radius: 6px;
         padding: 8px;
         z-index: 100001;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        min-width: 250px;
-        max-width: 300px;
+        min-width: 280px;
       `;
 
       // Create input field
@@ -1635,16 +1631,18 @@
       inputEl.value = existingMessage || '';
       inputEl.style.cssText = `
         width: 100%;
-        padding: 6px 8px;
+        padding: 8px 10px;
         border: 1px solid #d1d5db;
         border-radius: 4px;
         font-size: 13px;
         font-family: inherit;
         box-sizing: border-box;
         outline: none;
+        color: #1f2937 !important;
+        background-color: white !important;
       `;
 
-      // Save function
+      // Save function (only on Enter)
       const saveMessage = () => {
         const message = inputEl.value.trim();
         saveBlockedReason(sessionData, message);
@@ -1652,7 +1650,7 @@
         if (onSave) onSave(message);
       };
 
-      // Handle Enter key
+      // Handle Enter key only for saving
       inputEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -1663,21 +1661,26 @@
         }
       });
 
-      // Handle focus loss (clicking outside)
+      // Handle focus loss (clicking outside) - just dismiss, don't save
       inputEl.addEventListener('blur', () => {
         setTimeout(() => {
           if (document.body.contains(editor)) {
-            saveMessage();
+            editor.remove();
           }
         }, 100);
       });
 
       editor.appendChild(inputEl);
-      blockedButton.style.position = 'relative';
-      blockedButton.appendChild(editor);
+      document.body.appendChild(editor);
 
-      // Auto focus
-      setTimeout(() => inputEl.focus(), 50);
+      // Position the editor above the button
+      setTimeout(() => {
+        const buttonRect = blockedButton.getBoundingClientRect();
+        editor.style.left = (buttonRect.left + buttonRect.width / 2 - editor.offsetWidth / 2) + 'px';
+        editor.style.top = (buttonRect.top - editor.offsetHeight - 8) + 'px';
+        inputEl.focus();
+        inputEl.select();
+      }, 50);
     });
   }
 
