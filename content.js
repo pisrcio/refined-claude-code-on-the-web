@@ -116,20 +116,22 @@
       }
     }
 
-    // Method 3: Look for checkmark icon next to model name
+    // Method 3: Look for checkmark icon next to model name in dropdown
     const menuItems = document.querySelectorAll('[role="menuitem"], [role="menuitemradio"], [role="option"]');
     console.log(LOG_PREFIX, `Method 3 - Found ${menuItems.length} menu items`);
     for (const item of menuItems) {
-      const hasCheck = item.querySelector('svg[data-state="checked"], .check-icon, [data-checked="true"]') ||
-                       item.querySelector('svg')?.innerHTML.includes('check') ||
+      // Check for SVG checkmark (the selected model has an SVG with a checkmark path)
+      const svg = item.querySelector('svg');
+      const hasCheck = svg !== null ||  // SVG presence often indicates selection
+                       item.querySelector('[data-state="checked"]') ||
                        item.getAttribute('aria-checked') === 'true' ||
                        item.getAttribute('data-state') === 'checked';
 
-      if (hasCheck) {
+      if (hasCheck && svg) {
         const text = item.textContent.toLowerCase();
         for (const [key, name] of Object.entries(MODEL_NAMES)) {
           if (text.includes(key)) {
-            console.log(LOG_PREFIX, '✅ Found model via Method 3:', name);
+            console.log(LOG_PREFIX, '✅ Found model via Method 3 (checkmark):', name);
             return name;
           }
         }
@@ -235,6 +237,18 @@
 
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
+        // Watch for attribute changes on menu elements (data-open, aria-hidden, etc.)
+        if (mutation.type === 'attributes') {
+          const target = mutation.target;
+          if (target.matches?.('[role="menu"]') || target.closest?.('[role="menu"]')) {
+            console.log(LOG_PREFIX, `📋 Menu attribute changed: ${mutation.attributeName}`);
+            // Schedule updates after menu closes
+            setTimeout(updateModelSelector, 100);
+            setTimeout(updateModelSelector, 300);
+            setTimeout(updateModelSelector, 500);
+          }
+        }
+
         // Watch for dropdown being removed (closed) - this is when React re-renders
         if (mutation.type === 'childList' && mutation.removedNodes.length > 0) {
           for (const node of mutation.removedNodes) {
@@ -242,7 +256,7 @@
               const wasDropdown = node.matches?.('[role="menu"], [role="listbox"], [role="dialog"]') ||
                                   node.querySelector?.('[role="menu"], [role="listbox"]');
               if (wasDropdown) {
-                console.log(LOG_PREFIX, '📋 Dropdown closed, updating model display...');
+                console.log(LOG_PREFIX, '📋 Dropdown removed from DOM, updating model display...');
                 // Multiple updates to catch React re-renders
                 setTimeout(updateModelSelector, 50);
                 setTimeout(updateModelSelector, 150);
@@ -262,15 +276,16 @@
               const isDropdown = node.matches?.('[role="menu"], [role="listbox"], [role="dialog"]') ||
                                 node.querySelector?.('[role="menu"], [role="listbox"]');
               if (isDropdown) {
-                console.log(LOG_PREFIX, '📋 Dropdown appeared');
+                console.log(LOG_PREFIX, '📋 Dropdown added to DOM');
 
                 // Watch for clicks within the dropdown
                 node.addEventListener('click', () => {
-                  console.log(LOG_PREFIX, '🖱️ Click in dropdown detected');
+                  console.log(LOG_PREFIX, '🖱️ Click in dropdown detected (event listener)');
                   // Multiple updates to catch React re-renders after selection
                   setTimeout(updateModelSelector, 100);
                   setTimeout(updateModelSelector, 200);
                   setTimeout(updateModelSelector, 400);
+                  setTimeout(updateModelSelector, 800);
                 });
               }
             }
@@ -281,7 +296,9 @@
 
     observer.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-open', 'data-state', 'aria-hidden', 'hidden', 'style']
     });
 
     console.log(LOG_PREFIX, '✅ MutationObserver active');
@@ -404,16 +421,42 @@
     document.addEventListener('click', (event) => {
       const target = event.target;
 
-      // Check if clicked element or its parents contain model-related text
-      const clickedElement = target.closest('[role="menuitem"], [role="menuitemradio"], [role="option"], [data-testid*="model"]');
-      if (clickedElement) {
-        const text = clickedElement.textContent.toLowerCase();
+      // Check if clicked inside a menu (the model dropdown)
+      const menuContainer = target.closest('[role="menu"]');
+      if (menuContainer) {
+        console.log(LOG_PREFIX, '🖱️ Click detected inside [role="menu"]');
+
+        // Check if we clicked on or inside a menuitem
+        const menuItem = target.closest('[role="menuitem"]');
+        if (menuItem) {
+          const text = menuItem.textContent.toLowerCase();
+          console.log(LOG_PREFIX, '🖱️ Clicked menuitem with text:', text.substring(0, 50));
+
+          for (const key of Object.keys(MODEL_NAMES)) {
+            if (text.includes(key)) {
+              console.log(LOG_PREFIX, `🖱️ Clicked on model: "${key}"`);
+              // Multiple delayed updates to catch React re-renders
+              setTimeout(updateModelSelector, 100);
+              setTimeout(updateModelSelector, 200);
+              setTimeout(updateModelSelector, 400);
+              setTimeout(updateModelSelector, 800);
+              break;
+            }
+          }
+        }
+      }
+
+      // Also check for clicks on .font-ui elements (where model names are displayed)
+      const fontUiElement = target.closest('.font-ui');
+      if (fontUiElement) {
+        const text = fontUiElement.textContent.toLowerCase();
         for (const key of Object.keys(MODEL_NAMES)) {
           if (text.includes(key)) {
-            console.log(LOG_PREFIX, `🖱️ Clicked on model option containing "${key}"`);
-            // Wait for the selection to be processed
-            setTimeout(updateModelSelector, 300);
-            setTimeout(updateModelSelector, 500);
+            console.log(LOG_PREFIX, `🖱️ Clicked on .font-ui with model: "${key}"`);
+            setTimeout(updateModelSelector, 100);
+            setTimeout(updateModelSelector, 200);
+            setTimeout(updateModelSelector, 400);
+            setTimeout(updateModelSelector, 800);
             break;
           }
         }
