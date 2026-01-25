@@ -1,0 +1,99 @@
+/* Better Claude Code on the Web - Styles */
+
+/* Blocked button styling */
+.bcotw-blocked-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  margin-right: 4px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.15s ease;
+}
+
+.bcotw-blocked-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  opacity: 1;
+}
+
+.bcotw-blocked-btn:active {
+  transform: scale(0.95);
+}
+
+/* Active blocked state */
+.bcotw-blocked-btn.bcotw-blocked-active {
+  color: #dc2626;
+  opacity: 1;
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.bcotw-blocked-btn.bcotw-blocked-active:hover {
+  background: rgba(220, 38, 38, 0.15);
+}
+
+/* Task item blocked state */
+.bcotw-blocked {
+  opacity: 0.6;
+  position: relative;
+}
+
+.bcotw-blocked::before {
+  content: 'BLOCKED';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  font-weight: 600;
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .bcotw-blocked-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .bcotw-blocked-btn.bcotw-blocked-active {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.15);
+  }
+
+  .bcotw-blocked-btn.bcotw-blocked-active:hover {
+    background: rgba(248, 113, 113, 0.2);
+  }
+
+  .bcotw-blocked::before {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.15);
+  }
+}
+
+/* Handle Claude's dark theme class if different from system preference */
+[data-theme="dark"] .bcotw-blocked-btn:hover,
+.dark .bcotw-blocked-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .bcotw-blocked-btn.bcotw-blocked-active,
+.dark .bcotw-blocked-btn.bcotw-blocked-active {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.15);
+}
+
+[data-theme="dark"] .bcotw-blocked::before,
+.dark .bcotw-blocked::before {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.15);
+}
