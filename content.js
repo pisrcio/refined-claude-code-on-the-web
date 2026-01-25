@@ -1139,22 +1139,15 @@
         return;
       }
 
-      // Find the View PR button or Open in CLI button to place our button near them
-      const allButtons = document.querySelectorAll('button');
-      let targetButton = null;
+      // Find the Pull Branch in CLI button to place our button before it
+      const pullBranchBtn = document.querySelector('.better-pull-branch-btn');
 
-      for (const btn of allButtons) {
-        const text = btn.textContent.trim();
-        if (text.includes('View PR') || text.includes('Open in CLI')) {
-          targetButton = btn;
-          break;
-        }
-      }
-
-      if (!targetButton) {
-        console.log(LOG_PREFIX, 'View PR / Open in CLI button not found yet');
+      if (!pullBranchBtn) {
+        console.log(LOG_PREFIX, 'Pull Branch in CLI button not found yet');
         return;
       }
+
+      const targetButton = pullBranchBtn;
 
       // Detect main branch
       const mainBranch = detectMainBranch();
