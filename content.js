@@ -1,8 +1,14 @@
-// Better Claude Code on the Web - Mode Button
+// Better Claude Code on the Web - Content Script
+// Adds mode button and "Better" label
+
 (function() {
   'use strict';
 
   console.log('[BCC] Script loaded');
+
+  // ============================================
+  // Mode Button Feature
+  // ============================================
 
   let modeButton = null;
   let dropdown = null;
@@ -247,8 +253,8 @@
     }
   }
 
-  function findAndInjectButton() {
-    console.log('[BCC] findAndInjectButton() called');
+  function findAndInjectModeButton() {
+    console.log('[BCC] findAndInjectModeButton() called');
 
     // Look for the attachment/picture button area in Claude's interface
     // Common selectors for the button area near the input
@@ -323,7 +329,79 @@
     }
   }
 
-  // Initialize
+  // ============================================
+  // Better Label Feature
+  // ============================================
+
+  function addBetterLabel() {
+    console.log('[BCC] addBetterLabel() called');
+
+    // Find the anchor element that links to /code (the Claude Code header link)
+    const claudeCodeLink = document.querySelector('a[href="/code"]');
+
+    if (!claudeCodeLink) {
+      console.log('[BCC] No a[href="/code"] found yet');
+      return false;
+    }
+
+    console.log('[BCC] Found Claude Code link:', {
+      tagName: claudeCodeLink.tagName,
+      className: claudeCodeLink.className,
+      href: claudeCodeLink.href
+    });
+
+    // Check if we already added the Better label
+    const parent = claudeCodeLink.parentElement;
+    if (parent?.querySelector('.better-label')) {
+      console.log('[BCC] Better label already exists in parent, skipping');
+      return true;
+    }
+    if (claudeCodeLink.nextElementSibling?.classList?.contains('better-label')) {
+      console.log('[BCC] Better label already exists as sibling, skipping');
+      return true;
+    }
+
+    // Create the Better label element
+    const betterLabel = document.createElement('span');
+    betterLabel.textContent = 'Better';
+    betterLabel.className = 'better-label';
+
+    // Style to match the Research preview label appearance
+    betterLabel.style.cssText = `
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      margin-left: 8px;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 500;
+      line-height: 1.25;
+      color: #059669;
+      background-color: #d1fae5;
+      border-radius: 9999px;
+    `;
+
+    // Insert after the Claude Code link
+    console.log('[BCC] Inserting Better label');
+    claudeCodeLink.parentNode.insertBefore(betterLabel, claudeCodeLink.nextSibling);
+    console.log('[BCC] Better label inserted successfully');
+
+    return true;
+  }
+
+  // ============================================
+  // Initialization
+  // ============================================
+
+  // Debounce for Better Label
+  let debounceTimer = null;
+  function debouncedAddBetterLabel() {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      addBetterLabel();
+    }, 100);
+  }
+
   function init() {
     console.log('[BCC] init() called, readyState:', document.readyState);
 
@@ -332,19 +410,24 @@
       console.log('[BCC] Document still loading, adding DOMContentLoaded listener');
       document.addEventListener('DOMContentLoaded', () => {
         console.log('[BCC] DOMContentLoaded fired');
-        setTimeout(findAndInjectButton, 1000);
+        setTimeout(findAndInjectModeButton, 1000);
+        addBetterLabel();
       });
     } else {
       console.log('[BCC] Document already loaded, scheduling injection');
-      setTimeout(findAndInjectButton, 1000);
+      setTimeout(findAndInjectModeButton, 1000);
+      addBetterLabel();
     }
 
     // Watch for DOM changes (SPA navigation)
     const observer = new MutationObserver((mutations) => {
+      // Re-inject mode button if missing
       if (!document.querySelector('.bcc-mode-container')) {
-        console.log('[BCC] MutationObserver: container missing, re-injecting');
-        findAndInjectButton();
+        console.log('[BCC] MutationObserver: mode container missing, re-injecting');
+        findAndInjectModeButton();
       }
+      // Re-add better label if missing
+      debouncedAddBetterLabel();
     });
 
     observer.observe(document.body, {
