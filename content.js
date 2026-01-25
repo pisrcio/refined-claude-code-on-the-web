@@ -881,12 +881,17 @@
     function processSessionItem(sessionItem) {
       const sessionId = getSessionIdFromElement(sessionItem);
       if (!sessionId) {
+        console.log(LOG_PREFIX, '🟢 SESSION DOT: Could not extract sessionId from element');
         return;
       }
+
+      console.log(LOG_PREFIX, '🟢 SESSION DOT: Processing session:', sessionId);
 
       const spinnerContainer = sessionItem.querySelector('.code-spinner-animate');
       const hasSpinner = !!spinnerContainer;
       const existingDot = sessionItem.querySelector('.bcc-session-dot');
+
+      console.log(LOG_PREFIX, '🟢 SESSION DOT: hasSpinner:', hasSpinner, 'existingDot:', !!existingDot);
 
       if (hasSpinner) {
         markSessionAsRunning(sessionId);
@@ -897,17 +902,23 @@
         const wasRunning = wasSessionRunning(sessionId);
         const isViewed = isSessionViewed(sessionId);
 
+        console.log(LOG_PREFIX, '🟢 SESSION DOT: wasRunning:', wasRunning, 'isViewed:', isViewed);
+
         if (wasRunning && !isViewed && !existingDot) {
+          console.log(LOG_PREFIX, '🟢 SESSION DOT: Conditions met, looking for icon container');
           // Try multiple selectors for the icon container
           let iconContainer = sessionItem.querySelector('.w-6.h-6.flex.items-center.justify-center');
+          console.log(LOG_PREFIX, '🟢 SESSION DOT: Tried .w-6.h-6.flex - found:', !!iconContainer);
 
           if (!iconContainer) {
             iconContainer = sessionItem.querySelector('.relative.flex.items-center');
+            console.log(LOG_PREFIX, '🟢 SESSION DOT: Tried .relative.flex.items-center - found:', !!iconContainer);
           }
 
           if (!iconContainer) {
             const allDivs = sessionItem.querySelectorAll('div');
             iconContainer = allDivs[0];
+            console.log(LOG_PREFIX, '🟢 SESSION DOT: Tried fallback div[0] - found:', !!iconContainer);
           }
 
           if (iconContainer) {
@@ -918,12 +929,15 @@
           } else {
             console.log(LOG_PREFIX, '❌ Could not find icon container for session:', sessionId);
           }
+        } else {
+          console.log(LOG_PREFIX, '🟢 SESSION DOT: Skipped - wasRunning:', wasRunning, 'isViewed:', isViewed, 'existingDot:', !!existingDot);
         }
       }
     }
 
     function processAllSessions() {
       const allSessionLinks = document.querySelectorAll('a[href*="/code/"]');
+      console.log(LOG_PREFIX, '🟢 SESSION DOT: Found', allSessionLinks.length, 'session links');
       const processedItems = new Set();
 
       allSessionLinks.forEach((link) => {
@@ -935,6 +949,8 @@
         if (sessionItem && !processedItems.has(sessionItem)) {
           processedItems.add(sessionItem);
           processSessionItem(sessionItem);
+        } else if (!sessionItem) {
+          console.log(LOG_PREFIX, '🟢 SESSION DOT: Could not find sessionItem container for link:', link.href);
         }
       });
     }
