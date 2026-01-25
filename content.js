@@ -1515,7 +1515,7 @@
             tooltip.addEventListener('click', (e) => {
               e.stopPropagation();
               e.preventDefault();
-              showBlockedReasonModal(sessionData, (newMessage) => {
+              showBlockedReasonEditor(blockedButton, sessionData, (newMessage) => {
                 tooltip.textContent = newMessage;
               });
             });
@@ -1594,247 +1594,90 @@
   }
 
   /**
-   * Create and show modal dialog for entering blocked reason
+   * Create and show tooltip-style inline editor for blocked reason
+   * @param {HTMLButtonElement} blockedButton - The blocked button element
    * @param {Object} sessionData - The session data object
    * @param {Function} onSave - Callback when message is saved
    */
-  function showBlockedReasonModal(sessionData, onSave) {
-    console.log(LOG_PREFIX, '>>> showBlockedReasonModal called');
+  function showBlockedReasonEditor(blockedButton, sessionData, onSave) {
+    console.log(LOG_PREFIX, '>>> showBlockedReasonEditor called');
 
-    // Create overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'bcc-modal-overlay';
-    overlay.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 100000;
-    `;
-
-    // Create modal
-    const modal = document.createElement('div');
-    modal.className = 'bcc-modal-dialog';
-    modal.style.cssText = `
-      background: white;
-      border-radius: 8px;
-      padding: 24px;
-      max-width: 500px;
-      width: 90%;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-      z-index: 100001;
-    `;
+    // Remove any existing editor
+    const existingEditor = blockedButton.querySelector('.bcc-reason-editor');
+    if (existingEditor) {
+      existingEditor.remove();
+    }
 
     // Get existing message
     getBlockedReason(sessionData).then((existingMessage) => {
-      const titleEl = document.createElement('h2');
-      titleEl.textContent = 'Block Reason';
-      titleEl.style.cssText = `
-        margin: 0 0 16px 0;
-        font-size: 18px;
-        font-weight: 600;
-        color: #1f2937;
-      `;
-
-      const descEl = document.createElement('p');
-      descEl.textContent = `Enter a reason for blocking "${sessionData?.title}"`;
-      descEl.style.cssText = `
-        margin: 0 0 16px 0;
-        font-size: 14px;
-        color: #6b7280;
-      `;
-
-      const textareaEl = document.createElement('textarea');
-      textareaEl.className = 'bcc-reason-textarea';
-      textareaEl.placeholder = 'Enter reason (e.g., "Waiting for approval", "Fix in progress")';
-      textareaEl.value = existingMessage || '';
-      textareaEl.style.cssText = `
-        width: 100%;
-        height: 100px;
-        padding: 10px;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
-        font-family: inherit;
-        font-size: 14px;
-        resize: vertical;
-        box-sizing: border-box;
-        margin-bottom: 16px;
-      `;
-
-      const buttonsContainer = document.createElement('div');
-      buttonsContainer.style.cssText = `
-        display: flex;
-        gap: 8px;
-        justify-content: flex-end;
-      `;
-
-      const cancelBtn = document.createElement('button');
-      cancelBtn.type = 'button';
-      cancelBtn.textContent = 'Cancel';
-      cancelBtn.style.cssText = `
-        padding: 8px 16px;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
-        background: white;
-        color: #374151;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background 0.2s;
-      `;
-      cancelBtn.addEventListener('mouseenter', () => {
-        cancelBtn.style.background = '#f3f4f6';
-      });
-      cancelBtn.addEventListener('mouseleave', () => {
-        cancelBtn.style.background = 'white';
-      });
-      cancelBtn.addEventListener('click', () => {
-        overlay.remove();
-      });
-
-      const saveBtn = document.createElement('button');
-      saveBtn.type = 'button';
-      saveBtn.textContent = 'Save';
-      saveBtn.style.cssText = `
-        padding: 8px 16px;
-        border: none;
-        border-radius: 6px;
-        background: #059669;
-        color: white;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background 0.2s;
-      `;
-      saveBtn.addEventListener('mouseenter', () => {
-        saveBtn.style.background = '#047857';
-      });
-      saveBtn.addEventListener('mouseleave', () => {
-        saveBtn.style.background = '#059669';
-      });
-      saveBtn.addEventListener('click', () => {
-        const message = textareaEl.value.trim();
-        saveBlockedReason(sessionData, message);
-        overlay.remove();
-        if (onSave) onSave(message);
-      });
-
-      buttonsContainer.appendChild(cancelBtn);
-      buttonsContainer.appendChild(saveBtn);
-
-      modal.appendChild(titleEl);
-      modal.appendChild(descEl);
-      modal.appendChild(textareaEl);
-      modal.appendChild(buttonsContainer);
-
-      overlay.appendChild(modal);
-      document.body.appendChild(overlay);
-
-      // Focus textarea
-      setTimeout(() => textareaEl.focus(), 100);
-    });
-
-    // Close on overlay click
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) {
-        overlay.remove();
-      }
-    });
-  }
-
-  /**
-   * Update blocked indicator with tooltip
-   * @param {Element} sessionEl - The session element
-   * @param {Object} sessionData - The session data object
-   */
-  function updateBlockedIndicatorWithTooltip(sessionEl, sessionData) {
-    if (!sessionEl) return;
-
-    const indicator = sessionEl.querySelector('.bcc-blocked-indicator');
-    if (!indicator) return;
-
-    // Get the reason message
-    getBlockedReason(sessionData).then((message) => {
-      if (!message) return;
-
-      console.log(LOG_PREFIX, '>>> Creating tooltip for blocked indicator with message:', message);
-
-      // Create tooltip wrapper that will position correctly
-      const tooltipWrapper = document.createElement('div');
-      tooltipWrapper.className = 'bcc-tooltip-wrapper';
-      tooltipWrapper.style.cssText = `
-        position: relative;
-        display: inline-flex;
-      `;
-
-      // Create tooltip
-      const tooltip = document.createElement('div');
-      tooltip.className = 'bcc-blocked-tooltip';
-      tooltip.style.cssText = `
+      // Create editor container (positioned above the button)
+      const editor = document.createElement('div');
+      editor.className = 'bcc-reason-editor';
+      editor.style.cssText = `
         position: absolute;
         bottom: calc(100% + 8px);
         left: 50%;
         transform: translateX(-50%);
-        background: #1f2937;
-        color: white;
-        padding: 8px 12px;
+        background: white;
+        border: 1px solid #d1d5db;
         border-radius: 6px;
-        font-size: 13px;
-        white-space: nowrap;
+        padding: 8px;
         z-index: 100001;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.2s ease, visibility 0.2s ease;
-        pointer-events: none;
-        cursor: pointer;
-        max-width: 250px;
-        word-wrap: break-word;
-        white-space: normal;
-        line-height: 1.4;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        min-width: 250px;
+        max-width: 300px;
       `;
-      tooltip.textContent = message;
 
-      // Show tooltip on hover over indicator
-      const showTooltip = () => {
-        tooltip.style.opacity = '1';
-        tooltip.style.visibility = 'visible';
-        tooltip.style.pointerEvents = 'auto';
+      // Create input field
+      const inputEl = document.createElement('input');
+      inputEl.type = 'text';
+      inputEl.placeholder = 'Enter reason (e.g., "Waiting for approval")';
+      inputEl.value = existingMessage || '';
+      inputEl.style.cssText = `
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: 13px;
+        font-family: inherit;
+        box-sizing: border-box;
+        outline: none;
+      `;
+
+      // Save function
+      const saveMessage = () => {
+        const message = inputEl.value.trim();
+        saveBlockedReason(sessionData, message);
+        editor.remove();
+        if (onSave) onSave(message);
       };
 
-      const hideTooltip = () => {
-        tooltip.style.opacity = '0';
-        tooltip.style.visibility = 'hidden';
-        tooltip.style.pointerEvents = 'none';
-      };
-
-      indicator.addEventListener('mouseenter', showTooltip);
-      indicator.addEventListener('mouseleave', hideTooltip);
-
-      // Edit on click
-      tooltip.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        hideTooltip();
-        showBlockedReasonModal(sessionData, (newMessage) => {
-          tooltip.textContent = newMessage;
-          if (newMessage) {
-            // Update display after editing
-            setTimeout(showTooltip, 100);
-          }
-        });
+      // Handle Enter key
+      inputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveMessage();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          editor.remove();
+        }
       });
 
-      tooltip.addEventListener('mouseenter', showTooltip);
-      tooltip.addEventListener('mouseleave', hideTooltip);
+      // Handle focus loss (clicking outside)
+      inputEl.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (document.body.contains(editor)) {
+            saveMessage();
+          }
+        }, 100);
+      });
 
-      // Append tooltip to indicator
-      indicator.appendChild(tooltip);
-      console.log(LOG_PREFIX, '>>> Tooltip added to indicator');
+      editor.appendChild(inputEl);
+      blockedButton.style.position = 'relative';
+      blockedButton.appendChild(editor);
+
+      // Auto focus
+      setTimeout(() => inputEl.focus(), 50);
     });
   }
 
@@ -1864,8 +1707,8 @@
       // Add always-visible blocked indicator next to title
       addBlockedIndicator(sessionEl);
       console.log(LOG_PREFIX, '>>> Showing modal for reason input...');
-      // Show modal for entering reason
-      showBlockedReasonModal(sessionData, (message) => {
+      // Show inline editor for entering reason
+      showBlockedReasonEditor(button, sessionData, (message) => {
         showBlockedFeedback(`Session "${sessionData?.title}" marked as blocked`, true);
       });
     } else {
