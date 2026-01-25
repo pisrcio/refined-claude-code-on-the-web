@@ -4,14 +4,29 @@
 (function() {
   'use strict';
 
-  // SVG icon for the blocked/pause button
+  const LOG_PREFIX = '[BCOTW]';
+
+  function log(...args) {
+    console.log(LOG_PREFIX, ...args);
+  }
+
+  function logGroup(label) {
+    console.group(LOG_PREFIX + ' ' + label);
+  }
+
+  function logGroupEnd() {
+    console.groupEnd();
+  }
+
+  // SVG icon for the blocked button (exclamation mark in triangle)
   const BLOCKED_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="10"></circle>
-    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+    <line x1="12" y1="9" x2="12" y2="13"></line>
+    <line x1="12" y1="17" x2="12.01" y2="17"></line>
   </svg>`;
 
   // Check if we've already processed a button container
-  const PROCESSED_MARKER = 'bcotw-processed';
+  const PROCESSED_MARKER = 'data-bcotw-processed';
 
   // Create the blocked button element
   function createBlockedButton() {
@@ -20,9 +35,8 @@
     button.innerHTML = BLOCKED_ICON;
     button.title = 'Mark as blocked';
     button.setAttribute('aria-label', 'Mark task as blocked');
-
     button.addEventListener('click', handleBlockedClick);
-
+    log('Created blocked button element');
     return button;
   }
 
@@ -30,17 +44,17 @@
   function handleBlockedClick(event) {
     event.preventDefault();
     event.stopPropagation();
+    log('Blocked button clicked');
 
     const button = event.currentTarget;
     const taskItem = findSessionItem(button);
 
     if (taskItem) {
-      // Toggle blocked state
       const isBlocked = taskItem.classList.toggle('bcotw-blocked');
       button.classList.toggle('bcotw-blocked-active', isBlocked);
       button.title = isBlocked ? 'Unblock task' : 'Mark as blocked';
+      log('Task blocked state toggled:', isBlocked);
 
-      // Store blocked state in localStorage
       const taskId = getTaskId(taskItem);
       if (taskId) {
         const blockedTasks = getBlockedTasks();
@@ -50,16 +64,15 @@
           delete blockedTasks[taskId];
         }
         localStorage.setItem('bcotw-blocked-tasks', JSON.stringify(blockedTasks));
+        log('Saved blocked state to localStorage for task:', taskId);
       }
     }
   }
 
   // Get task ID from element
   function getTaskId(taskItem) {
-    // Try to get a unique identifier for the task
     const textContent = taskItem.textContent;
     if (textContent) {
-      // Create a simple hash from the task text
       return btoa(textContent.substring(0, 100)).replace(/[^a-zA-Z0-9]/g, '');
     }
     return null;
@@ -76,50 +89,100 @@
 
   // Find and process session items with delete buttons
   function processTaskItems() {
-    // Look for delete buttons specifically within session list items
-    // Session items have a specific structure with title, metadata, and action buttons
+    logGroup('Processing task items');
+
     const allButtons = document.querySelectorAll('button');
+    log('Total buttons found on page:', allButtons.length);
 
-    allButtons.forEach(button => {
+    let processedCount = 0;
+    let skippedAlreadyProcessed = 0;
+    let skippedNoSvg = 0;
+    let skippedNotTrash = 0;
+    let addedButtons = 0;
+
+    allButtons.forEach((button, index) => {
       // Skip if already processed
-      if (button.hasAttribute(PROCESSED_MARKER)) return;
+      if (button.hasAttribute(PROCESSED_MARKER)) {
+        skippedAlreadyProcessed++;
+        return;
+      }
 
-      // Check if this button contains a trash/delete icon (SVG with specific path)
+      // Check if this button contains an SVG
       const svg = button.querySelector('svg');
-      if (!svg) return;
+      if (!svg) {
+        skippedNoSvg++;
+        return;
+      }
 
-      // Look for trash icon characteristics
-      const svgContent = svg.innerHTML || '';
-      const isTrashIcon =
-        svgContent.includes('M19 7') || // Common trash icon path start
-        svgContent.includes('polyline points="3 6 5 6 21 6"') || // Another trash variant
-        button.getAttribute('aria-label')?.toLowerCase().includes('delete');
+      // Log every button with SVG for debugging
+      const svgContent = svg.outerHTML;
+      const buttonParent = button.parentElement;
+      const siblingButtons = buttonParent ? buttonParent.querySelectorAll('button') : [];
 
-      if (!isTrashIcon) return;
+      logGroup(`Button #${index} analysis`);
+      log('Button element:', button);
+      log('Button classes:', button.className);
+      log('Button aria-label:', button.getAttribute('aria-label'));
+      log('Button title:', button.title);
+      log('SVG content preview:', svgContent.substring(0, 200));
+      log('Parent element:', buttonParent);
+      log('Parent tag:', buttonParent?.tagName);
+      log('Parent classes:', buttonParent?.className);
+      log('Sibling buttons count:', siblingButtons.length);
 
-      // Verify this is within a session/task list item by checking for sibling structure
-      // Session items typically have: text content + timestamp + buttons
+      // Check for trash icon - look for common patterns
+      const svgLower = svgContent.toLowerCase();
+      const hasTrashPath =
+        svgLower.includes('m19') ||
+        svgLower.includes('polyline') ||
+        svgLower.includes('trash') ||
+        svgLower.includes('delete');
+
+      const ariaLabel = (button.getAttribute('aria-label') || '').toLowerCase();
+      const title = (button.title || '').toLowerCase();
+      const isDeleteByAttr = ariaLabel.includes('delete') || title.includes('delete');
+
+      log('Has trash-like SVG path:', hasTrashPath);
+      log('Has delete in aria-label/title:', isDeleteByAttr);
+
+      // More permissive: if there are exactly 2 sibling buttons, assume the last one is delete
+      const isLastButton = siblingButtons.length === 2 && siblingButtons[1] === button;
+      log('Is last of 2 buttons:', isLastButton);
+
+      logGroupEnd();
+
+      // Decide if this is a delete button
+      const isDeleteButton = isDeleteByAttr || isLastButton;
+
+      if (!isDeleteButton) {
+        skippedNotTrash++;
+        return;
+      }
+
+      processedCount++;
+      log('>>> Found potential delete button #' + index);
+
+      // Check parent
       const parent = button.parentElement;
-      if (!parent) return;
+      if (!parent) {
+        log('No parent element, skipping');
+        return;
+      }
 
-      // Check if this is in a list-like context with multiple items
-      const grandparent = parent.parentElement;
-      if (!grandparent) return;
+      // Check if there's already a blocked button
+      if (parent.querySelector('.bcotw-blocked-btn')) {
+        log('Blocked button already exists in parent, skipping');
+        return;
+      }
 
-      // The button container should have exactly 2 buttons (copy and delete)
-      // or we should be adding to make it 3 (blocked, copy, delete)
-      const siblingButtons = parent.querySelectorAll('button:not(.bcotw-blocked-btn)');
-      if (siblingButtons.length > 3) return; // Too many buttons, probably not a session item
-
-      // Check if there's already a blocked button in this container
-      if (parent.querySelector('.bcotw-blocked-btn')) return;
-
-      // Mark button as processed
+      // Mark as processed
       button.setAttribute(PROCESSED_MARKER, 'true');
 
-      // Create and insert the blocked button before the delete button
+      // Create and insert the blocked button
       const blockedButton = createBlockedButton();
       parent.insertBefore(blockedButton, button);
+      addedButtons++;
+      log('>>> INSERTED blocked button before delete button');
 
       // Check if this task was previously blocked
       const taskItem = findSessionItem(button);
@@ -129,17 +192,24 @@
           taskItem.classList.add('bcotw-blocked');
           blockedButton.classList.add('bcotw-blocked-active');
           blockedButton.title = 'Unblock task';
+          log('Restored blocked state for task');
         }
       }
     });
+
+    log('--- Summary ---');
+    log('Skipped (already processed):', skippedAlreadyProcessed);
+    log('Skipped (no SVG):', skippedNoSvg);
+    log('Skipped (not trash icon):', skippedNotTrash);
+    log('Processed as potential delete buttons:', processedCount);
+    log('Blocked buttons added:', addedButtons);
+    logGroupEnd();
   }
 
   // Find the parent session item element
   function findSessionItem(button) {
     let element = button.parentElement;
-    // Walk up to find a reasonable container (but not too far)
     for (let i = 0; i < 5 && element; i++) {
-      // Session items typically have clickable behavior and contain text + timestamp
       if (element.textContent && element.textContent.length > 20) {
         return element;
       }
@@ -150,6 +220,8 @@
 
   // Set up MutationObserver to watch for new task items
   function setupObserver() {
+    log('Setting up MutationObserver');
+
     const observer = new MutationObserver((mutations) => {
       let shouldProcess = false;
 
@@ -161,9 +233,11 @@
       }
 
       if (shouldProcess) {
-        // Debounce processing
         clearTimeout(window.bcotwProcessTimeout);
-        window.bcotwProcessTimeout = setTimeout(processTaskItems, 100);
+        window.bcotwProcessTimeout = setTimeout(() => {
+          log('DOM changed, reprocessing...');
+          processTaskItems();
+        }, 100);
       }
     });
 
@@ -172,14 +246,18 @@
       subtree: true
     });
 
-    // Initial processing
+    log('MutationObserver started');
+    log('Running initial processing...');
     processTaskItems();
   }
 
   // Initialize when DOM is ready
+  log('Content script loaded');
   if (document.readyState === 'loading') {
+    log('DOM still loading, waiting for DOMContentLoaded');
     document.addEventListener('DOMContentLoaded', setupObserver);
   } else {
+    log('DOM ready, initializing immediately');
     setupObserver();
   }
 })();
