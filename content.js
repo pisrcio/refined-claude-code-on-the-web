@@ -1,10 +1,14 @@
 // Better Claude Code on the Web - Content Script
-// Adds mode button and "Better" label
+// Features: Mode Button, Show Actual Model, Better Label
 
 (function() {
   'use strict';
 
-  console.log('[BCC] Script loaded');
+  const LOG_PREFIX = '[BCC]';
+
+  console.log(LOG_PREFIX, 'Script loaded');
+  console.log(LOG_PREFIX, 'URL:', window.location.href);
+  console.log(LOG_PREFIX, 'Document readyState:', document.readyState);
 
   // ============================================
   // Mode Button Feature
@@ -15,14 +19,14 @@
   let currentMode = 'Agent';
 
   function createModeButton() {
-    console.log('[BCC] createModeButton() called');
+    console.log(LOG_PREFIX, 'createModeButton() called');
 
     // Create container
     const container = document.createElement('div');
     container.className = 'bcc-mode-container';
     // Apply inline styles to override page CSS
     container.style.cssText = 'position: relative !important; display: inline-flex !important; flex-direction: row !important; align-items: center !important; margin-right: 8px !important; z-index: 1000 !important;';
-    console.log('[BCC] Created container:', container);
+    console.log(LOG_PREFIX, 'Created container:', container);
 
     // Create button
     modeButton = document.createElement('button');
@@ -36,8 +40,7 @@
         <path d="m6 9 6 6 6-6"></path>
       </svg>
     `;
-    console.log('[BCC] Created modeButton:', modeButton);
-    console.log('[BCC] modeButton.innerHTML:', modeButton.innerHTML);
+    console.log(LOG_PREFIX, 'Created modeButton:', modeButton);
     modeButton.addEventListener('click', toggleDropdown);
 
     // Create dropdown
@@ -55,11 +58,11 @@
         <span>Plan</span>
       </div>
     `;
-    console.log('[BCC] Created dropdown:', dropdown);
+    console.log(LOG_PREFIX, 'Created dropdown:', dropdown);
 
     dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
       option.addEventListener('click', (e) => {
-        console.log('[BCC] Option clicked:', option.dataset.mode);
+        console.log(LOG_PREFIX, 'Option clicked:', option.dataset.mode);
         e.preventDefault();
         e.stopPropagation();
         selectMode(option.dataset.mode);
@@ -69,27 +72,25 @@
     container.appendChild(modeButton);
     container.appendChild(dropdown);
 
-    console.log('[BCC] Final container:', container);
-    console.log('[BCC] Container children:', container.children);
-    console.log('[BCC] Container innerHTML:', container.innerHTML);
+    console.log(LOG_PREFIX, 'Final container:', container);
 
     // Log computed styles after a tick
     setTimeout(() => {
       const containerStyle = window.getComputedStyle(container);
       const buttonStyle = window.getComputedStyle(modeButton);
-      console.log('[BCC] Container computed style - display:', containerStyle.display, 'flexDirection:', containerStyle.flexDirection);
-      console.log('[BCC] Button computed style - display:', buttonStyle.display, 'flexDirection:', buttonStyle.flexDirection);
+      console.log(LOG_PREFIX, 'Container computed style - display:', containerStyle.display, 'flexDirection:', containerStyle.flexDirection);
+      console.log(LOG_PREFIX, 'Button computed style - display:', buttonStyle.display, 'flexDirection:', buttonStyle.flexDirection);
     }, 100);
 
     return container;
   }
 
   function toggleDropdown(e) {
-    console.log('[BCC] toggleDropdown() called');
+    console.log(LOG_PREFIX, 'toggleDropdown() called');
     e.stopPropagation();
     e.preventDefault();
     const isVisible = dropdown.style.visibility === 'visible';
-    console.log('[BCC] Current visibility:', isVisible);
+    console.log(LOG_PREFIX, 'Current visibility:', isVisible);
 
     if (isVisible) {
       closeDropdown();
@@ -97,7 +98,7 @@
       dropdown.style.opacity = '1';
       dropdown.style.visibility = 'visible';
       dropdown.style.transform = 'translateY(0)';
-      console.log('[BCC] Dropdown now visible');
+      console.log(LOG_PREFIX, 'Dropdown now visible');
       // Close on outside click
       setTimeout(() => {
         document.addEventListener('click', closeDropdown, { once: true });
@@ -106,17 +107,17 @@
   }
 
   function closeDropdown() {
-    console.log('[BCC] closeDropdown() called');
+    console.log(LOG_PREFIX, 'closeDropdown() called');
     dropdown.style.opacity = '0';
     dropdown.style.visibility = 'hidden';
     dropdown.style.transform = 'translateY(4px)';
   }
 
   function selectMode(mode) {
-    console.log('[BCC] selectMode() called with:', mode);
+    console.log(LOG_PREFIX, 'selectMode() called with:', mode);
     currentMode = mode;
     modeButton.querySelector('.bcc-mode-label').textContent = mode;
-    console.log('[BCC] Updated label to:', mode);
+    console.log(LOG_PREFIX, 'Updated label to:', mode);
 
     // Update checkmarks
     dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
@@ -128,198 +129,319 @@
 
     // Handle mode change
     if (mode === 'Plan') {
-      console.log('[BCC] Calling addPlanPrefix()');
+      console.log(LOG_PREFIX, 'Calling addPlanPrefix()');
       addPlanPrefix();
     } else if (mode === 'Agent') {
-      console.log('[BCC] Calling removePlanPrefix()');
+      console.log(LOG_PREFIX, 'Calling removePlanPrefix()');
       removePlanPrefix();
     }
   }
 
   function addPlanPrefix() {
-    console.log('[BCC] addPlanPrefix() called');
-    // Find the textarea/input field in Claude's interface
+    console.log(LOG_PREFIX, 'addPlanPrefix() called');
     const textField = document.querySelector('div[contenteditable="true"]') ||
                       document.querySelector('textarea') ||
                       document.querySelector('[data-placeholder]');
 
-    console.log('[BCC] Found textField:', textField);
-    console.log('[BCC] textField tagName:', textField?.tagName);
+    console.log(LOG_PREFIX, 'Found textField:', textField);
 
     if (textField) {
       const prefix = 'use @agent-plan : ';
 
       if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
-        console.log('[BCC] Handling TEXTAREA/INPUT');
-        console.log('[BCC] Current value:', textField.value);
-        // For textarea/input elements
         if (!textField.value.startsWith(prefix)) {
           textField.value = prefix + textField.value;
           textField.focus();
           textField.setSelectionRange(textField.value.length, textField.value.length);
-          // Trigger input event for React
           textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log('[BCC] Added prefix, new value:', textField.value);
-        } else {
-          console.log('[BCC] Prefix already present');
+          console.log(LOG_PREFIX, 'Added prefix, new value:', textField.value);
         }
       } else {
-        console.log('[BCC] Handling contenteditable');
-        // For contenteditable divs
         const currentText = textField.innerText || textField.textContent || '';
-        console.log('[BCC] Current text:', currentText);
         if (!currentText.startsWith(prefix)) {
           textField.focus();
-          // Clear and set new content
           textField.innerText = prefix + currentText;
-          // Move cursor to end
           const range = document.createRange();
           const sel = window.getSelection();
           range.selectNodeContents(textField);
           range.collapse(false);
           sel.removeAllRanges();
           sel.addRange(range);
-          // Trigger input event for React
           textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log('[BCC] Added prefix, new text:', textField.innerText);
-        } else {
-          console.log('[BCC] Prefix already present');
+          console.log(LOG_PREFIX, 'Added prefix, new text:', textField.innerText);
         }
       }
-    } else {
-      console.log('[BCC] No textField found!');
     }
   }
 
   function removePlanPrefix() {
-    console.log('[BCC] removePlanPrefix() called');
-    // Find the textarea/input field in Claude's interface
+    console.log(LOG_PREFIX, 'removePlanPrefix() called');
     const textField = document.querySelector('div[contenteditable="true"]') ||
                       document.querySelector('textarea') ||
                       document.querySelector('[data-placeholder]');
 
-    console.log('[BCC] Found textField:', textField);
-    console.log('[BCC] textField tagName:', textField?.tagName);
+    console.log(LOG_PREFIX, 'Found textField:', textField);
 
     if (textField) {
       const prefix = 'use @agent-plan : ';
 
       if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
-        console.log('[BCC] Handling TEXTAREA/INPUT');
-        console.log('[BCC] Current value:', textField.value);
-        // For textarea/input elements
         if (textField.value.startsWith(prefix)) {
           textField.value = textField.value.slice(prefix.length);
           textField.focus();
           textField.setSelectionRange(textField.value.length, textField.value.length);
-          // Trigger input event for React
           textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log('[BCC] Removed prefix, new value:', textField.value);
-        } else {
-          console.log('[BCC] No prefix to remove');
+          console.log(LOG_PREFIX, 'Removed prefix, new value:', textField.value);
         }
       } else {
-        console.log('[BCC] Handling contenteditable');
-        // For contenteditable divs
         const currentText = textField.innerText || textField.textContent || '';
-        console.log('[BCC] Current text:', currentText);
         if (currentText.startsWith(prefix)) {
           textField.focus();
-          // Remove prefix from content
           textField.innerText = currentText.slice(prefix.length);
-          // Move cursor to end
           const range = document.createRange();
           const sel = window.getSelection();
           range.selectNodeContents(textField);
           range.collapse(false);
           sel.removeAllRanges();
           sel.addRange(range);
-          // Trigger input event for React
           textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log('[BCC] Removed prefix, new text:', textField.innerText);
-        } else {
-          console.log('[BCC] No prefix to remove');
+          console.log(LOG_PREFIX, 'Removed prefix, new text:', textField.innerText);
         }
       }
-    } else {
-      console.log('[BCC] No textField found!');
     }
   }
 
   function findAndInjectModeButton() {
-    console.log('[BCC] findAndInjectModeButton() called');
+    console.log(LOG_PREFIX, 'findAndInjectModeButton() called');
 
-    // Look for the attachment/picture button area in Claude's interface
-    // Common selectors for the button area near the input
     const possibleContainers = [
-      // Look for button groups near the input
       'form button[aria-label*="ttach"]',
       'form button[aria-label*="mage"]',
       'form button[aria-label*="ile"]',
       '[data-testid*="attach"]',
       '[data-testid*="upload"]',
-      // Generic button near input
       'form > div button',
       '.flex button svg',
     ];
 
-    // Try to find the button row/container
     let targetButton = null;
     for (const selector of possibleContainers) {
       targetButton = document.querySelector(selector);
-      console.log('[BCC] Trying selector:', selector, '- Found:', targetButton);
+      console.log(LOG_PREFIX, 'Trying selector:', selector, '- Found:', targetButton);
       if (targetButton) break;
     }
 
-    // If no specific button found, try to find the input container
     let insertionPoint = null;
 
     if (targetButton) {
       insertionPoint = targetButton.closest('div');
-      console.log('[BCC] Found insertionPoint via targetButton:', insertionPoint);
+      console.log(LOG_PREFIX, 'Found insertionPoint via targetButton:', insertionPoint);
     } else {
-      // Fallback: find the form or input area
       const form = document.querySelector('form');
-      console.log('[BCC] Found form:', form);
+      console.log(LOG_PREFIX, 'Found form:', form);
       if (form) {
-        // Look for button containers within the form
         const buttonContainers = form.querySelectorAll('button');
-        console.log('[BCC] Found buttons in form:', buttonContainers.length);
+        console.log(LOG_PREFIX, 'Found buttons in form:', buttonContainers.length);
         if (buttonContainers.length > 0) {
-          // Find the first button's parent
           insertionPoint = buttonContainers[0].parentElement;
-          console.log('[BCC] Using first button parent as insertionPoint:', insertionPoint);
+          console.log(LOG_PREFIX, 'Using first button parent as insertionPoint:', insertionPoint);
         }
       }
     }
 
-    // Check if we already injected
     if (document.querySelector('.bcc-mode-container')) {
-      console.log('[BCC] Already injected, skipping');
+      console.log(LOG_PREFIX, 'Already injected, skipping');
       return;
     }
 
     if (insertionPoint) {
-      console.log('[BCC] Injecting into insertionPoint');
+      console.log(LOG_PREFIX, 'Injecting into insertionPoint');
       const modeContainer = createModeButton();
       insertionPoint.insertBefore(modeContainer, insertionPoint.firstChild);
-      console.log('[BCC] Injection complete');
-      console.log('[BCC] InsertionPoint innerHTML after inject:', insertionPoint.innerHTML);
+      console.log(LOG_PREFIX, 'Injection complete');
     } else {
-      // Ultimate fallback: create a floating button
       const form = document.querySelector('form') || document.querySelector('[contenteditable="true"]')?.closest('div');
-      console.log('[BCC] Fallback - form:', form);
+      console.log(LOG_PREFIX, 'Fallback - form:', form);
       if (form && !document.querySelector('.bcc-mode-container')) {
-        console.log('[BCC] Using floating fallback');
+        console.log(LOG_PREFIX, 'Using floating fallback');
         const modeContainer = createModeButton();
         modeContainer.classList.add('bcc-floating');
         form.style.position = 'relative';
         form.insertBefore(modeContainer, form.firstChild);
-        console.log('[BCC] Floating injection complete');
+        console.log(LOG_PREFIX, 'Floating injection complete');
       } else {
-        console.log('[BCC] No injection point found!');
+        console.log(LOG_PREFIX, 'No injection point found!');
       }
     }
+  }
+
+  // ============================================
+  // Show Actual Model Feature
+  // ============================================
+
+  const MODEL_NAMES = {
+    'opus': 'Opus 4.5',
+    'sonnet': 'Sonnet 4.5',
+    'haiku': 'Haiku 4.5'
+  };
+
+  let lastKnownModel = null;
+  let modelButtonObserver = null;
+
+  function parseModelId(modelId, quiet = false) {
+    if (!modelId) return null;
+    const modelIdLower = modelId.toLowerCase();
+    for (const [key, name] of Object.entries(MODEL_NAMES)) {
+      if (modelIdLower.includes(key)) {
+        if (!quiet) {
+          console.log(LOG_PREFIX, `Parsed model ID "${modelId}" -> "${name}"`);
+        }
+        return name;
+      }
+    }
+    return null;
+  }
+
+  function findModelSelectorButton() {
+    const moreOptionsButton = document.querySelector('button[aria-label="More options"]');
+    if (moreOptionsButton) {
+      return moreOptionsButton;
+    }
+
+    const buttons = document.querySelectorAll('button');
+    for (const button of buttons) {
+      const text = button.textContent.trim();
+      const ariaLabel = button.getAttribute('aria-label');
+
+      if (ariaLabel && (ariaLabel.toLowerCase().includes('model') || ariaLabel.toLowerCase().includes('options'))) {
+        return button;
+      }
+
+      if (text === '...' || text === '\u2026' || text === '\u22EF') {
+        return button;
+      }
+    }
+
+    return null;
+  }
+
+  function getSelectedModel() {
+    try {
+      const stickyModel = localStorage.getItem('ccr-sticky-model-selector');
+      if (stickyModel) {
+        const parsed = parseModelId(stickyModel, true);
+        if (parsed) return parsed;
+      }
+    } catch (e) {}
+
+    try {
+      const defaultModel = localStorage.getItem('default-model');
+      if (defaultModel) {
+        const parsed = parseModelId(defaultModel, true);
+        if (parsed) return parsed;
+      }
+    } catch (e) {}
+
+    const checkedItem = document.querySelector('[role="menuitemradio"][aria-checked="true"]');
+    if (checkedItem) {
+      const modelText = checkedItem.textContent;
+      for (const [key, name] of Object.entries(MODEL_NAMES)) {
+        if (modelText.toLowerCase().includes(key)) {
+          return name;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  function updateModelDisplay(button, modelName) {
+    if (!button || !modelName) return;
+
+    const currentText = button.textContent.trim();
+    if (currentText === modelName) return;
+
+    console.log(LOG_PREFIX, 'Updating button to show:', modelName);
+    button.innerHTML = `<span style="font-size: 12px; font-weight: 500;">${modelName}</span>`;
+    button.style.minWidth = 'auto';
+    button.style.paddingLeft = '8px';
+    button.style.paddingRight = '8px';
+
+    watchModelButtonForChanges(button, modelName);
+  }
+
+  function watchModelButtonForChanges(button, modelName) {
+    if (modelButtonObserver) {
+      modelButtonObserver.disconnect();
+    }
+
+    modelButtonObserver = new MutationObserver((mutations) => {
+      const currentText = button.textContent.trim();
+      if (currentText !== modelName && currentText !== lastKnownModel) {
+        const currentModel = parseModelId(localStorage.getItem('default-model'), true);
+        if (currentModel) {
+          button.innerHTML = `<span style="font-size: 12px; font-weight: 500;">${currentModel}</span>`;
+          button.style.minWidth = 'auto';
+          button.style.paddingLeft = '8px';
+          button.style.paddingRight = '8px';
+        }
+      }
+    });
+
+    modelButtonObserver.observe(button, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+  }
+
+  function updateModelSelector() {
+    const button = findModelSelectorButton();
+    const model = getSelectedModel();
+
+    if (button && model) {
+      updateModelDisplay(button, model);
+    }
+  }
+
+  function watchLocalStorage() {
+    const originalSetItem = localStorage.setItem.bind(localStorage);
+    localStorage.setItem = function(key, value) {
+      originalSetItem(key, value);
+
+      if (key === 'ccr-sticky-model-selector' || key === 'default-model') {
+        console.log(LOG_PREFIX, `localStorage ${key} changed to:`, value);
+        const newModel = parseModelId(value);
+        if (newModel && newModel !== lastKnownModel) {
+          lastKnownModel = newModel;
+          setTimeout(updateModelSelector, 100);
+          setTimeout(updateModelSelector, 300);
+        }
+      }
+    };
+  }
+
+  function pollForModelChanges() {
+    setInterval(() => {
+      try {
+        const stickyModel = localStorage.getItem('ccr-sticky-model-selector');
+        const defaultModel = localStorage.getItem('default-model');
+        const currentModelId = stickyModel || defaultModel;
+        const parsedModel = parseModelId(currentModelId, true);
+
+        if (parsedModel) {
+          if (parsedModel !== lastKnownModel) {
+            lastKnownModel = parsedModel;
+            updateModelSelector();
+          } else {
+            const button = document.querySelector('button[aria-label="More options"]');
+            if (button && button.textContent.trim() !== parsedModel) {
+              updateModelDisplay(button, parsedModel);
+            }
+          }
+        }
+      } catch (e) {}
+    }, 250);
   }
 
   // ============================================
@@ -327,39 +449,35 @@
   // ============================================
 
   function addBetterLabel() {
-    console.log('[BCC] addBetterLabel() called');
+    console.log(LOG_PREFIX, 'addBetterLabel() called');
 
-    // Find the anchor element that links to /code (the Claude Code header link)
     const claudeCodeLink = document.querySelector('a[href="/code"]');
 
     if (!claudeCodeLink) {
-      console.log('[BCC] No a[href="/code"] found yet');
+      console.log(LOG_PREFIX, 'No a[href="/code"] found yet');
       return false;
     }
 
-    console.log('[BCC] Found Claude Code link:', {
+    console.log(LOG_PREFIX, 'Found Claude Code link:', {
       tagName: claudeCodeLink.tagName,
       className: claudeCodeLink.className,
       href: claudeCodeLink.href
     });
 
-    // Check if we already added the Better label
     const parent = claudeCodeLink.parentElement;
     if (parent?.querySelector('.better-label')) {
-      console.log('[BCC] Better label already exists in parent, skipping');
+      console.log(LOG_PREFIX, 'Better label already exists in parent, skipping');
       return true;
     }
     if (claudeCodeLink.nextElementSibling?.classList?.contains('better-label')) {
-      console.log('[BCC] Better label already exists as sibling, skipping');
+      console.log(LOG_PREFIX, 'Better label already exists as sibling, skipping');
       return true;
     }
 
-    // Create the Better label element
     const betterLabel = document.createElement('span');
     betterLabel.textContent = 'Better';
     betterLabel.className = 'better-label';
 
-    // Style to match the Research preview label appearance
     betterLabel.style.cssText = `
       display: inline-flex;
       align-items: center;
@@ -374,10 +492,9 @@
       border-radius: 9999px;
     `;
 
-    // Insert after the Claude Code link
-    console.log('[BCC] Inserting Better label');
+    console.log(LOG_PREFIX, 'Inserting Better label');
     claudeCodeLink.parentNode.insertBefore(betterLabel, claudeCodeLink.nextSibling);
-    console.log('[BCC] Better label inserted successfully');
+    console.log(LOG_PREFIX, 'Better label inserted successfully');
 
     return true;
   }
@@ -386,7 +503,6 @@
   // Initialization
   // ============================================
 
-  // Debounce for Better Label
   let debounceTimer = null;
   function debouncedAddBetterLabel() {
     if (debounceTimer) clearTimeout(debounceTimer);
@@ -396,27 +512,37 @@
   }
 
   function init() {
-    console.log('[BCC] init() called, readyState:', document.readyState);
+    console.log(LOG_PREFIX, 'init() called, readyState:', document.readyState);
+
+    // Set up model display watchers
+    watchLocalStorage();
+    pollForModelChanges();
+
+    // Store initial model
+    lastKnownModel = getSelectedModel();
+    console.log(LOG_PREFIX, 'Initial model:', lastKnownModel);
 
     // Wait for page to load
     if (document.readyState === 'loading') {
-      console.log('[BCC] Document still loading, adding DOMContentLoaded listener');
+      console.log(LOG_PREFIX, 'Document still loading, adding DOMContentLoaded listener');
       document.addEventListener('DOMContentLoaded', () => {
-        console.log('[BCC] DOMContentLoaded fired');
+        console.log(LOG_PREFIX, 'DOMContentLoaded fired');
         setTimeout(findAndInjectModeButton, 1000);
         addBetterLabel();
+        updateModelSelector();
       });
     } else {
-      console.log('[BCC] Document already loaded, scheduling injection');
+      console.log(LOG_PREFIX, 'Document already loaded, scheduling injection');
       setTimeout(findAndInjectModeButton, 1000);
       addBetterLabel();
+      updateModelSelector();
     }
 
     // Watch for DOM changes (SPA navigation)
     const observer = new MutationObserver((mutations) => {
       // Re-inject mode button if missing
       if (!document.querySelector('.bcc-mode-container')) {
-        console.log('[BCC] MutationObserver: mode container missing, re-injecting');
+        console.log(LOG_PREFIX, 'MutationObserver: mode container missing, re-injecting');
         findAndInjectModeButton();
       }
       // Re-add better label if missing
@@ -427,7 +553,7 @@
       childList: true,
       subtree: true
     });
-    console.log('[BCC] MutationObserver started');
+    console.log(LOG_PREFIX, 'MutationObserver started');
   }
 
   init();
