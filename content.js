@@ -1360,12 +1360,16 @@
       console.log(LOG_PREFIX, '>>> Setting blocked state (amber color)');
       button.style.color = '#f59e0b';
       button.title = 'Marked as blocked - click to unblock';
+      // Add always-visible blocked indicator to the session row
+      addBlockedIndicator(sessionEl);
       console.log(LOG_PREFIX, '>>> Calling showBlockedFeedback...');
       showBlockedFeedback(`Session "${sessionData?.title}" marked as blocked`, true);
     } else {
       console.log(LOG_PREFIX, '>>> Clearing blocked state');
       button.style.color = '';
       button.title = 'Mark as blocked';
+      // Remove the blocked indicator
+      removeBlockedIndicator(sessionEl);
       console.log(LOG_PREFIX, '>>> Calling showBlockedFeedback...');
       showBlockedFeedback(`Session "${sessionData?.title}" unblocked`, false);
     }
@@ -1429,6 +1433,51 @@
       feedback.remove();
       console.log(LOG_PREFIX, '>>> Feedback element removed');
     }, 2000);
+  }
+
+  /**
+   * Add an always-visible blocked indicator to a session row
+   * @param {Element} sessionEl - The session element
+   */
+  function addBlockedIndicator(sessionEl) {
+    if (!sessionEl) return;
+
+    // Check if indicator already exists
+    if (sessionEl.querySelector('.bcc-blocked-indicator')) {
+      return;
+    }
+
+    // Find the title span to add indicator after
+    const titleSpan = sessionEl.querySelector('span.font-base.text-text-100.leading-relaxed');
+    if (!titleSpan) {
+      console.log(LOG_PREFIX, '>>> Title span not found for blocked indicator');
+      return;
+    }
+
+    // Create the indicator
+    const indicator = document.createElement('span');
+    indicator.className = 'bcc-blocked-indicator';
+    indicator.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 256 256" style="vertical-align: middle; margin-left: 6px;"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"></path></svg>`;
+    indicator.style.cssText = 'color: #f59e0b; display: inline-flex; align-items: center; flex-shrink: 0;';
+    indicator.title = 'Session is blocked';
+
+    // Insert after the title text
+    titleSpan.parentNode.insertBefore(indicator, titleSpan.nextSibling);
+    console.log(LOG_PREFIX, '>>> Added blocked indicator to session');
+  }
+
+  /**
+   * Remove the blocked indicator from a session row
+   * @param {Element} sessionEl - The session element
+   */
+  function removeBlockedIndicator(sessionEl) {
+    if (!sessionEl) return;
+
+    const indicator = sessionEl.querySelector('.bcc-blocked-indicator');
+    if (indicator) {
+      indicator.remove();
+      console.log(LOG_PREFIX, '>>> Removed blocked indicator from session');
+    }
   }
 
   /**
