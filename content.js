@@ -291,77 +291,170 @@
     }
   }
 
+  // Find the input field using multiple selector strategies
+  function findInputField() {
+    // Try multiple selectors in order of specificity
+    const selectors = [
+      // ProseMirror editor (common in modern apps)
+      '.ProseMirror[contenteditable="true"]',
+      // Lexical editor
+      '[data-lexical-editor="true"]',
+      // Generic contenteditable with common Claude-like classes
+      'div[contenteditable="true"].focus\\:outline-none',
+      'div[contenteditable="true"][role="textbox"]',
+      // Input area by aria label
+      '[aria-label*="Message"]',
+      '[aria-label*="message"]',
+      '[aria-label*="input"]',
+      // Generic contenteditable
+      'div[contenteditable="true"]',
+      // Textarea fallback
+      'textarea',
+      // Data placeholder attribute
+      '[data-placeholder]'
+    ];
+
+    for (const selector of selectors) {
+      try {
+        const field = document.querySelector(selector);
+        if (field) {
+          console.log(LOG_PREFIX, `Found input field with selector: ${selector}`);
+          return field;
+        }
+      } catch (e) {
+        // Some selectors might be invalid, continue to next
+      }
+    }
+
+    // Last resort: find by looking inside forms
+    const form = document.querySelector('form');
+    if (form) {
+      const contentEditable = form.querySelector('[contenteditable="true"]');
+      if (contentEditable) {
+        console.log(LOG_PREFIX, 'Found input field inside form');
+        return contentEditable;
+      }
+    }
+
+    return null;
+  }
+
+  // Properly set text in various input types with React/editor compatibility
+  function setInputText(textField, newText) {
+    if (!textField) return false;
+
+    textField.focus();
+
+    if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
+      // For native inputs, use native value setter to bypass React
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype, 'value'
+      )?.set || Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype, 'value'
+      )?.set;
+
+      if (nativeInputValueSetter) {
+        nativeInputValueSetter.call(textField, newText);
+      } else {
+        textField.value = newText;
+      }
+
+      textField.setSelectionRange(newText.length, newText.length);
+    } else {
+      // For contenteditable elements (ProseMirror, Lexical, etc.)
+      // Clear and re-type using execCommand for better compatibility
+      const sel = window.getSelection();
+      const range = document.createRange();
+
+      // Select all content
+      range.selectNodeContents(textField);
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      // Delete existing content and insert new text
+      document.execCommand('delete', false, null);
+      document.execCommand('insertText', false, newText);
+
+      // Move cursor to end
+      range.selectNodeContents(textField);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    // Dispatch multiple event types for maximum compatibility
+    const inputEvent = new InputEvent('input', {
+      bubbles: true,
+      cancelable: true,
+      inputType: 'insertText',
+      data: newText
+    });
+    textField.dispatchEvent(inputEvent);
+
+    // Also dispatch change event
+    textField.dispatchEvent(new Event('change', { bubbles: true }));
+
+    return true;
+  }
+
+  // Get current text from various input types
+  function getInputText(textField) {
+    if (!textField) return '';
+
+    if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
+      return textField.value || '';
+    } else {
+      return textField.innerText || textField.textContent || '';
+    }
+  }
+
   function addPlanPrefix() {
     console.log(LOG_PREFIX, 'addPlanPrefix() called');
-    const textField = document.querySelector('div[contenteditable="true"]') ||
-                      document.querySelector('textarea') ||
-                      document.querySelector('[data-placeholder]');
+    const textField = findInputField();
 
     console.log(LOG_PREFIX, 'Found textField:', textField);
 
     if (textField) {
       const prefix = 'use @agent-plan : ';
+      const currentText = getInputText(textField);
 
-      if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
-        if (!textField.value.startsWith(prefix)) {
-          textField.value = prefix + textField.value;
-          textField.focus();
-          textField.setSelectionRange(textField.value.length, textField.value.length);
-          textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log(LOG_PREFIX, 'Added prefix, new value:', textField.value);
+      if (!currentText.startsWith(prefix)) {
+        const newText = prefix + currentText;
+        if (setInputText(textField, newText)) {
+          console.log(LOG_PREFIX, 'Added prefix, new text:', newText);
+        } else {
+          console.log(LOG_PREFIX, 'Failed to add prefix');
         }
       } else {
-        const currentText = textField.innerText || textField.textContent || '';
-        if (!currentText.startsWith(prefix)) {
-          textField.focus();
-          textField.innerText = prefix + currentText;
-          const range = document.createRange();
-          const sel = window.getSelection();
-          range.selectNodeContents(textField);
-          range.collapse(false);
-          sel.removeAllRanges();
-          sel.addRange(range);
-          textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log(LOG_PREFIX, 'Added prefix, new text:', textField.innerText);
-        }
+        console.log(LOG_PREFIX, 'Prefix already present');
       }
+    } else {
+      console.log(LOG_PREFIX, 'No text field found!');
     }
   }
 
   function removePlanPrefix() {
     console.log(LOG_PREFIX, 'removePlanPrefix() called');
-    const textField = document.querySelector('div[contenteditable="true"]') ||
-                      document.querySelector('textarea') ||
-                      document.querySelector('[data-placeholder]');
+    const textField = findInputField();
 
     console.log(LOG_PREFIX, 'Found textField:', textField);
 
     if (textField) {
       const prefix = 'use @agent-plan : ';
+      const currentText = getInputText(textField);
 
-      if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
-        if (textField.value.startsWith(prefix)) {
-          textField.value = textField.value.slice(prefix.length);
-          textField.focus();
-          textField.setSelectionRange(textField.value.length, textField.value.length);
-          textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log(LOG_PREFIX, 'Removed prefix, new value:', textField.value);
+      if (currentText.startsWith(prefix)) {
+        const newText = currentText.slice(prefix.length);
+        if (setInputText(textField, newText)) {
+          console.log(LOG_PREFIX, 'Removed prefix, new text:', newText);
+        } else {
+          console.log(LOG_PREFIX, 'Failed to remove prefix');
         }
       } else {
-        const currentText = textField.innerText || textField.textContent || '';
-        if (currentText.startsWith(prefix)) {
-          textField.focus();
-          textField.innerText = currentText.slice(prefix.length);
-          const range = document.createRange();
-          const sel = window.getSelection();
-          range.selectNodeContents(textField);
-          range.collapse(false);
-          sel.removeAllRanges();
-          sel.addRange(range);
-          textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log(LOG_PREFIX, 'Removed prefix, new text:', textField.innerText);
-        }
+        console.log(LOG_PREFIX, 'Prefix not present');
       }
+    } else {
+      console.log(LOG_PREFIX, 'No text field found!');
     }
   }
 
