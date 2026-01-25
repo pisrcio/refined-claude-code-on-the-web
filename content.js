@@ -4,6 +4,10 @@
 // 2. Shows actual model name instead of "..." button
 // 3. Adds "Better" label next to Claude Code header
 
+// IMMEDIATE LOG - if you don't see this, the script isn't loading at all
+console.log('🚀🚀🚀 [BetterClaude] SCRIPT FILE LOADED 🚀🚀🚀');
+console.log('🚀🚀🚀 [BetterClaude] URL:', window.location.href, '🚀🚀🚀');
+
 (function() {
   'use strict';
 
