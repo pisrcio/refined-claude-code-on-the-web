@@ -14,6 +14,7 @@
     // Create button
     modeButton = document.createElement('button');
     modeButton.className = 'bcc-mode-button';
+    modeButton.type = 'button'; // Prevent form submission
     modeButton.innerHTML = `
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="3"></circle>
@@ -44,7 +45,11 @@
     `;
 
     dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
-      option.addEventListener('click', () => selectMode(option.dataset.mode));
+      option.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        selectMode(option.dataset.mode);
+      });
     });
 
     container.appendChild(modeButton);
@@ -81,9 +86,11 @@
 
     closeDropdown();
 
-    // If Plan mode selected, add prefix to text field
+    // Handle mode change
     if (mode === 'Plan') {
       addPlanPrefix();
+    } else if (mode === 'Agent') {
+      removePlanPrefix();
     }
   }
 
@@ -112,6 +119,45 @@
           textField.focus();
           // Clear and set new content
           textField.innerText = prefix + currentText;
+          // Move cursor to end
+          const range = document.createRange();
+          const sel = window.getSelection();
+          range.selectNodeContents(textField);
+          range.collapse(false);
+          sel.removeAllRanges();
+          sel.addRange(range);
+          // Trigger input event for React
+          textField.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }
+    }
+  }
+
+  function removePlanPrefix() {
+    // Find the textarea/input field in Claude's interface
+    const textField = document.querySelector('div[contenteditable="true"]') ||
+                      document.querySelector('textarea') ||
+                      document.querySelector('[data-placeholder]');
+
+    if (textField) {
+      const prefix = 'use @agent-plan : ';
+
+      if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
+        // For textarea/input elements
+        if (textField.value.startsWith(prefix)) {
+          textField.value = textField.value.slice(prefix.length);
+          textField.focus();
+          textField.setSelectionRange(textField.value.length, textField.value.length);
+          // Trigger input event for React
+          textField.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      } else {
+        // For contenteditable divs
+        const currentText = textField.innerText || textField.textContent || '';
+        if (currentText.startsWith(prefix)) {
+          textField.focus();
+          // Remove prefix from content
+          textField.innerText = currentText.slice(prefix.length);
           // Move cursor to end
           const range = document.createRange();
           const sel = window.getSelection();
