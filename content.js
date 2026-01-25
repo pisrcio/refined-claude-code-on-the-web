@@ -1,18 +1,19 @@
 // Better Claude Code on the Web - Content Script
-// Adds a "Better" label next to the "Research preview" label
+// Adds a "Better" label next to the "Claude Code" label
 
 function addBetterLabel() {
-  // Find the "Research preview" label by searching for elements containing that text
+  // Find the "Claude Code" label by searching for elements containing that text
   const allElements = document.querySelectorAll('*');
 
   for (const element of allElements) {
-    // Check if this element directly contains "Research preview" text
+    // Check if this element directly contains "Claude Code" text
     if (element.childNodes.length === 1 &&
         element.childNodes[0].nodeType === Node.TEXT_NODE &&
-        element.textContent.trim() === 'Research preview') {
+        element.textContent.trim() === 'Claude Code') {
 
       // Check if we already added the Better label
-      if (element.nextElementSibling?.classList.contains('better-label')) {
+      const parent = element.parentElement;
+      if (parent?.querySelector('.better-label')) {
         continue;
       }
 
@@ -21,23 +22,22 @@ function addBetterLabel() {
       betterLabel.textContent = 'Better';
       betterLabel.className = 'better-label';
 
-      // Copy styles from the Research preview label to match appearance
-      const computedStyle = window.getComputedStyle(element);
+      // Style to match the Research preview label appearance
       betterLabel.style.cssText = `
         display: inline-flex;
         align-items: center;
-        padding: ${computedStyle.padding};
+        padding: 2px 8px;
         margin-left: 8px;
-        font-size: ${computedStyle.fontSize};
-        font-family: ${computedStyle.fontFamily};
-        font-weight: ${computedStyle.fontWeight};
-        line-height: ${computedStyle.lineHeight};
+        font-size: 12px;
+        font-family: inherit;
+        font-weight: 500;
+        line-height: 1.25;
         color: #059669;
         background-color: #d1fae5;
-        border-radius: ${computedStyle.borderRadius || '9999px'};
+        border-radius: 9999px;
       `;
 
-      // Insert after the Research preview label
+      // Insert after the Claude Code element's parent container
       element.parentNode.insertBefore(betterLabel, element.nextSibling);
     }
   }
