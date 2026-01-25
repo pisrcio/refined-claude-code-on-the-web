@@ -87,15 +87,15 @@
   function getSelectedModel() {
     console.log(LOG_PREFIX, '🔍 Looking for selected model...');
 
-    // Method 1 (PRIMARY): Check localStorage for 'default-model' key
-    // This is where Claude Code stores the selected model (e.g., "claude-opus-4-5-20251101")
+    // Method 1 (PRIMARY): Check localStorage for 'ccr-sticky-model-selector' key
+    // This is the ACTUAL selected model for the current session
     try {
-      const defaultModel = localStorage.getItem('default-model');
-      console.log(LOG_PREFIX, 'Method 1 - default-model from localStorage:', defaultModel);
-      if (defaultModel) {
-        const parsed = parseModelId(defaultModel);
+      const stickyModel = localStorage.getItem('ccr-sticky-model-selector');
+      console.log(LOG_PREFIX, 'Method 1 - ccr-sticky-model-selector from localStorage:', stickyModel);
+      if (stickyModel) {
+        const parsed = parseModelId(stickyModel);
         if (parsed) {
-          console.log(LOG_PREFIX, '✅ Found model via Method 1 (default-model):', parsed);
+          console.log(LOG_PREFIX, '✅ Found model via Method 1 (ccr-sticky-model-selector):', parsed);
           return parsed;
         }
       }
@@ -103,22 +103,37 @@
       console.log(LOG_PREFIX, 'localStorage error:', e);
     }
 
-    // Method 2: Look for a checked/selected item in a model dropdown
+    // Method 2: Fallback to 'default-model' key (used when no sticky selection)
+    try {
+      const defaultModel = localStorage.getItem('default-model');
+      console.log(LOG_PREFIX, 'Method 2 - default-model from localStorage:', defaultModel);
+      if (defaultModel) {
+        const parsed = parseModelId(defaultModel);
+        if (parsed) {
+          console.log(LOG_PREFIX, '✅ Found model via Method 2 (default-model):', parsed);
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.log(LOG_PREFIX, 'localStorage error:', e);
+    }
+
+    // Method 3: Look for a checked/selected item in a model dropdown
     const checkedItem = document.querySelector('[role="menuitemradio"][aria-checked="true"]');
-    console.log(LOG_PREFIX, 'Method 2 - menuitemradio checked:', checkedItem?.textContent);
+    console.log(LOG_PREFIX, 'Method 3 - menuitemradio checked:', checkedItem?.textContent);
     if (checkedItem) {
       const modelText = checkedItem.textContent;
       for (const [key, name] of Object.entries(MODEL_NAMES)) {
         if (modelText.toLowerCase().includes(key)) {
-          console.log(LOG_PREFIX, '✅ Found model via Method 2:', name);
+          console.log(LOG_PREFIX, '✅ Found model via Method 3:', name);
           return name;
         }
       }
     }
 
-    // Method 3: Look for checkmark icon next to model name in dropdown
+    // Method 4: Look for checkmark icon next to model name in dropdown
     const menuItems = document.querySelectorAll('[role="menuitem"], [role="menuitemradio"], [role="option"]');
-    console.log(LOG_PREFIX, `Method 3 - Found ${menuItems.length} menu items`);
+    console.log(LOG_PREFIX, `Method 4 - Found ${menuItems.length} menu items`);
     for (const item of menuItems) {
       // Check for SVG checkmark (the selected model has an SVG with a checkmark path)
       const svg = item.querySelector('svg');
@@ -131,21 +146,21 @@
         const text = item.textContent.toLowerCase();
         for (const [key, name] of Object.entries(MODEL_NAMES)) {
           if (text.includes(key)) {
-            console.log(LOG_PREFIX, '✅ Found model via Method 3 (checkmark):', name);
+            console.log(LOG_PREFIX, '✅ Found model via Method 4 (checkmark):', name);
             return name;
           }
         }
       }
     }
 
-    // Method 4: Check other localStorage keys
+    // Method 5: Check other localStorage keys
     try {
-      console.log(LOG_PREFIX, 'Method 4 - Checking other localStorage keys...');
+      console.log(LOG_PREFIX, 'Method 5 - Checking other localStorage keys...');
       const stored = localStorage.getItem('selectedModel') || localStorage.getItem('model');
       if (stored) {
         const parsed = parseModelId(stored);
         if (parsed) {
-          console.log(LOG_PREFIX, '✅ Found model via Method 4:', parsed);
+          console.log(LOG_PREFIX, '✅ Found model via Method 5:', parsed);
           return parsed;
         }
       }
@@ -399,14 +414,16 @@
     localStorage.setItem = function(key, value) {
       originalSetItem(key, value);
 
-      // Check if model was changed
-      if (key === 'default-model') {
-        console.log(LOG_PREFIX, '🔄 localStorage default-model changed to:', value);
+      // Check if model was changed - watch both keys
+      if (key === 'ccr-sticky-model-selector' || key === 'default-model') {
+        console.log(LOG_PREFIX, `🔄 localStorage ${key} changed to:`, value);
         const newModel = parseModelId(value);
         if (newModel && newModel !== lastKnownModel) {
           console.log(LOG_PREFIX, '✅ Model changed! Updating display...');
           lastKnownModel = newModel;
           setTimeout(updateModelSelector, 100);
+          setTimeout(updateModelSelector, 300);
+          setTimeout(updateModelSelector, 500);
         }
       }
     };
@@ -472,7 +489,10 @@
 
     setInterval(() => {
       try {
-        const currentModelId = localStorage.getItem('default-model');
+        // Check ccr-sticky-model-selector first (per-session), then fall back to default-model
+        const stickyModel = localStorage.getItem('ccr-sticky-model-selector');
+        const defaultModel = localStorage.getItem('default-model');
+        const currentModelId = stickyModel || defaultModel;
         const parsedModel = parseModelId(currentModelId, true); // quiet mode
 
         if (parsedModel) {
