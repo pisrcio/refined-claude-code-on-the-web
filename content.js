@@ -1146,6 +1146,8 @@
       const currentProject = getCurrentProjectName();
 
       console.log(LOG_PREFIX, `Detected project name: "${currentProject}"`);
+      console.log(LOG_PREFIX, `Full currentSettings:`, JSON.stringify(currentSettings));
+      console.log(LOG_PREFIX, `projectMainBranch:`, JSON.stringify(projectMainBranch));
       console.log(LOG_PREFIX, `Configured projects:`, Object.keys(projectMainBranch));
 
       if (currentProject) {
