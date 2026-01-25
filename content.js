@@ -16,17 +16,24 @@
     'haiku': 'Haiku 4.5'
   };
 
+  // Track the last known model to detect changes
+  let lastKnownModel = null;
+
   // Parse model ID from localStorage format (e.g., "claude-opus-4-5-20251101" -> "Opus 4.5")
-  function parseModelId(modelId) {
+  function parseModelId(modelId, quiet = false) {
     if (!modelId) return null;
     const modelIdLower = modelId.toLowerCase();
     for (const [key, name] of Object.entries(MODEL_NAMES)) {
       if (modelIdLower.includes(key)) {
-        console.log(LOG_PREFIX, `✅ Parsed model ID "${modelId}" -> "${name}"`);
+        if (!quiet) {
+          console.log(LOG_PREFIX, `✅ Parsed model ID "${modelId}" -> "${name}"`);
+        }
         return name;
       }
     }
-    console.log(LOG_PREFIX, `❌ Could not parse model ID: ${modelId}`);
+    if (!quiet) {
+      console.log(LOG_PREFIX, `❌ Could not parse model ID: ${modelId}`);
+    }
     return null;
   }
 
@@ -338,6 +345,77 @@
     updateModelSelector();
   }
 
+  // Watch for localStorage changes (intercept setItem)
+  function watchLocalStorage() {
+    console.log(LOG_PREFIX, '👀 Setting up localStorage watcher...');
+
+    const originalSetItem = localStorage.setItem.bind(localStorage);
+    localStorage.setItem = function(key, value) {
+      originalSetItem(key, value);
+
+      // Check if model was changed
+      if (key === 'default-model') {
+        console.log(LOG_PREFIX, '🔄 localStorage default-model changed to:', value);
+        const newModel = parseModelId(value);
+        if (newModel && newModel !== lastKnownModel) {
+          console.log(LOG_PREFIX, '✅ Model changed! Updating display...');
+          lastKnownModel = newModel;
+          setTimeout(updateModelSelector, 100);
+        }
+      }
+    };
+
+    console.log(LOG_PREFIX, '✅ localStorage watcher active');
+  }
+
+  // Watch for clicks on model menu items
+  function watchForModelClicks() {
+    console.log(LOG_PREFIX, '👀 Setting up click watcher for model selection...');
+
+    document.addEventListener('click', (event) => {
+      const target = event.target;
+
+      // Check if clicked element or its parents contain model-related text
+      const clickedElement = target.closest('[role="menuitem"], [role="menuitemradio"], [role="option"], [data-testid*="model"]');
+      if (clickedElement) {
+        const text = clickedElement.textContent.toLowerCase();
+        for (const key of Object.keys(MODEL_NAMES)) {
+          if (text.includes(key)) {
+            console.log(LOG_PREFIX, `🖱️ Clicked on model option containing "${key}"`);
+            // Wait for the selection to be processed
+            setTimeout(updateModelSelector, 300);
+            setTimeout(updateModelSelector, 500);
+            break;
+          }
+        }
+      }
+    }, true);
+
+    console.log(LOG_PREFIX, '✅ Click watcher active');
+  }
+
+  // Poll localStorage for changes (fallback for /model command)
+  function pollForModelChanges() {
+    console.log(LOG_PREFIX, '👀 Setting up model change polling...');
+
+    setInterval(() => {
+      try {
+        const currentModel = localStorage.getItem('default-model');
+        const parsedModel = parseModelId(currentModel, true); // quiet mode
+
+        if (parsedModel && parsedModel !== lastKnownModel) {
+          console.log(LOG_PREFIX, `🔄 Model changed from "${lastKnownModel}" to "${parsedModel}"`);
+          lastKnownModel = parsedModel;
+          updateModelSelector();
+        }
+      } catch (e) {
+        // Ignore errors
+      }
+    }, 500); // Check every 500ms for responsive updates
+
+    console.log(LOG_PREFIX, '✅ Model change polling active');
+  }
+
   // Initialize
   function init() {
     console.log(LOG_PREFIX, '🎬 Initializing...');
@@ -345,17 +423,20 @@
     // Dump page structure for debugging
     dumpPageStructure();
 
+    // Set up watchers
+    watchLocalStorage();
+    watchForModelClicks();
+    pollForModelChanges();
+
     // Initial scan
     scanAndUpdate();
 
     // Watch for DOM changes
     watchForModelDropdown();
 
-    // Periodic check as fallback
-    setInterval(() => {
-      console.log(LOG_PREFIX, '⏰ Periodic scan...');
-      scanAndUpdate();
-    }, 5000);
+    // Store initial model
+    lastKnownModel = getSelectedModel();
+    console.log(LOG_PREFIX, 'Initial model:', lastKnownModel);
 
     console.log(LOG_PREFIX, '✅ Initialization complete');
   }
