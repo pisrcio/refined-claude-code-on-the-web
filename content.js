@@ -1140,10 +1140,13 @@
       return null;
     }
 
-    // Function to get main branch from settings (returns null if not configured)
+    // Function to get main branch from settings (returns 'main' as default)
     function getMainBranchFromSettings() {
       const projectMainBranch = currentSettings.projectMainBranch || {};
       const currentProject = getCurrentProjectName();
+
+      console.log(LOG_PREFIX, `Detected project name: "${currentProject}"`);
+      console.log(LOG_PREFIX, `Configured projects:`, Object.keys(projectMainBranch));
 
       if (currentProject) {
         // Try exact match first
@@ -1152,18 +1155,20 @@
           return projectMainBranch[currentProject];
         }
 
-        // Try partial match
+        // Try partial match (case-insensitive)
         for (const [projectName, branch] of Object.entries(projectMainBranch)) {
-          if (currentProject.includes(projectName) || projectName.includes(currentProject)) {
+          const projectLower = currentProject.toLowerCase();
+          const configLower = projectName.toLowerCase();
+          if (projectLower.includes(configLower) || configLower.includes(projectLower)) {
             console.log(LOG_PREFIX, `Found main branch via partial match "${projectName}": ${branch}`);
             return branch;
           }
         }
       }
 
-      // Return null if not configured (button won't show)
-      console.log(LOG_PREFIX, 'No project-specific main branch found, button will not show');
-      return null;
+      // Default to 'main' if no project-specific config found
+      console.log(LOG_PREFIX, 'No project-specific main branch found, using default "main"');
+      return 'main';
     }
 
     // Function to add the Merge Branch button
@@ -1183,14 +1188,8 @@
 
       const targetButton = pullBranchBtn;
 
-      // Get main branch from settings (returns null if not configured)
+      // Get main branch from settings (defaults to 'main')
       const mainBranch = getMainBranchFromSettings();
-
-      // Don't show button if main branch is not configured
-      if (!mainBranch) {
-        console.log(LOG_PREFIX, 'Main branch not configured for this project, skipping merge button');
-        return;
-      }
 
       console.log(LOG_PREFIX, `📋 Found target button and main branch: ${mainBranch}`);
 
