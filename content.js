@@ -961,68 +961,59 @@
   // Session Dot Feature
   // ============================================
 
-  // Track sessions that were running but haven't been viewed yet
+  // Track sessions: "running" = has spinner, "viewed" = user has seen the completed session
+  const RUNNING_SESSIONS_KEY = 'bcc-running-sessions';
   const VIEWED_SESSIONS_KEY = 'bcc-viewed-sessions';
-  const COMPLETED_SESSIONS_KEY = 'bcc-completed-sessions';
 
-  function getViewedSessions() {
+  function getStoredSessions(key) {
     try {
-      const data = localStorage.getItem(VIEWED_SESSIONS_KEY);
+      const data = localStorage.getItem(key);
       return data ? JSON.parse(data) : [];
     } catch (e) {
       return [];
     }
   }
 
-  function saveViewedSessions(sessions) {
+  function saveStoredSessions(key, sessions) {
     try {
-      localStorage.setItem(VIEWED_SESSIONS_KEY, JSON.stringify(sessions));
+      localStorage.setItem(key, JSON.stringify(sessions));
     } catch (e) {
-      console.log(LOG_PREFIX, 'Failed to save viewed sessions:', e);
+      console.log(LOG_PREFIX, 'Failed to save sessions:', e);
     }
   }
 
-  function getCompletedSessions() {
-    try {
-      const data = localStorage.getItem(COMPLETED_SESSIONS_KEY);
-      return data ? JSON.parse(data) : [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  function saveCompletedSessions(sessions) {
-    try {
-      localStorage.setItem(COMPLETED_SESSIONS_KEY, JSON.stringify(sessions));
-    } catch (e) {
-      console.log(LOG_PREFIX, 'Failed to save completed sessions:', e);
+  function markSessionAsRunning(sessionId) {
+    const running = getStoredSessions(RUNNING_SESSIONS_KEY);
+    if (!running.includes(sessionId)) {
+      running.push(sessionId);
+      saveStoredSessions(RUNNING_SESSIONS_KEY, running);
+      console.log(LOG_PREFIX, 'Marked session as running:', sessionId);
     }
   }
 
   function markSessionAsViewed(sessionId) {
-    const viewed = getViewedSessions();
+    // Add to viewed
+    const viewed = getStoredSessions(VIEWED_SESSIONS_KEY);
     if (!viewed.includes(sessionId)) {
       viewed.push(sessionId);
-      saveViewedSessions(viewed);
+      saveStoredSessions(VIEWED_SESSIONS_KEY, viewed);
       console.log(LOG_PREFIX, 'Marked session as viewed:', sessionId);
+    }
+    // Remove from running (it's been seen now)
+    const running = getStoredSessions(RUNNING_SESSIONS_KEY);
+    const idx = running.indexOf(sessionId);
+    if (idx > -1) {
+      running.splice(idx, 1);
+      saveStoredSessions(RUNNING_SESSIONS_KEY, running);
     }
   }
 
-  function markSessionAsCompleted(sessionId) {
-    const completed = getCompletedSessions();
-    if (!completed.includes(sessionId)) {
-      completed.push(sessionId);
-      saveCompletedSessions(completed);
-      console.log(LOG_PREFIX, 'Marked session as completed:', sessionId);
-    }
+  function wasSessionRunning(sessionId) {
+    return getStoredSessions(RUNNING_SESSIONS_KEY).includes(sessionId);
   }
 
   function isSessionViewed(sessionId) {
-    return getViewedSessions().includes(sessionId);
-  }
-
-  function isSessionCompleted(sessionId) {
-    return getCompletedSessions().includes(sessionId);
+    return getStoredSessions(VIEWED_SESSIONS_KEY).includes(sessionId);
   }
 
   // Extract session ID from a session link element
@@ -1054,9 +1045,6 @@
     return dot;
   }
 
-  // Track sessions with spinners (running sessions)
-  let runningSessions = new Set();
-
   function watchSessionDots() {
     console.log(LOG_PREFIX, '👀 Setting up session dot watcher...');
 
@@ -1081,31 +1069,19 @@
       const hasSpinner = !!spinnerContainer;
       const existingDot = sessionItem.querySelector('.bcc-session-dot');
 
-      // Track running sessions
       if (hasSpinner) {
-        if (!runningSessions.has(sessionId)) {
-          console.log(LOG_PREFIX, 'Session started running:', sessionId);
-          runningSessions.add(sessionId);
-        }
+        // Spinner is present - mark this session as running (persisted to localStorage)
+        markSessionAsRunning(sessionId);
         // Remove dot if present while spinner is active
         if (existingDot) {
           existingDot.remove();
         }
       } else {
-        // Session no longer has spinner
-        if (runningSessions.has(sessionId)) {
-          // This session was running and is now complete
-          console.log(LOG_PREFIX, 'Session completed:', sessionId);
-          runningSessions.delete(sessionId);
-          markSessionAsCompleted(sessionId);
-        }
-
-        // Add green dot if session is completed but not viewed
-        if (isSessionCompleted(sessionId) && !isSessionViewed(sessionId) && !existingDot) {
-          // Find the spinner container's parent to replace it
+        // No spinner - check if this session was previously running and not yet viewed
+        if (wasSessionRunning(sessionId) && !isSessionViewed(sessionId) && !existingDot) {
+          // Find the icon container to add the green dot
           const iconContainer = sessionItem.querySelector('.w-6.h-6.flex.items-center.justify-center');
           if (iconContainer) {
-            // Clear the container and add the green dot
             const dot = createGreenDot();
             iconContainer.innerHTML = '';
             iconContainer.appendChild(dot);
