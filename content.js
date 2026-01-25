@@ -1356,20 +1356,30 @@
     const isBlocked = button.classList.toggle('bcc-blocked-active');
     console.log(LOG_PREFIX, '>>> isBlocked after toggle:', isBlocked);
 
+    // Find the hover container that hides buttons (has opacity-0 class)
+    const hoverContainer = button.closest('.group-hover\\:opacity-100, [class*="group-hover:opacity"]');
+    console.log(LOG_PREFIX, '>>> Hover container:', hoverContainer);
+
     if (isBlocked) {
       console.log(LOG_PREFIX, '>>> Setting blocked state (amber color)');
       button.style.color = '#f59e0b';
       button.title = 'Marked as blocked - click to unblock';
-      // Add always-visible blocked indicator to the session row
-      addBlockedIndicator(sessionEl);
+      // Make the hover container always visible
+      if (hoverContainer) {
+        hoverContainer.style.cssText = 'opacity: 1 !important; visibility: visible !important;';
+        console.log(LOG_PREFIX, '>>> Set hover container to always visible');
+      }
       console.log(LOG_PREFIX, '>>> Calling showBlockedFeedback...');
       showBlockedFeedback(`Session "${sessionData?.title}" marked as blocked`, true);
     } else {
       console.log(LOG_PREFIX, '>>> Clearing blocked state');
       button.style.color = '';
       button.title = 'Mark as blocked';
-      // Remove the blocked indicator
-      removeBlockedIndicator(sessionEl);
+      // Reset the hover container to default behavior
+      if (hoverContainer) {
+        hoverContainer.style.cssText = '';
+        console.log(LOG_PREFIX, '>>> Reset hover container to default');
+      }
       console.log(LOG_PREFIX, '>>> Calling showBlockedFeedback...');
       showBlockedFeedback(`Session "${sessionData?.title}" unblocked`, false);
     }
