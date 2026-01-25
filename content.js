@@ -683,10 +683,14 @@
       console.log(LOG_PREFIX, 'Toggling all features:', newAllEnabled);
 
       await saveSettings({ allEnabled: newAllEnabled });
-      applySettings();
 
-      // Show feedback
-      showToggleFeedback(newAllEnabled ? 'Features enabled' : 'Features disabled');
+      // Show feedback then reload
+      showToggleFeedback(newAllEnabled ? 'Features enabled - Reloading...' : 'Features disabled - Reloading...');
+
+      // Reload the page after a short delay to show the feedback
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     });
 
     // Add hover effect

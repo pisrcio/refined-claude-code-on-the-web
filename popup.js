@@ -26,6 +26,18 @@ async function saveSettings(settings) {
   });
 }
 
+// Reload all Claude tabs
+async function reloadClaudeTabs() {
+  try {
+    const tabs = await chrome.tabs.query({ url: 'https://claude.ai/*' });
+    for (const tab of tabs) {
+      chrome.tabs.reload(tab.id);
+    }
+  } catch (e) {
+    console.error('Failed to reload tabs:', e);
+  }
+}
+
 // Update UI based on settings
 function updateUI(settings) {
   const allToggle = document.getElementById('allFeaturesToggle');
@@ -60,6 +72,7 @@ async function init() {
     newSettings.allEnabled = e.target.checked;
     await saveSettings(newSettings);
     updateUI(newSettings);
+    reloadClaudeTabs();
   });
 
   // Individual feature toggle handlers
@@ -70,6 +83,7 @@ async function init() {
       const newSettings = await loadSettings();
       newSettings[feature] = e.target.checked;
       await saveSettings(newSettings);
+      reloadClaudeTabs();
     });
   });
 }
