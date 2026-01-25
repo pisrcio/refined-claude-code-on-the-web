@@ -286,11 +286,11 @@
       console.log(LOG_PREFIX, 'Button rect values - top:', buttonRect.top, 'left:', buttonRect.left, 'width:', buttonRect.width, 'height:', buttonRect.height);
 
       // First, make dropdown visible but transparent to measure its height
-      dropdown.style.visibility = 'hidden';
-      dropdown.style.opacity = '0';
-      dropdown.style.display = 'block';
-      dropdown.style.left = buttonRect.left + 'px';
-      dropdown.style.top = '0px'; // Temporary position
+      dropdown.style.setProperty('visibility', 'hidden', 'important');
+      dropdown.style.setProperty('opacity', '0', 'important');
+      dropdown.style.setProperty('display', 'block', 'important');
+      dropdown.style.setProperty('left', buttonRect.left + 'px', 'important');
+      dropdown.style.setProperty('top', '0px', 'important'); // Temporary position
 
       // Force reflow to get accurate measurements
       void dropdown.offsetHeight;
@@ -303,11 +303,11 @@
       const finalLeft = buttonRect.left;
       console.log(LOG_PREFIX, 'Final position - top:', finalTop, 'left:', finalLeft);
 
-      dropdown.style.top = finalTop + 'px';
-      dropdown.style.left = finalLeft + 'px';
-      dropdown.style.opacity = '1';
-      dropdown.style.visibility = 'visible';
-      dropdown.style.transform = 'translateY(0)';
+      dropdown.style.setProperty('top', finalTop + 'px', 'important');
+      dropdown.style.setProperty('left', finalLeft + 'px', 'important');
+      dropdown.style.setProperty('opacity', '1', 'important');
+      dropdown.style.setProperty('visibility', 'visible', 'important');
+      dropdown.style.setProperty('transform', 'translateY(0)', 'important');
 
       console.log(LOG_PREFIX, 'Dropdown styles after update:');
       console.log(LOG_PREFIX, '  - display:', dropdown.style.display);
@@ -347,9 +347,9 @@
       console.log(LOG_PREFIX, 'Event type:', e.type);
     }
     console.log(LOG_PREFIX, 'Stack trace:', new Error().stack);
-    dropdown.style.opacity = '0';
-    dropdown.style.visibility = 'hidden';
-    dropdown.style.transform = 'translateY(4px)';
+    dropdown.style.setProperty('opacity', '0', 'important');
+    dropdown.style.setProperty('visibility', 'hidden', 'important');
+    dropdown.style.setProperty('transform', 'translateY(4px)', 'important');
     console.log(LOG_PREFIX, 'Dropdown hidden');
   }
 
