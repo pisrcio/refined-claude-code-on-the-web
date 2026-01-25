@@ -1444,6 +1444,19 @@
 
     console.log(LOG_PREFIX, '>>> SUCCESS: Added blocked button to session');
 
+    // Check if this session was previously blocked (restore state from storage)
+    const sessionData = getSessionData(sessionEl);
+    getBlockedReason(sessionData).then((reason) => {
+      if (reason) {
+        console.log(LOG_PREFIX, '>>> Found stored blocked reason, restoring blocked state');
+        // Mark as blocked without showing modal
+        blockedButton.classList.add('bcc-blocked-active');
+        blockedButton.style.color = '#f59e0b';
+        blockedButton.title = 'Marked as blocked - click to unblock';
+        addBlockedIndicator(sessionEl);
+      }
+    });
+
     // Add click handler
     blockedButton.addEventListener('click', (e) => {
       console.log(LOG_PREFIX, '>>> CLICK EVENT FIRED on blocked button!');
@@ -1460,6 +1473,292 @@
     });
 
     return blockedButton;
+  }
+
+  /**
+   * Get session ID for storage (based on title)
+   * @param {Object} sessionData - The session data object
+   * @returns {string} Session identifier
+   */
+  function getSessionStorageId(sessionData) {
+    // Use title as the session identifier
+    return `bcc-blocked-reason-${sessionData?.title?.replace(/[^a-zA-Z0-9-_]/g, '_')}`;
+  }
+
+  /**
+   * Save blocked reason message to storage
+   * @param {Object} sessionData - The session data object
+   * @param {string} message - The blocked reason message
+   */
+  function saveBlockedReason(sessionData, message) {
+    const storageKey = getSessionStorageId(sessionData);
+    if (typeof chrome !== 'undefined' && chrome.storage) {
+      const data = {};
+      data[storageKey] = message;
+      chrome.storage.sync.set(data, () => {
+        console.log(LOG_PREFIX, '>>> Saved blocked reason to chrome storage:', storageKey);
+      });
+    } else {
+      // Fallback to localStorage
+      localStorage.setItem(storageKey, message);
+      console.log(LOG_PREFIX, '>>> Saved blocked reason to localStorage:', storageKey);
+    }
+  }
+
+  /**
+   * Get blocked reason message from storage
+   * @param {Object} sessionData - The session data object
+   * @returns {Promise<string|null>} The blocked reason message or null
+   */
+  function getBlockedReason(sessionData) {
+    return new Promise((resolve) => {
+      const storageKey = getSessionStorageId(sessionData);
+
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        chrome.storage.sync.get([storageKey], (result) => {
+          if (chrome.runtime.lastError) {
+            console.log(LOG_PREFIX, '>>> Error reading from chrome storage:', chrome.runtime.lastError);
+            // Fallback to localStorage
+            const localValue = localStorage.getItem(storageKey);
+            resolve(localValue);
+          } else {
+            resolve(result[storageKey] || null);
+          }
+        });
+      } else {
+        // Use localStorage
+        const localValue = localStorage.getItem(storageKey);
+        resolve(localValue);
+      }
+    });
+  }
+
+  /**
+   * Create and show modal dialog for entering blocked reason
+   * @param {Object} sessionData - The session data object
+   * @param {Function} onSave - Callback when message is saved
+   */
+  function showBlockedReasonModal(sessionData, onSave) {
+    console.log(LOG_PREFIX, '>>> showBlockedReasonModal called');
+
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'bcc-modal-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100000;
+    `;
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'bcc-modal-dialog';
+    modal.style.cssText = `
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      z-index: 100001;
+    `;
+
+    // Get existing message
+    getBlockedReason(sessionData).then((existingMessage) => {
+      const titleEl = document.createElement('h2');
+      titleEl.textContent = 'Block Reason';
+      titleEl.style.cssText = `
+        margin: 0 0 16px 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #1f2937;
+      `;
+
+      const descEl = document.createElement('p');
+      descEl.textContent = `Enter a reason for blocking "${sessionData?.title}"`;
+      descEl.style.cssText = `
+        margin: 0 0 16px 0;
+        font-size: 14px;
+        color: #6b7280;
+      `;
+
+      const textareaEl = document.createElement('textarea');
+      textareaEl.className = 'bcc-reason-textarea';
+      textareaEl.placeholder = 'Enter reason (e.g., "Waiting for approval", "Fix in progress")';
+      textareaEl.value = existingMessage || '';
+      textareaEl.style.cssText = `
+        width: 100%;
+        height: 100px;
+        padding: 10px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 14px;
+        resize: vertical;
+        box-sizing: border-box;
+        margin-bottom: 16px;
+      `;
+
+      const buttonsContainer = document.createElement('div');
+      buttonsContainer.style.cssText = `
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      `;
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.style.cssText = `
+        padding: 8px 16px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        background: white;
+        color: #374151;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+      `;
+      cancelBtn.addEventListener('mouseenter', () => {
+        cancelBtn.style.background = '#f3f4f6';
+      });
+      cancelBtn.addEventListener('mouseleave', () => {
+        cancelBtn.style.background = 'white';
+      });
+      cancelBtn.addEventListener('click', () => {
+        overlay.remove();
+      });
+
+      const saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.textContent = 'Save';
+      saveBtn.style.cssText = `
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        background: #059669;
+        color: white;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+      `;
+      saveBtn.addEventListener('mouseenter', () => {
+        saveBtn.style.background = '#047857';
+      });
+      saveBtn.addEventListener('mouseleave', () => {
+        saveBtn.style.background = '#059669';
+      });
+      saveBtn.addEventListener('click', () => {
+        const message = textareaEl.value.trim();
+        saveBlockedReason(sessionData, message);
+        overlay.remove();
+        if (onSave) onSave(message);
+      });
+
+      buttonsContainer.appendChild(cancelBtn);
+      buttonsContainer.appendChild(saveBtn);
+
+      modal.appendChild(titleEl);
+      modal.appendChild(descEl);
+      modal.appendChild(textareaEl);
+      modal.appendChild(buttonsContainer);
+
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+
+      // Focus textarea
+      setTimeout(() => textareaEl.focus(), 100);
+    });
+
+    // Close on overlay click
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+      }
+    });
+  }
+
+  /**
+   * Update blocked indicator with tooltip
+   * @param {Element} sessionEl - The session element
+   * @param {Object} sessionData - The session data object
+   */
+  function updateBlockedIndicatorWithTooltip(sessionEl, sessionData) {
+    if (!sessionEl) return;
+
+    const indicator = sessionEl.querySelector('.bcc-blocked-indicator');
+    if (!indicator) return;
+
+    // Get the reason message
+    getBlockedReason(sessionData).then((message) => {
+      if (!message) return;
+
+      // Create tooltip
+      const tooltip = document.createElement('div');
+      tooltip.className = 'bcc-blocked-tooltip';
+      tooltip.style.cssText = `
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1f2937;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        white-space: normal;
+        max-width: 200px;
+        word-wrap: break-word;
+        z-index: 100001;
+        margin-bottom: 8px;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s, visibility 0.2s;
+        pointer-events: auto;
+        cursor: pointer;
+      `;
+      tooltip.textContent = message;
+
+      // Add arrow to tooltip
+      tooltip.style.cssText += `
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+      `;
+
+      // Show tooltip on hover
+      indicator.addEventListener('mouseenter', () => {
+        tooltip.style.opacity = '1';
+        tooltip.style.visibility = 'visible';
+      });
+
+      indicator.addEventListener('mouseleave', () => {
+        tooltip.style.opacity = '0';
+        tooltip.style.visibility = 'hidden';
+      });
+
+      // Edit on click
+      tooltip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showBlockedReasonModal(sessionData, (newMessage) => {
+          tooltip.textContent = newMessage;
+        });
+      });
+
+      // Add tooltip to indicator
+      indicator.style.position = 'relative';
+      indicator.appendChild(tooltip);
+    });
   }
 
   /**
@@ -1487,14 +1786,27 @@
       button.title = 'Marked as blocked - click to unblock';
       // Add always-visible blocked indicator next to title
       addBlockedIndicator(sessionEl);
-      console.log(LOG_PREFIX, '>>> Calling showBlockedFeedback...');
-      showBlockedFeedback(`Session "${sessionData?.title}" marked as blocked`, true);
+      console.log(LOG_PREFIX, '>>> Showing modal for reason input...');
+      // Show modal for entering reason
+      showBlockedReasonModal(sessionData, (message) => {
+        updateBlockedIndicatorWithTooltip(sessionEl, sessionData);
+        showBlockedFeedback(`Session "${sessionData?.title}" marked as blocked`, true);
+      });
     } else {
       console.log(LOG_PREFIX, '>>> Clearing blocked state');
       button.style.color = '';
       button.title = 'Mark as blocked';
       // Remove the blocked indicator
       removeBlockedIndicator(sessionEl);
+      // Clear the stored reason
+      const storageKey = getSessionStorageId(sessionData);
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        chrome.storage.sync.remove([storageKey], () => {
+          console.log(LOG_PREFIX, '>>> Removed blocked reason from storage');
+        });
+      } else {
+        localStorage.removeItem(storageKey);
+      }
       console.log(LOG_PREFIX, '>>> Calling showBlockedFeedback...');
       showBlockedFeedback(`Session "${sessionData?.title}" unblocked`, false);
     }
@@ -1579,18 +1891,20 @@
       return;
     }
 
+    const sessionData = getSessionData(sessionEl);
+
     // Create the indicator (same size as button: h-6 w-6 = 24x24, with 14x14 icon inside)
     const indicator = document.createElement('span');
     indicator.className = 'bcc-blocked-indicator inline-flex items-center justify-center h-6 w-6';
     indicator.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"></path></svg>`;
-    indicator.title = 'Session is blocked';
+    indicator.title = 'Session is blocked - hover to see reason';
 
     // Hide indicator on hover (when buttons become visible)
     const groupEl = sessionEl.querySelector('.group');
 
     // Check if currently hovering (indicator should be hidden if so)
     const isCurrentlyHovering = groupEl && groupEl.matches(':hover');
-    indicator.style.cssText = `color: #f59e0b; display: ${isCurrentlyHovering ? 'none' : 'inline-flex'};`;
+    indicator.style.cssText = `color: #f59e0b; display: ${isCurrentlyHovering ? 'none' : 'inline-flex'}; position: relative;`;
 
     if (groupEl) {
       groupEl.addEventListener('mouseenter', () => {
@@ -1604,6 +1918,9 @@
     // Append to relative container (sibling of hover buttons container)
     relativeContainer.appendChild(indicator);
     console.log(LOG_PREFIX, '>>> Added blocked indicator to relative container (hides on hover)');
+
+    // Add tooltip if there's a reason message
+    updateBlockedIndicatorWithTooltip(sessionEl, sessionData);
   }
 
   /**
