@@ -1,10 +1,13 @@
 // Better Claude Code on the Web - Content Script
-// Adds a "blocked" button to task items in the Claude web interface
+// Features:
+// 1. Adds a "blocked" button to session items
+// 2. Shows actual model name instead of "..." button
+// 3. Adds "Better" label next to Claude Code header
 
 (function() {
   'use strict';
 
-  const LOG_PREFIX = '[BCOTW]';
+  const LOG_PREFIX = '[BetterClaude]';
 
   function log(...args) {
     console.log(LOG_PREFIX, ...args);
@@ -18,17 +21,21 @@
     console.groupEnd();
   }
 
-  // SVG icon for the blocked button (exclamation mark in triangle)
+  log('Content script loaded!');
+  log('URL:', window.location.href);
+
+  // ============================================================
+  // FEATURE 1: Blocked Button for Session Items
+  // ============================================================
+
   const BLOCKED_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
     <line x1="12" y1="9" x2="12" y2="13"></line>
     <line x1="12" y1="17" x2="12.01" y2="17"></line>
   </svg>`;
 
-  // Check if we've already processed a button container
   const PROCESSED_MARKER = 'data-bcotw-processed';
 
-  // Create the blocked button element
   function createBlockedButton() {
     const button = document.createElement('button');
     button.className = 'bcotw-blocked-btn';
@@ -40,7 +47,6 @@
     return button;
   }
 
-  // Handle click on the blocked button
   function handleBlockedClick(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -69,7 +75,6 @@
     }
   }
 
-  // Get task ID from element
   function getTaskId(taskItem) {
     const textContent = taskItem.textContent;
     if (textContent) {
@@ -78,7 +83,6 @@
     return null;
   }
 
-  // Get blocked tasks from localStorage
   function getBlockedTasks() {
     try {
       return JSON.parse(localStorage.getItem('bcotw-blocked-tasks') || '{}');
@@ -87,41 +91,23 @@
     }
   }
 
-  // Check if an element is within a session list item
-  // Session items have specific patterns: repo name, timestamp (pm/am or day names), optionally diff stats
   function isWithinSessionItem(element) {
-    // Walk up the tree to find a potential session item container
     let current = element;
     for (let i = 0; i < 10 && current; i++) {
       const text = current.textContent || '';
 
-      // Look for session item patterns:
-      // - Timestamps like "9:40 pm", "Thu", "Wed", etc.
-      // - Diff stats like "+376 -3"
-      // - Should NOT be in the main input area (which has contenteditable or textarea)
-
       const hasTimestamp = /\d{1,2}:\d{2}\s*(am|pm)/i.test(text) ||
                           /\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/i.test(text);
-      const hasDiffStats = /\+\d+\s+-\d+/.test(text);
-      const hasRepoPattern = text.includes('·'); // Session items use · as separator
+      const hasRepoPattern = text.includes('·');
 
-      // Check if we're in an input area (avoid these)
       const isInputArea = current.querySelector('textarea, [contenteditable="true"]') ||
                          current.closest('textarea, [contenteditable="true"]');
 
       if (isInputArea) {
-        log('Skipping - found input area ancestor');
         return false;
       }
 
-      // Session items typically have timestamp and separator
       if (hasTimestamp && hasRepoPattern) {
-        log('Found session item pattern in ancestor:', {
-          hasTimestamp,
-          hasDiffStats,
-          hasRepoPattern,
-          textPreview: text.substring(0, 100)
-        });
         return true;
       }
 
@@ -130,7 +116,6 @@
     return false;
   }
 
-  // Find and process session items with delete buttons
   function processTaskItems() {
     logGroup('Processing task items');
 
@@ -147,20 +132,17 @@
     };
 
     allButtons.forEach((button, index) => {
-      // Skip if already processed
       if (button.hasAttribute(PROCESSED_MARKER)) {
         stats.alreadyProcessed++;
         return;
       }
 
-      // Check if this button contains an SVG (icon button)
       const svg = button.querySelector('svg');
       if (!svg) {
         stats.noSvg++;
         return;
       }
 
-      // CRITICAL: First check if this button is within a session list item
       if (!isWithinSessionItem(button)) {
         stats.notInSession++;
         return;
@@ -169,21 +151,10 @@
       const buttonParent = button.parentElement;
       const siblingButtons = buttonParent ? buttonParent.querySelectorAll('button:not(.bcotw-blocked-btn)') : [];
 
-      logGroup(`Button #${index} analysis (in session item)`);
-      log('Button element:', button);
-      log('Button classes:', button.className);
-      log('Sibling buttons count:', siblingButtons.length);
-
-      // Within a session item, look for the delete button
-      // It's typically the last button, or has delete in aria-label/title
       const ariaLabel = (button.getAttribute('aria-label') || '').toLowerCase();
       const title = (button.title || '').toLowerCase();
       const isDeleteByAttr = ariaLabel.includes('delete') || title.includes('delete');
       const isLastOfTwo = siblingButtons.length === 2 && siblingButtons[1] === button;
-
-      log('Is delete by attr:', isDeleteByAttr);
-      log('Is last of 2 buttons:', isLastOfTwo);
-      logGroupEnd();
 
       const isDeleteButton = isDeleteByAttr || isLastOfTwo;
 
@@ -196,27 +167,21 @@
 
       const parent = button.parentElement;
       if (!parent) {
-        log('No parent element, skipping');
         return;
       }
 
-      // Check if there's already a blocked button
       if (parent.querySelector('.bcotw-blocked-btn')) {
         stats.alreadyHasBlocked++;
-        log('Blocked button already exists, skipping');
         return;
       }
 
-      // Mark as processed
       button.setAttribute(PROCESSED_MARKER, 'true');
 
-      // Create and insert the blocked button BEFORE the delete button
       const blockedButton = createBlockedButton();
       parent.insertBefore(blockedButton, button);
       stats.added++;
       log('>>> INSERTED blocked button before delete button');
 
-      // Check if this task was previously blocked
       const taskItem = findSessionItem(button);
       if (taskItem) {
         const taskId = getTaskId(taskItem);
@@ -234,7 +199,6 @@
     logGroupEnd();
   }
 
-  // Find the parent session item element
   function findSessionItem(button) {
     let element = button.parentElement;
     for (let i = 0; i < 5 && element; i++) {
@@ -246,10 +210,225 @@
     return null;
   }
 
-  // Set up MutationObserver to watch for new task items
-  function setupObserver() {
-    log('Setting up MutationObserver');
+  // ============================================================
+  // FEATURE 2: Show Actual Model Name
+  // ============================================================
 
+  const MODEL_NAMES = {
+    'opus': 'Opus 4.5',
+    'sonnet': 'Sonnet 4.5',
+    'haiku': 'Haiku 4.5'
+  };
+
+  let lastKnownModel = null;
+  let buttonObserver = null;
+
+  function parseModelId(modelId, quiet = false) {
+    if (!modelId) return null;
+    const modelIdLower = modelId.toLowerCase();
+    for (const [key, name] of Object.entries(MODEL_NAMES)) {
+      if (modelIdLower.includes(key)) {
+        if (!quiet) {
+          log(`Parsed model ID "${modelId}" -> "${name}"`);
+        }
+        return name;
+      }
+    }
+    return null;
+  }
+
+  function findModelSelectorButton() {
+    const moreOptionsButton = document.querySelector('button[aria-label="More options"]');
+    if (moreOptionsButton) {
+      return moreOptionsButton;
+    }
+
+    const buttons = document.querySelectorAll('button');
+    for (const button of buttons) {
+      const text = button.textContent.trim();
+      const ariaLabel = button.getAttribute('aria-label');
+
+      if (ariaLabel && (ariaLabel.toLowerCase().includes('model') || ariaLabel.toLowerCase().includes('options'))) {
+        return button;
+      }
+
+      if (text === '...' || text === '\u2026' || text === '\u22EF') {
+        return button;
+      }
+    }
+
+    return null;
+  }
+
+  function getSelectedModel() {
+    // Method 1: Check ccr-sticky-model-selector (per-session model)
+    try {
+      const stickyModel = localStorage.getItem('ccr-sticky-model-selector');
+      if (stickyModel) {
+        const parsed = parseModelId(stickyModel);
+        if (parsed) return parsed;
+      }
+    } catch (e) {}
+
+    // Method 2: Check default-model
+    try {
+      const defaultModel = localStorage.getItem('default-model');
+      if (defaultModel) {
+        const parsed = parseModelId(defaultModel);
+        if (parsed) return parsed;
+      }
+    } catch (e) {}
+
+    // Method 3: Check menu items
+    const checkedItem = document.querySelector('[role="menuitemradio"][aria-checked="true"]');
+    if (checkedItem) {
+      const modelText = checkedItem.textContent;
+      for (const [key, name] of Object.entries(MODEL_NAMES)) {
+        if (modelText.toLowerCase().includes(key)) {
+          return name;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  function updateModelDisplay(button, modelName) {
+    if (!button || !modelName) return;
+
+    const currentText = button.textContent.trim();
+    if (currentText === modelName) return;
+
+    log('Updating button to show:', modelName);
+    button.innerHTML = `<span style="font-size: 12px; font-weight: 500;">${modelName}</span>`;
+    button.style.minWidth = 'auto';
+    button.style.paddingLeft = '8px';
+    button.style.paddingRight = '8px';
+
+    watchButtonForChanges(button, modelName);
+  }
+
+  function watchButtonForChanges(button, modelName) {
+    if (buttonObserver) {
+      buttonObserver.disconnect();
+    }
+
+    buttonObserver = new MutationObserver((mutations) => {
+      const currentText = button.textContent.trim();
+      if (currentText !== modelName && currentText !== lastKnownModel) {
+        const currentModel = parseModelId(localStorage.getItem('default-model'), true);
+        if (currentModel) {
+          button.innerHTML = `<span style="font-size: 12px; font-weight: 500;">${currentModel}</span>`;
+          button.style.minWidth = 'auto';
+          button.style.paddingLeft = '8px';
+          button.style.paddingRight = '8px';
+        }
+      }
+    });
+
+    buttonObserver.observe(button, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+  }
+
+  function updateModelSelector() {
+    const button = findModelSelectorButton();
+    const model = getSelectedModel();
+
+    if (button && model) {
+      updateModelDisplay(button, model);
+    }
+  }
+
+  function watchLocalStorage() {
+    const originalSetItem = localStorage.setItem.bind(localStorage);
+    localStorage.setItem = function(key, value) {
+      originalSetItem(key, value);
+
+      if (key === 'ccr-sticky-model-selector' || key === 'default-model') {
+        log(`localStorage ${key} changed to:`, value);
+        const newModel = parseModelId(value);
+        if (newModel && newModel !== lastKnownModel) {
+          lastKnownModel = newModel;
+          setTimeout(updateModelSelector, 100);
+          setTimeout(updateModelSelector, 300);
+        }
+      }
+    };
+  }
+
+  function pollForModelChanges() {
+    setInterval(() => {
+      try {
+        const stickyModel = localStorage.getItem('ccr-sticky-model-selector');
+        const defaultModel = localStorage.getItem('default-model');
+        const currentModelId = stickyModel || defaultModel;
+        const parsedModel = parseModelId(currentModelId, true);
+
+        if (parsedModel) {
+          if (parsedModel !== lastKnownModel) {
+            lastKnownModel = parsedModel;
+            updateModelSelector();
+          } else {
+            const button = document.querySelector('button[aria-label="More options"]');
+            if (button && button.textContent.trim() !== parsedModel) {
+              updateModelDisplay(button, parsedModel);
+            }
+          }
+        }
+      } catch (e) {}
+    }, 250);
+  }
+
+  // ============================================================
+  // FEATURE 3: Better Label
+  // ============================================================
+
+  function addBetterLabel() {
+    const claudeCodeLink = document.querySelector('a[href="/code"]');
+
+    if (!claudeCodeLink) {
+      return false;
+    }
+
+    const parent = claudeCodeLink.parentElement;
+    if (parent?.querySelector('.better-label')) {
+      return true;
+    }
+    if (claudeCodeLink.nextElementSibling?.classList?.contains('better-label')) {
+      return true;
+    }
+
+    const betterLabel = document.createElement('span');
+    betterLabel.textContent = 'Better';
+    betterLabel.className = 'better-label';
+    betterLabel.style.cssText = `
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      margin-left: 8px;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 500;
+      line-height: 1.25;
+      color: #059669;
+      background-color: #d1fae5;
+      border-radius: 9999px;
+    `;
+
+    claudeCodeLink.parentNode.insertBefore(betterLabel, claudeCodeLink.nextSibling);
+    log('Better label inserted');
+
+    return true;
+  }
+
+  // ============================================================
+  // INITIALIZATION
+  // ============================================================
+
+  function setupBlockedButtonObserver() {
     const observer = new MutationObserver((mutations) => {
       let shouldProcess = false;
 
@@ -263,7 +442,6 @@
       if (shouldProcess) {
         clearTimeout(window.bcotwProcessTimeout);
         window.bcotwProcessTimeout = setTimeout(() => {
-          log('DOM changed, reprocessing...');
           processTaskItems();
         }, 100);
       }
@@ -274,18 +452,61 @@
       subtree: true
     });
 
-    log('MutationObserver started');
-    log('Running initial processing...');
+    log('Blocked button MutationObserver started');
     processTaskItems();
   }
 
-  // Initialize when DOM is ready
-  log('Content script loaded');
+  function setupModelDropdownObserver() {
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === 'childList' && mutation.removedNodes.length > 0) {
+          for (const node of mutation.removedNodes) {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const wasDropdown = node.matches?.('[role="menu"], [role="listbox"]') ||
+                                  node.querySelector?.('[role="menu"], [role="listbox"]');
+              if (wasDropdown) {
+                setTimeout(updateModelSelector, 50);
+                setTimeout(updateModelSelector, 150);
+                setTimeout(updateModelSelector, 300);
+              }
+            }
+          }
+        }
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    log('Model dropdown MutationObserver started');
+  }
+
+  function init() {
+    log('Initializing all features...');
+
+    // Feature 1: Blocked button
+    setupBlockedButtonObserver();
+
+    // Feature 2: Model display
+    watchLocalStorage();
+    pollForModelChanges();
+    setupModelDropdownObserver();
+    updateModelSelector();
+    lastKnownModel = getSelectedModel();
+
+    // Feature 3: Better label
+    addBetterLabel();
+    setTimeout(addBetterLabel, 1000);
+
+    log('Initialization complete');
+  }
+
+  // Wait for DOM to be ready
   if (document.readyState === 'loading') {
-    log('DOM still loading, waiting for DOMContentLoaded');
-    document.addEventListener('DOMContentLoaded', setupObserver);
+    document.addEventListener('DOMContentLoaded', init);
   } else {
-    log('DOM ready, initializing immediately');
-    setupObserver();
+    init();
   }
 })();
