@@ -350,14 +350,13 @@
       console.log(LOG_PREFIX, 'Button rect values - top:', buttonRect.top, 'left:', buttonRect.left, 'width:', buttonRect.width, 'height:', buttonRect.height);
 
       // Set position using inline styles (these won't conflict with visibility classes)
-      dropdown.style.left = buttonRect.left + 'px';
-
-      // Estimate dropdown height (since it's hidden, we use a reasonable default)
-      const dropdownHeight = 80; // Approximate height for 2 options
-      const finalTop = buttonRect.top - dropdownHeight - 4;
-      console.log(LOG_PREFIX, 'Final position - top:', finalTop, 'left:', buttonRect.left);
+      // Position dropdown below the button
+      const finalTop = buttonRect.bottom + 4;
+      const finalLeft = buttonRect.left;
+      console.log(LOG_PREFIX, 'Final position - top:', finalTop, 'left:', finalLeft);
 
       dropdown.style.top = finalTop + 'px';
+      dropdown.style.left = finalLeft + 'px';
 
       // Toggle classes for visibility (CSS handles opacity/visibility with !important)
       dropdown.classList.remove('bcc-dropdown-hidden');
