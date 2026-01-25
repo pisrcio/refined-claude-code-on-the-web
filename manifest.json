@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Better Claude Code on the Web",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Enhance the Claude web experience with improved code editing capabilities",
-  "permissions": [],
+  "permissions": ["storage", "tabs"],
   "host_permissions": [
     "https://claude.ai/*"
   ],
   "action": {
-    "default_title": "Better Claude Code on the Web"
+    "default_title": "Better Claude Code on the Web",
+    "default_popup": "popup.html"
   },
   "icons": {},
   "content_scripts": [

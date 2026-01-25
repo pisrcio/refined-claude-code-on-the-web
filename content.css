@@ -149,3 +149,34 @@ html.dark .bcc-mode-option:hover,
 [data-theme="dark"] .bcc-mode-option:hover {
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
+
+/* Better Label Styles */
+.better-label {
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  user-select: none !important;
+}
+
+.better-label:hover {
+  opacity: 0.8 !important;
+}
+
+.better-label-disabled {
+  color: #9ca3af !important;
+  background-color: #f3f4f6 !important;
+  text-decoration: line-through !important;
+}
+
+/* Dark mode support for disabled label */
+@media (prefers-color-scheme: dark) {
+  .better-label-disabled {
+    color: #6b7280 !important;
+    background-color: #374151 !important;
+  }
+}
+
+html.dark .better-label-disabled,
+[data-theme="dark"] .better-label-disabled {
+  color: #6b7280 !important;
+  background-color: #374151 !important;
+}
