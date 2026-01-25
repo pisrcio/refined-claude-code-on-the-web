@@ -1377,8 +1377,23 @@
     button.title = 'Mark as blocked';
     button.innerHTML = BLOCKED_ICON_SVG;
 
-    // No hover color change when not active - stays default color
-    // Only maintain amber color when in blocked state
+    // Ensure button is visible with explicit inline styles
+    button.style.cssText = `
+      display: inline-flex !important;
+      width: 24px !important;
+      height: 24px !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      background-color: rgba(0, 0, 0, 0.05) !important;
+      border: none !important;
+      border-radius: 6px !important;
+      cursor: pointer !important;
+      flex-shrink: 0 !important;
+      color: #6b7280 !important;
+      transition: all 0.2s !important;
+    `;
 
     return button;
   }
