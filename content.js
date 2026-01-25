@@ -11,6 +11,150 @@
   console.log(LOG_PREFIX, 'Document readyState:', document.readyState);
 
   // ============================================
+  // Settings Management
+  // ============================================
+
+  const DEFAULT_SETTINGS = {
+    allEnabled: true,
+    modeButton: true,
+    showModel: true,
+    betterLabel: true,
+    pullBranch: true
+  };
+
+  let currentSettings = { ...DEFAULT_SETTINGS };
+
+  // Load settings from storage
+  function loadSettings() {
+    return new Promise((resolve) => {
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        chrome.storage.sync.get(DEFAULT_SETTINGS, (result) => {
+          currentSettings = result;
+          console.log(LOG_PREFIX, 'Settings loaded:', currentSettings);
+          resolve(currentSettings);
+        });
+      } else {
+        console.log(LOG_PREFIX, 'Chrome storage not available, using defaults');
+        resolve(currentSettings);
+      }
+    });
+  }
+
+  // Save settings to storage
+  function saveSettings(settings) {
+    return new Promise((resolve) => {
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        chrome.storage.sync.set(settings, () => {
+          currentSettings = { ...currentSettings, ...settings };
+          console.log(LOG_PREFIX, 'Settings saved:', settings);
+          resolve();
+        });
+      } else {
+        currentSettings = { ...currentSettings, ...settings };
+        resolve();
+      }
+    });
+  }
+
+  // Check if a feature is enabled
+  function isFeatureEnabled(feature) {
+    return currentSettings.allEnabled && currentSettings[feature];
+  }
+
+  // Listen for settings changes from popup
+  if (typeof chrome !== 'undefined' && chrome.storage) {
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+      if (namespace === 'sync') {
+        console.log(LOG_PREFIX, 'Settings changed:', changes);
+        for (const [key, { newValue }] of Object.entries(changes)) {
+          currentSettings[key] = newValue;
+        }
+        applySettings();
+      }
+    });
+  }
+
+  // Apply current settings to the page
+  function applySettings() {
+    console.log(LOG_PREFIX, 'Applying settings:', currentSettings);
+
+    // Update Better label appearance
+    updateBetterLabelState();
+
+    // Toggle mode button
+    const modeContainer = document.querySelector('.bcc-mode-container');
+    if (modeContainer) {
+      modeContainer.style.display = isFeatureEnabled('modeButton') ? 'inline-flex' : 'none';
+    }
+
+    // Toggle pull branch button
+    const pullBranchBtn = document.querySelector('.better-pull-branch-btn');
+    if (pullBranchBtn) {
+      pullBranchBtn.style.display = isFeatureEnabled('pullBranch') ? 'flex' : 'none';
+    }
+
+    // Handle model display - revert or update
+    if (isFeatureEnabled('showModel')) {
+      updateModelSelector();
+    } else {
+      // Revert model button to default
+      const button = document.querySelector('button[aria-label="More options"]');
+      if (button && button.querySelector('span[style*="font-weight: 500"]')) {
+        button.innerHTML = '...';
+        button.style.minWidth = '';
+        button.style.paddingLeft = '';
+        button.style.paddingRight = '';
+      }
+    }
+  }
+
+  // Update Better label appearance based on settings
+  function updateBetterLabelState() {
+    const betterLabel = document.querySelector('.better-label');
+    if (!betterLabel) return;
+
+    const allEnabled = currentSettings.allEnabled;
+
+    if (allEnabled) {
+      betterLabel.classList.remove('better-label-disabled');
+      betterLabel.style.cssText = `
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        margin-left: 8px;
+        font-size: 12px;
+        font-family: inherit;
+        font-weight: 500;
+        line-height: 1.25;
+        color: #059669;
+        background-color: #d1fae5;
+        border-radius: 9999px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+      `;
+    } else {
+      betterLabel.classList.add('better-label-disabled');
+      betterLabel.style.cssText = `
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        margin-left: 8px;
+        font-size: 12px;
+        font-family: inherit;
+        font-weight: 500;
+        line-height: 1.25;
+        color: #9ca3af;
+        background-color: #f3f4f6;
+        border-radius: 9999px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: line-through;
+      `;
+    }
+  }
+
+  // ============================================
   // Mode Button Feature
   // ============================================
 
@@ -451,6 +595,16 @@
   function addBetterLabel() {
     console.log(LOG_PREFIX, 'addBetterLabel() called');
 
+    // Check if betterLabel feature is enabled (but we always show the label itself)
+    if (!isFeatureEnabled('betterLabel') && !currentSettings.allEnabled === false) {
+      // Only hide label if betterLabel specifically disabled but allEnabled is true
+      const existingLabel = document.querySelector('.better-label');
+      if (existingLabel && currentSettings.allEnabled && !currentSettings.betterLabel) {
+        existingLabel.style.display = 'none';
+        return true;
+      }
+    }
+
     const claudeCodeLink = document.querySelector('a[href="/code"]');
 
     if (!claudeCodeLink) {
@@ -466,37 +620,125 @@
 
     const parent = claudeCodeLink.parentElement;
     if (parent?.querySelector('.better-label')) {
-      console.log(LOG_PREFIX, 'Better label already exists in parent, skipping');
+      console.log(LOG_PREFIX, 'Better label already exists in parent, updating state');
+      updateBetterLabelState();
       return true;
     }
     if (claudeCodeLink.nextElementSibling?.classList?.contains('better-label')) {
-      console.log(LOG_PREFIX, 'Better label already exists as sibling, skipping');
+      console.log(LOG_PREFIX, 'Better label already exists as sibling, updating state');
+      updateBetterLabelState();
       return true;
     }
 
     const betterLabel = document.createElement('span');
     betterLabel.textContent = 'Better';
     betterLabel.className = 'better-label';
+    betterLabel.title = 'Click to toggle all extension features';
 
-    betterLabel.style.cssText = `
-      display: inline-flex;
-      align-items: center;
-      padding: 2px 8px;
-      margin-left: 8px;
-      font-size: 12px;
-      font-family: inherit;
-      font-weight: 500;
-      line-height: 1.25;
-      color: #059669;
-      background-color: #d1fae5;
-      border-radius: 9999px;
-    `;
+    // Apply initial style based on current settings
+    const allEnabled = currentSettings.allEnabled;
+    if (allEnabled) {
+      betterLabel.style.cssText = `
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        margin-left: 8px;
+        font-size: 12px;
+        font-family: inherit;
+        font-weight: 500;
+        line-height: 1.25;
+        color: #059669;
+        background-color: #d1fae5;
+        border-radius: 9999px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+      `;
+    } else {
+      betterLabel.classList.add('better-label-disabled');
+      betterLabel.style.cssText = `
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        margin-left: 8px;
+        font-size: 12px;
+        font-family: inherit;
+        font-weight: 500;
+        line-height: 1.25;
+        color: #9ca3af;
+        background-color: #f3f4f6;
+        border-radius: 9999px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: line-through;
+      `;
+    }
+
+    // Add click handler to toggle all features
+    betterLabel.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const newAllEnabled = !currentSettings.allEnabled;
+      console.log(LOG_PREFIX, 'Toggling all features:', newAllEnabled);
+
+      await saveSettings({ allEnabled: newAllEnabled });
+      applySettings();
+
+      // Show feedback
+      showToggleFeedback(newAllEnabled ? 'Features enabled' : 'Features disabled');
+    });
+
+    // Add hover effect
+    betterLabel.addEventListener('mouseenter', () => {
+      betterLabel.style.opacity = '0.8';
+    });
+    betterLabel.addEventListener('mouseleave', () => {
+      betterLabel.style.opacity = '1';
+    });
 
     console.log(LOG_PREFIX, 'Inserting Better label');
     claudeCodeLink.parentNode.insertBefore(betterLabel, claudeCodeLink.nextSibling);
     console.log(LOG_PREFIX, 'Better label inserted successfully');
 
     return true;
+  }
+
+  // Show visual feedback when toggling features
+  function showToggleFeedback(message) {
+    const feedback = document.createElement('div');
+    feedback.textContent = message;
+    feedback.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: ${message.includes('enabled') ? '#059669' : '#6b7280'};
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 99999;
+      animation: fadeInOut 2s ease-in-out;
+    `;
+
+    // Add animation keyframes if not already present
+    if (!document.querySelector('#better-claude-animations')) {
+      const style = document.createElement('style');
+      style.id = 'better-claude-animations';
+      style.textContent = `
+        @keyframes fadeInOut {
+          0% { opacity: 0; transform: translateY(-10px); }
+          15% { opacity: 1; transform: translateY(0); }
+          85% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-10px); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    document.body.appendChild(feedback);
+    setTimeout(() => feedback.remove(), 2000);
   }
 
   // ============================================
@@ -712,45 +954,66 @@
     }, 100);
   }
 
-  function init() {
+  async function init() {
     console.log(LOG_PREFIX, 'init() called, readyState:', document.readyState);
 
-    // Set up model display watchers
-    watchLocalStorage();
-    pollForModelChanges();
+    // Load settings first
+    await loadSettings();
+    console.log(LOG_PREFIX, 'Settings loaded in init:', currentSettings);
 
-    // Store initial model
-    lastKnownModel = getSelectedModel();
-    console.log(LOG_PREFIX, 'Initial model:', lastKnownModel);
+    // Set up model display watchers (only if enabled)
+    if (isFeatureEnabled('showModel')) {
+      watchLocalStorage();
+      pollForModelChanges();
+
+      // Store initial model
+      lastKnownModel = getSelectedModel();
+      console.log(LOG_PREFIX, 'Initial model:', lastKnownModel);
+    }
 
     // Wait for page to load
     if (document.readyState === 'loading') {
       console.log(LOG_PREFIX, 'Document still loading, adding DOMContentLoaded listener');
       document.addEventListener('DOMContentLoaded', () => {
         console.log(LOG_PREFIX, 'DOMContentLoaded fired');
-        setTimeout(findAndInjectModeButton, 1000);
-        addBetterLabel();
-        updateModelSelector();
+        if (isFeatureEnabled('modeButton')) {
+          setTimeout(findAndInjectModeButton, 1000);
+        }
+        addBetterLabel(); // Always add the label (it's the toggle)
+        if (isFeatureEnabled('showModel')) {
+          updateModelSelector();
+        }
       });
     } else {
       console.log(LOG_PREFIX, 'Document already loaded, scheduling injection');
-      setTimeout(findAndInjectModeButton, 1000);
-      addBetterLabel();
-      updateModelSelector();
+      if (isFeatureEnabled('modeButton')) {
+        setTimeout(findAndInjectModeButton, 1000);
+      }
+      addBetterLabel(); // Always add the label (it's the toggle)
+      if (isFeatureEnabled('showModel')) {
+        updateModelSelector();
+      }
     }
 
-    // Watch for copy branch button clicks
-    watchForCopyBranchButton();
+    // Watch for copy branch button clicks (only if enabled)
+    if (isFeatureEnabled('pullBranch')) {
+      watchForCopyBranchButton();
+    }
 
     // Watch for DOM changes (SPA navigation)
     const observer = new MutationObserver((mutations) => {
-      // Re-inject mode button if missing
-      if (!document.querySelector('.bcc-mode-container')) {
+      // Re-inject mode button if missing and enabled
+      if (isFeatureEnabled('modeButton') && !document.querySelector('.bcc-mode-container')) {
         console.log(LOG_PREFIX, 'MutationObserver: mode container missing, re-injecting');
         findAndInjectModeButton();
       }
-      // Re-add better label if missing
+      // Re-add better label if missing (always, since it's the toggle control)
       debouncedAddBetterLabel();
+
+      // Re-add pull branch button if missing and enabled
+      if (isFeatureEnabled('pullBranch') && !document.querySelector('.better-pull-branch-btn')) {
+        // The watcher handles this, but we can trigger a check
+      }
     });
 
     observer.observe(document.body, {

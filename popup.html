@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Better Claude Code Settings</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>Better Claude Code</h1>
+      <div class="master-toggle">
+        <label class="toggle-switch">
+          <input type="checkbox" id="allFeaturesToggle" checked>
+          <span class="slider"></span>
+        </label>
+        <span class="toggle-label">All Features</span>
+      </div>
+    </header>
+
+    <div class="features-list">
+      <div class="feature-item" data-feature="modeButton">
+        <div class="feature-info">
+          <div class="feature-name">Mode Button</div>
+          <div class="feature-description">Adds Agent/Plan mode switcher to quickly toggle between Agent and Plan modes</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" class="feature-toggle" data-feature="modeButton" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="feature-item" data-feature="showModel">
+        <div class="feature-info">
+          <div class="feature-name">Show Actual Model</div>
+          <div class="feature-description">Displays the full model name (Opus, Sonnet, Haiku) instead of dots</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" class="feature-toggle" data-feature="showModel" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="feature-item" data-feature="betterLabel">
+        <div class="feature-info">
+          <div class="feature-name">Better Label</div>
+          <div class="feature-description">Shows "Better" badge next to Claude Code link in the sidebar</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" class="feature-toggle" data-feature="betterLabel" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="feature-item" data-feature="pullBranch">
+        <div class="feature-info">
+          <div class="feature-name">Pull Branch Button</div>
+          <div class="feature-description">Adds a button to copy git commands for pulling the current branch</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" class="feature-toggle" data-feature="pullBranch" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <span class="version">v1.1.0</span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
