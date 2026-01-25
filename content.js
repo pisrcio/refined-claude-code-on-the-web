@@ -197,24 +197,31 @@
     console.log(LOG_PREFIX, 'Created modeButton:', modeButton);
     modeButton.addEventListener('click', toggleDropdown);
 
-    // Create dropdown
+    // Create dropdown - append to body to avoid overflow clipping
     dropdown = document.createElement('div');
     dropdown.className = 'bcc-mode-dropdown';
-    // Apply inline styles for dropdown
-    dropdown.style.cssText = 'position: absolute !important; bottom: calc(100% + 4px) !important; left: 0 !important; min-width: 120px !important; background: #ffffff !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; opacity: 0 !important; visibility: hidden !important; transform: translateY(4px) !important; transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s !important; overflow: hidden !important; z-index: 10001 !important;';
+    // Apply inline styles for dropdown - use fixed positioning
+    dropdown.style.cssText = 'position: fixed !important; min-width: 120px !important; background: #ffffff !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; opacity: 0 !important; visibility: hidden !important; transform: translateY(4px) !important; transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s !important; overflow: hidden !important; z-index: 10001 !important;';
     dropdown.innerHTML = `
-      <div class="bcc-mode-option" data-mode="Agent" style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 8px !important; padding: 10px 12px !important; cursor: pointer !important; font-size: 13px !important;">
+      <div class="bcc-mode-option" data-mode="Agent" style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 8px !important; padding: 10px 12px !important; cursor: pointer !important; font-size: 13px !important; background: #ffffff !important;">
         <span class="bcc-check" style="display: inline-block !important; width: 16px !important; color: #10a37f !important; font-weight: bold !important;">&#10003;</span>
-        <span>Agent</span>
+        <span style="color: #000000 !important;">Agent</span>
       </div>
-      <div class="bcc-mode-option" data-mode="Plan" style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 8px !important; padding: 10px 12px !important; cursor: pointer !important; font-size: 13px !important;">
+      <div class="bcc-mode-option" data-mode="Plan" style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 8px !important; padding: 10px 12px !important; cursor: pointer !important; font-size: 13px !important; background: #ffffff !important;">
         <span class="bcc-check" style="display: inline-block !important; width: 16px !important; color: #10a37f !important; font-weight: bold !important;"></span>
-        <span>Plan</span>
+        <span style="color: #000000 !important;">Plan</span>
       </div>
     `;
     console.log(LOG_PREFIX, 'Created dropdown:', dropdown);
 
+    // Add hover effect for dropdown options
     dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
+      option.addEventListener('mouseenter', () => {
+        option.style.backgroundColor = '#f3f4f6';
+      });
+      option.addEventListener('mouseleave', () => {
+        option.style.backgroundColor = '#ffffff';
+      });
       option.addEventListener('click', (e) => {
         console.log(LOG_PREFIX, 'Option clicked:', option.dataset.mode);
         e.preventDefault();
@@ -224,7 +231,8 @@
     });
 
     container.appendChild(modeButton);
-    container.appendChild(dropdown);
+    // Append dropdown to body to avoid overflow issues
+    document.body.appendChild(dropdown);
 
     console.log(LOG_PREFIX, 'Final container:', container);
 
@@ -249,10 +257,24 @@
     if (isVisible) {
       closeDropdown();
     } else {
+      // Position dropdown above the button
+      const buttonRect = modeButton.getBoundingClientRect();
+      dropdown.style.left = buttonRect.left + 'px';
+      dropdown.style.top = (buttonRect.top - dropdown.offsetHeight - 4) + 'px';
+
+      // Make visible first to get offsetHeight, then reposition
+      dropdown.style.visibility = 'hidden';
+      dropdown.style.opacity = '0';
+      dropdown.style.display = 'block';
+
+      // Now position correctly with actual height
+      const dropdownHeight = dropdown.offsetHeight || 80; // fallback height
+      dropdown.style.top = (buttonRect.top - dropdownHeight - 4) + 'px';
+
       dropdown.style.opacity = '1';
       dropdown.style.visibility = 'visible';
       dropdown.style.transform = 'translateY(0)';
-      console.log(LOG_PREFIX, 'Dropdown now visible');
+      console.log(LOG_PREFIX, 'Dropdown now visible at', buttonRect.left, buttonRect.top - dropdownHeight - 4);
       // Close on outside click
       setTimeout(() => {
         document.addEventListener('click', closeDropdown, { once: true });
