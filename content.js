@@ -1238,12 +1238,17 @@
     button.innerHTML = BLOCKED_ICON_SVG;
 
     // Add hover color style (warning/amber color)
-    button.style.cssText = '--hover-color: #f59e0b;';
+    // Only change color on hover if NOT in blocked state
     button.addEventListener('mouseenter', () => {
-      button.style.color = '#f59e0b';
+      if (!button.classList.contains('bcc-blocked-active')) {
+        button.style.color = '#f59e0b';
+      }
     });
     button.addEventListener('mouseleave', () => {
-      button.style.color = '';
+      // Only reset color if NOT in blocked state
+      if (!button.classList.contains('bcc-blocked-active')) {
+        button.style.color = '';
+      }
     });
 
     return button;
@@ -1356,13 +1361,13 @@
       button.style.color = '#f59e0b';
       button.title = 'Marked as blocked - click to unblock';
       console.log(LOG_PREFIX, '>>> Calling showBlockedFeedback...');
-      showBlockedFeedback(`Session "${sessionData?.title}" marked as blocked`);
+      showBlockedFeedback(`Session "${sessionData?.title}" marked as blocked`, true);
     } else {
       console.log(LOG_PREFIX, '>>> Clearing blocked state');
       button.style.color = '';
       button.title = 'Mark as blocked';
       console.log(LOG_PREFIX, '>>> Calling showBlockedFeedback...');
-      showBlockedFeedback(`Session "${sessionData?.title}" unblocked`);
+      showBlockedFeedback(`Session "${sessionData?.title}" unblocked`, false);
     }
 
     // Emit custom event for external listeners
@@ -1379,17 +1384,19 @@
   /**
    * Show visual feedback when blocking/unblocking
    * @param {string} message - The message to display
+   * @param {boolean} isBlocked - True for blocked (amber), false for unblocked (green)
    */
-  function showBlockedFeedback(message) {
-    console.log(LOG_PREFIX, '>>> showBlockedFeedback called with message:', message);
+  function showBlockedFeedback(message, isBlocked = true) {
+    console.log(LOG_PREFIX, '>>> showBlockedFeedback called with message:', message, 'isBlocked:', isBlocked);
 
+    const bgColor = isBlocked ? '#f59e0b' : '#059669'; // amber for blocked, green for unblocked
     const feedback = document.createElement('div');
     feedback.textContent = message;
     feedback.style.cssText = `
       position: fixed;
       top: 20px;
       right: 20px;
-      background: #f59e0b;
+      background: ${bgColor};
       color: white;
       padding: 8px 16px;
       border-radius: 6px;
