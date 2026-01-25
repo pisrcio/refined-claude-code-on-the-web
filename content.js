@@ -1158,49 +1158,55 @@
       const mergeBranchBtn = document.createElement('button');
       mergeBranchBtn.type = 'button';
       mergeBranchBtn.className = 'group flex items-center gap-[6px] px-[10px] py-2 bg-bg-000 border-0.5 border-border-300 rounded-[6px] shadow-sm hover:bg-bg-100 transition-colors better-merge-branch-btn';
-      mergeBranchBtn.title = `Copy: git fetch origin ${mainBranch} && git merge origin/${mainBranch}`;
+      mergeBranchBtn.title = `Insert merge request into text field`;
       mergeBranchBtn.style.marginRight = '8px';
 
       // Match exact HTML structure with merge icon
       mergeBranchBtn.innerHTML = `
         <span class="text-xs font-medium text-text-100 group-disabled:text-text-500">Merge ${mainBranch}</span>
         <div class="group-disabled:text-text-500" style="width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; color: #8b5cf6;">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" class="group-disabled:text-text-500" aria-hidden="true" style="flex-shrink: 0; color: #8b5cf6;">
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M5 3.25a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm1.416.483a3.751 3.751 0 1 0-1.416 1.416c.16.235.335.46.526.671.611.673 1.386 1.18 2.474 1.18h.5v3.75l-.096.016a3.75 3.75 0 1 0 1.596 0l-.096-.016V7a2.5 2.5 0 0 0 2.5-2.5h1.5a.75.75 0 0 0 0-1.5h-1.5A2.5 2.5 0 0 0 9.5 5.5h-.5c-1.382 0-2.286-.671-2.584-1.767ZM11.5 12.75a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"></path>
+          <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg" class="group-disabled:text-text-500" aria-hidden="true" style="flex-shrink: 0; color: #8b5cf6;">
+            <path d="M108,64A36,36,0,1,0,60,97.94v60.12a36,36,0,1,0,24,0V97.94A36.07,36.07,0,0,0,108,64ZM72,52A12,12,0,1,1,60,64,12,12,0,0,1,72,52Zm0,152a12,12,0,1,1,12-12A12,12,0,0,1,72,204Zm140-45.94V110.63a27.81,27.81,0,0,0-8.2-19.8L173,60h19a12,12,0,0,0,0-24H144a12,12,0,0,0-12,12V96a12,12,0,0,0,24,0V77l30.83,30.83a4,4,0,0,1,1.17,2.83v47.43a36,36,0,1,0,24,0ZM200,204a12,12,0,1,1,12-12A12,12,0,0,1,200,204Z"></path>
           </svg>
         </div>
       `;
 
-      mergeBranchBtn.addEventListener('click', async (event) => {
+      mergeBranchBtn.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
 
         // Re-detect main branch in case context changed
         const branch = detectMainBranch();
-        const gitCommand = `git fetch origin ${branch} && git merge origin/${branch}`;
-        console.log(LOG_PREFIX, `📋 Copying merge command: ${gitCommand}`);
+        const mergeMessage = `Merge in ${branch} branch and fix merge conflicts.`;
+        console.log(LOG_PREFIX, `📋 Inserting merge message: ${mergeMessage}`);
 
-        try {
-          await navigator.clipboard.writeText(gitCommand);
-          console.log(LOG_PREFIX, '✅ Merge command copied to clipboard!');
-          showMergeCopyFeedback('Merge command copied to clipboard');
-        } catch (err) {
-          console.error(LOG_PREFIX, '❌ Failed to copy:', err);
-          // Fallback: try execCommand
-          try {
-            const textArea = document.createElement('textarea');
-            textArea.value = gitCommand;
-            textArea.style.position = 'fixed';
-            textArea.style.left = '-9999px';
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            console.log(LOG_PREFIX, '✅ Merge command copied via fallback!');
-            showMergeCopyFeedback('Merge command copied to clipboard');
-          } catch (fallbackErr) {
-            console.error(LOG_PREFIX, '❌ Fallback copy failed:', fallbackErr);
+        // Find the text field and insert the message
+        const textField = document.querySelector('div[contenteditable="true"]') ||
+                          document.querySelector('textarea') ||
+                          document.querySelector('[data-placeholder]');
+
+        if (textField) {
+          if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
+            textField.value = mergeMessage;
+            textField.focus();
+            textField.setSelectionRange(textField.value.length, textField.value.length);
+            textField.dispatchEvent(new Event('input', { bubbles: true }));
+          } else {
+            textField.focus();
+            textField.innerText = mergeMessage;
+            // Move cursor to end
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(textField);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+            textField.dispatchEvent(new Event('input', { bubbles: true }));
           }
+          console.log(LOG_PREFIX, '✅ Merge message inserted into text field');
+          showMergeCopyFeedback('Merge message inserted');
+        } else {
+          console.error(LOG_PREFIX, '❌ Text field not found');
         }
       });
 
