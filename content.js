@@ -455,6 +455,63 @@
     console.log(LOG_PREFIX, '✅ Model change polling active');
   }
 
+  // Add "Better" label next to Claude Code link
+  function addBetterLabel() {
+    console.log(LOG_PREFIX, '🏷️ addBetterLabel() called');
+
+    // Find the anchor element that links to /code (the Claude Code header link)
+    const claudeCodeLink = document.querySelector('a[href="/code"]');
+
+    if (!claudeCodeLink) {
+      console.log(LOG_PREFIX, 'No a[href="/code"] found yet');
+      return false;
+    }
+
+    console.log(LOG_PREFIX, 'Found Claude Code link:', {
+      tagName: claudeCodeLink.tagName,
+      className: claudeCodeLink.className,
+      href: claudeCodeLink.href
+    });
+
+    // Check if we already added the Better label
+    const parent = claudeCodeLink.parentElement;
+    if (parent?.querySelector('.better-label')) {
+      console.log(LOG_PREFIX, 'Better label already exists in parent, skipping');
+      return true;
+    }
+    if (claudeCodeLink.nextElementSibling?.classList?.contains('better-label')) {
+      console.log(LOG_PREFIX, 'Better label already exists as sibling, skipping');
+      return true;
+    }
+
+    // Create the Better label element
+    const betterLabel = document.createElement('span');
+    betterLabel.textContent = 'Better';
+    betterLabel.className = 'better-label';
+
+    // Style to match the Research preview label appearance
+    betterLabel.style.cssText = `
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      margin-left: 8px;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 500;
+      line-height: 1.25;
+      color: #059669;
+      background-color: #d1fae5;
+      border-radius: 9999px;
+    `;
+
+    // Insert after the Claude Code link
+    console.log(LOG_PREFIX, 'Inserting Better label');
+    claudeCodeLink.parentNode.insertBefore(betterLabel, claudeCodeLink.nextSibling);
+    console.log(LOG_PREFIX, '✅ Better label inserted successfully');
+
+    return true;
+  }
+
   // Initialize
   function init() {
     console.log(LOG_PREFIX, '🎬 Initializing...');
@@ -476,6 +533,15 @@
     // Store initial model
     lastKnownModel = getSelectedModel();
     console.log(LOG_PREFIX, 'Initial model:', lastKnownModel);
+
+    // Add Better label
+    addBetterLabel();
+
+    // Also try after a delay in case content loads late
+    setTimeout(() => {
+      console.log(LOG_PREFIX, 'Delayed Better label check (1s)');
+      addBetterLabel();
+    }, 1000);
 
     console.log(LOG_PREFIX, '✅ Initialization complete');
   }
