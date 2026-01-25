@@ -195,26 +195,101 @@
       </svg>
     `;
     console.log(LOG_PREFIX, 'Created modeButton:', modeButton);
-    modeButton.addEventListener('click', toggleDropdown);
+    console.log(LOG_PREFIX, 'Attaching click event listener to modeButton...');
+    modeButton.addEventListener('click', (e) => {
+      console.log(LOG_PREFIX, '*** CLICK EVENT FIRED ON MODE BUTTON ***');
+      toggleDropdown(e);
+    });
+    console.log(LOG_PREFIX, 'Click event listener attached successfully');
 
-    // Create dropdown
+    // Create dropdown - append to body to avoid overflow clipping
     dropdown = document.createElement('div');
+    dropdown.id = 'bcc-dropdown-' + Date.now(); // Unique ID for CSS targeting
     dropdown.className = 'bcc-mode-dropdown';
-    // Apply inline styles for dropdown
-    dropdown.style.cssText = 'position: absolute !important; bottom: calc(100% + 4px) !important; left: 0 !important; min-width: 120px !important; background: #ffffff !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; opacity: 0 !important; visibility: hidden !important; transform: translateY(4px) !important; transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s !important; overflow: hidden !important;';
+
+    // Inject stylesheet with high specificity rules
+    if (!document.getElementById('bcc-dropdown-styles')) {
+      const styleEl = document.createElement('style');
+      styleEl.id = 'bcc-dropdown-styles';
+      styleEl.textContent = `
+        .bcc-mode-dropdown[id^="bcc-dropdown-"] {
+          position: fixed !important;
+          display: block !important;
+          min-width: 120px !important;
+          min-height: 40px !important;
+          padding: 4px 0 !important;
+          background: #ffffff !important;
+          border: 1px solid rgba(0, 0, 0, 0.1) !important;
+          border-radius: 8px !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+          z-index: 999999 !important;
+          overflow: visible !important;
+        }
+        .bcc-mode-dropdown[id^="bcc-dropdown-"].bcc-dropdown-hidden {
+          display: block !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+        }
+        .bcc-mode-dropdown[id^="bcc-dropdown-"].bcc-dropdown-visible {
+          display: block !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+          pointer-events: auto !important;
+        }
+        .bcc-mode-dropdown[id^="bcc-dropdown-"] .bcc-mode-option {
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: center !important;
+          gap: 8px !important;
+          padding: 10px 12px !important;
+          margin: 0 !important;
+          cursor: pointer !important;
+          font-size: 13px !important;
+          background: #ffffff !important;
+          color: #000000 !important;
+          min-height: 36px !important;
+          box-sizing: border-box !important;
+        }
+        .bcc-mode-dropdown[id^="bcc-dropdown-"] .bcc-mode-option:hover {
+          background: #f3f4f6 !important;
+        }
+        .bcc-mode-dropdown[id^="bcc-dropdown-"] .bcc-check {
+          display: inline-block !important;
+          width: 16px !important;
+          color: #10a37f !important;
+          font-weight: bold !important;
+        }
+        .bcc-mode-dropdown[id^="bcc-dropdown-"] span {
+          display: inline !important;
+          color: #000000 !important;
+        }
+      `;
+      document.head.appendChild(styleEl);
+      console.log(LOG_PREFIX, 'Injected dropdown stylesheet');
+    }
+
+    dropdown.classList.add('bcc-dropdown-hidden');
     dropdown.innerHTML = `
-      <div class="bcc-mode-option" data-mode="Agent" style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 8px !important; padding: 10px 12px !important; cursor: pointer !important; font-size: 13px !important;">
-        <span class="bcc-check" style="display: inline-block !important; width: 16px !important; color: #10a37f !important; font-weight: bold !important;">&#10003;</span>
+      <div class="bcc-mode-option" data-mode="Agent">
+        <span class="bcc-check">&#10003;</span>
         <span>Agent</span>
       </div>
-      <div class="bcc-mode-option" data-mode="Plan" style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 8px !important; padding: 10px 12px !important; cursor: pointer !important; font-size: 13px !important;">
-        <span class="bcc-check" style="display: inline-block !important; width: 16px !important; color: #10a37f !important; font-weight: bold !important;"></span>
+      <div class="bcc-mode-option" data-mode="Plan">
+        <span class="bcc-check"></span>
         <span>Plan</span>
       </div>
     `;
     console.log(LOG_PREFIX, 'Created dropdown:', dropdown);
 
+    // Add hover effect for dropdown options
     dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
+      option.addEventListener('mouseenter', () => {
+        option.style.backgroundColor = '#f3f4f6';
+      });
+      option.addEventListener('mouseleave', () => {
+        option.style.backgroundColor = '#ffffff';
+      });
       option.addEventListener('click', (e) => {
         console.log(LOG_PREFIX, 'Option clicked:', option.dataset.mode);
         e.preventDefault();
@@ -224,7 +299,8 @@
     });
 
     container.appendChild(modeButton);
-    container.appendChild(dropdown);
+    // Append dropdown to body to avoid overflow issues
+    document.body.appendChild(dropdown);
 
     console.log(LOG_PREFIX, 'Final container:', container);
 
@@ -240,31 +316,90 @@
   }
 
   function toggleDropdown(e) {
-    console.log(LOG_PREFIX, 'toggleDropdown() called');
+    console.log(LOG_PREFIX, '=== toggleDropdown() START ===');
+    console.log(LOG_PREFIX, 'Event:', e);
+    console.log(LOG_PREFIX, 'Event type:', e.type);
+    console.log(LOG_PREFIX, 'Event target:', e.target);
+    console.log(LOG_PREFIX, 'modeButton reference:', modeButton);
+    console.log(LOG_PREFIX, 'dropdown reference:', dropdown);
+    console.log(LOG_PREFIX, 'dropdown in DOM?:', document.body.contains(dropdown));
+    console.log(LOG_PREFIX, 'modeButton in DOM?:', document.body.contains(modeButton));
+
     e.stopPropagation();
     e.preventDefault();
-    const isVisible = dropdown.style.visibility === 'visible';
-    console.log(LOG_PREFIX, 'Current visibility:', isVisible);
+
+    if (!dropdown) {
+      console.error(LOG_PREFIX, 'ERROR: dropdown is null or undefined!');
+      return;
+    }
+
+    // Check visibility using class instead of inline style
+    const isVisible = dropdown.classList.contains('bcc-dropdown-visible');
+    console.log(LOG_PREFIX, 'Has bcc-dropdown-visible class:', isVisible);
+    console.log(LOG_PREFIX, 'Has bcc-dropdown-hidden class:', dropdown.classList.contains('bcc-dropdown-hidden'));
 
     if (isVisible) {
+      console.log(LOG_PREFIX, 'Dropdown is visible, closing...');
       closeDropdown();
     } else {
-      dropdown.style.opacity = '1';
-      dropdown.style.visibility = 'visible';
-      dropdown.style.transform = 'translateY(0)';
-      console.log(LOG_PREFIX, 'Dropdown now visible');
+      console.log(LOG_PREFIX, 'Dropdown is hidden, opening...');
+
+      // Position dropdown above the button
+      const buttonRect = modeButton.getBoundingClientRect();
+      console.log(LOG_PREFIX, 'Button rect:', JSON.stringify(buttonRect));
+      console.log(LOG_PREFIX, 'Button rect values - top:', buttonRect.top, 'left:', buttonRect.left, 'width:', buttonRect.width, 'height:', buttonRect.height);
+
+      // Set position using inline styles (these won't conflict with visibility classes)
+      // Position dropdown below the button
+      const finalTop = buttonRect.bottom + 4;
+      const finalLeft = buttonRect.left;
+      console.log(LOG_PREFIX, 'Final position - top:', finalTop, 'left:', finalLeft);
+
+      dropdown.style.top = finalTop + 'px';
+      dropdown.style.left = finalLeft + 'px';
+
+      // Toggle classes for visibility (CSS handles opacity/visibility with !important)
+      dropdown.classList.remove('bcc-dropdown-hidden');
+      dropdown.classList.add('bcc-dropdown-visible');
+
+      console.log(LOG_PREFIX, 'Classes after toggle:', dropdown.className);
+
+      // Check computed styles
+      const computedStyle = window.getComputedStyle(dropdown);
+      console.log(LOG_PREFIX, 'Computed styles:');
+      console.log(LOG_PREFIX, '  - display:', computedStyle.display);
+      console.log(LOG_PREFIX, '  - visibility:', computedStyle.visibility);
+      console.log(LOG_PREFIX, '  - opacity:', computedStyle.opacity);
+      console.log(LOG_PREFIX, '  - top:', computedStyle.top);
+      console.log(LOG_PREFIX, '  - left:', computedStyle.left);
+      console.log(LOG_PREFIX, '  - position:', computedStyle.position);
+      console.log(LOG_PREFIX, '  - zIndex:', computedStyle.zIndex);
+
+      console.log(LOG_PREFIX, '=== Dropdown should now be visible ===');
+
       // Close on outside click
       setTimeout(() => {
         document.addEventListener('click', closeDropdown, { once: true });
       }, 0);
     }
+    console.log(LOG_PREFIX, '=== toggleDropdown() END ===');
   }
 
-  function closeDropdown() {
-    console.log(LOG_PREFIX, 'closeDropdown() called');
-    dropdown.style.opacity = '0';
-    dropdown.style.visibility = 'hidden';
-    dropdown.style.transform = 'translateY(4px)';
+  function closeDropdown(e) {
+    console.log(LOG_PREFIX, '=== closeDropdown() called ===');
+    console.log(LOG_PREFIX, 'Called from event:', e);
+    if (e) {
+      console.log(LOG_PREFIX, 'Event target:', e.target);
+      console.log(LOG_PREFIX, 'Event type:', e.type);
+    }
+    if (!dropdown) {
+      console.log(LOG_PREFIX, 'No dropdown to close');
+      return;
+    }
+    // Use class toggling for visibility (CSS handles the styles with !important)
+    dropdown.classList.remove('bcc-dropdown-visible');
+    dropdown.classList.add('bcc-dropdown-hidden');
+    console.log(LOG_PREFIX, 'Dropdown hidden, classes:', dropdown.className);
   }
 
   function selectMode(mode) {
