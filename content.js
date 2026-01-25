@@ -27,14 +27,24 @@
   // Load settings from storage
   function loadSettings() {
     return new Promise((resolve) => {
-      if (typeof chrome !== 'undefined' && chrome.storage) {
-        chrome.storage.sync.get(DEFAULT_SETTINGS, (result) => {
-          currentSettings = result;
-          console.log(LOG_PREFIX, 'Settings loaded:', currentSettings);
+      try {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+          chrome.storage.sync.get(DEFAULT_SETTINGS, (result) => {
+            if (chrome.runtime.lastError) {
+              console.log(LOG_PREFIX, 'Storage error, using defaults:', chrome.runtime.lastError);
+              resolve(currentSettings);
+            } else {
+              currentSettings = result;
+              console.log(LOG_PREFIX, 'Settings loaded:', currentSettings);
+              resolve(currentSettings);
+            }
+          });
+        } else {
+          console.log(LOG_PREFIX, 'Chrome storage not available, using defaults');
           resolve(currentSettings);
-        });
-      } else {
-        console.log(LOG_PREFIX, 'Chrome storage not available, using defaults');
+        }
+      } catch (e) {
+        console.log(LOG_PREFIX, 'Error loading settings, using defaults:', e);
         resolve(currentSettings);
       }
     });
@@ -961,9 +971,13 @@
   async function init() {
     console.log(LOG_PREFIX, 'init() called, readyState:', document.readyState);
 
-    // Load settings first
-    await loadSettings();
-    console.log(LOG_PREFIX, 'Settings loaded in init:', currentSettings);
+    try {
+      // Load settings first
+      await loadSettings();
+      console.log(LOG_PREFIX, 'Settings loaded in init:', currentSettings);
+    } catch (e) {
+      console.log(LOG_PREFIX, 'Failed to load settings, using defaults:', e);
+    }
 
     // Set up model display watchers (only if enabled)
     if (isFeatureEnabled('showModel')) {
@@ -975,11 +989,9 @@
       console.log(LOG_PREFIX, 'Initial model:', lastKnownModel);
     }
 
-    // Wait for page to load
-    if (document.readyState === 'loading') {
-      console.log(LOG_PREFIX, 'Document still loading, adding DOMContentLoaded listener');
-      document.addEventListener('DOMContentLoaded', () => {
-        console.log(LOG_PREFIX, 'DOMContentLoaded fired');
+    // Function to inject UI elements
+    function injectUI() {
+      try {
         if (isFeatureEnabled('modeButton')) {
           setTimeout(findAndInjectModeButton, 1000);
         }
@@ -987,16 +999,21 @@
         if (isFeatureEnabled('showModel')) {
           updateModelSelector();
         }
+      } catch (e) {
+        console.error(LOG_PREFIX, 'Error injecting UI:', e);
+      }
+    }
+
+    // Wait for page to load
+    if (document.readyState === 'loading') {
+      console.log(LOG_PREFIX, 'Document still loading, adding DOMContentLoaded listener');
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log(LOG_PREFIX, 'DOMContentLoaded fired');
+        injectUI();
       });
     } else {
       console.log(LOG_PREFIX, 'Document already loaded, scheduling injection');
-      if (isFeatureEnabled('modeButton')) {
-        setTimeout(findAndInjectModeButton, 1000);
-      }
-      addBetterLabel(); // Always add the label (it's the toggle)
-      if (isFeatureEnabled('showModel')) {
-        updateModelSelector();
-      }
+      injectUI();
     }
 
     // Watch for copy branch button clicks (only if enabled)
@@ -1027,5 +1044,9 @@
     console.log(LOG_PREFIX, 'Initialization complete');
   }
 
-  init();
+  init().catch(e => {
+    console.error(LOG_PREFIX, 'Init failed:', e);
+    // Fallback: try to add the better label anyway
+    setTimeout(() => addBetterLabel(), 1000);
+  });
 })();
