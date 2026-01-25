@@ -1874,6 +1874,12 @@
       button.title = 'Mark as blocked';
       // Remove the blocked indicator
       removeBlockedIndicator(sessionEl);
+      // Remove any existing tooltip from the button
+      const existingTooltip = button.querySelector('.bcc-blocked-tooltip');
+      if (existingTooltip) {
+        existingTooltip.remove();
+        console.log(LOG_PREFIX, '>>> Removed tooltip from button');
+      }
       // Clear the stored reason
       const storageKey = getSessionStorageId(sessionData);
       if (typeof chrome !== 'undefined' && chrome.storage) {
