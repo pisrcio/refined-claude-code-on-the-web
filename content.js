@@ -16,28 +16,46 @@
     'haiku': 'Haiku 4.5'
   };
 
-  // Find the model selector button (the "..." button)
+  // Parse model ID from localStorage format (e.g., "claude-opus-4-5-20251101" -> "Opus 4.5")
+  function parseModelId(modelId) {
+    if (!modelId) return null;
+    const modelIdLower = modelId.toLowerCase();
+    for (const [key, name] of Object.entries(MODEL_NAMES)) {
+      if (modelIdLower.includes(key)) {
+        console.log(LOG_PREFIX, `✅ Parsed model ID "${modelId}" -> "${name}"`);
+        return name;
+      }
+    }
+    console.log(LOG_PREFIX, `❌ Could not parse model ID: ${modelId}`);
+    return null;
+  }
+
+  // Find the model selector button (the "..." button with aria-label "More options")
   function findModelSelectorButton() {
     console.log(LOG_PREFIX, '🔍 Looking for model selector button...');
 
-    // Look for buttons that might be the model selector
+    // Primary method: Find by aria-label "More options" (this is the "..." button)
+    const moreOptionsButton = document.querySelector('button[aria-label="More options"]');
+    if (moreOptionsButton) {
+      console.log(LOG_PREFIX, '✅ Found "More options" button by aria-label!', {
+        text: moreOptionsButton.textContent.trim(),
+        className: moreOptionsButton.className
+      });
+      return moreOptionsButton;
+    }
+
+    // Fallback: Look for buttons that might be the model selector
     const buttons = document.querySelectorAll('button');
     console.log(LOG_PREFIX, `Found ${buttons.length} buttons on page`);
 
     for (const button of buttons) {
-      // The "..." button typically contains just an ellipsis or three dots icon
       const text = button.textContent.trim();
-      const innerHTML = button.innerHTML;
+      const ariaLabel = button.getAttribute('aria-label');
 
-      // Log buttons that might be relevant (short text or contain svg)
-      if (text.length < 10 || button.querySelector('svg')) {
-        console.log(LOG_PREFIX, 'Button candidate:', {
-          text: text,
-          innerHTML: innerHTML.substring(0, 200),
-          classList: button.className,
-          ariaLabel: button.getAttribute('aria-label'),
-          dataTestId: button.getAttribute('data-testid')
-        });
+      // Check for common model selector patterns
+      if (ariaLabel && (ariaLabel.toLowerCase().includes('model') || ariaLabel.toLowerCase().includes('options'))) {
+        console.log(LOG_PREFIX, '✅ Found button by aria-label pattern:', ariaLabel);
+        return button;
       }
 
       if (text === '...' || text === '\u2026' || text === '\u22EF') {
@@ -61,94 +79,68 @@
   function getSelectedModel() {
     console.log(LOG_PREFIX, '🔍 Looking for selected model...');
 
-    // Method 1: Look for a checked/selected item in a model dropdown
-    const checkedItem = document.querySelector('[role="menuitemradio"][aria-checked="true"]');
-    console.log(LOG_PREFIX, 'Method 1 - menuitemradio checked:', checkedItem?.textContent);
-    if (checkedItem) {
-      const modelText = checkedItem.textContent;
-      for (const [key, name] of Object.entries(MODEL_NAMES)) {
-        if (modelText.toLowerCase().includes(key)) {
-          console.log(LOG_PREFIX, '✅ Found model via Method 1:', name);
-          return name;
-        }
-      }
-    }
-
-    // Method 2: Look for checkmark icon next to model name
-    const menuItems = document.querySelectorAll('[role="menuitem"], [role="menuitemradio"], [role="option"]');
-    console.log(LOG_PREFIX, `Method 2 - Found ${menuItems.length} menu items`);
-    for (const item of menuItems) {
-      const hasCheck = item.querySelector('svg[data-state="checked"], .check-icon, [data-checked="true"]') ||
-                       item.querySelector('svg')?.innerHTML.includes('check') ||
-                       item.getAttribute('aria-checked') === 'true' ||
-                       item.getAttribute('data-state') === 'checked';
-
-      console.log(LOG_PREFIX, 'Menu item:', {
-        text: item.textContent.substring(0, 50),
-        hasCheck: hasCheck,
-        ariaChecked: item.getAttribute('aria-checked'),
-        dataState: item.getAttribute('data-state')
-      });
-
-      if (hasCheck) {
-        const text = item.textContent.toLowerCase();
-        for (const [key, name] of Object.entries(MODEL_NAMES)) {
-          if (text.includes(key)) {
-            console.log(LOG_PREFIX, '✅ Found model via Method 2:', name);
-            return name;
-          }
-        }
-      }
-    }
-
-    // Method 3: Look for model indicator in the UI
-    const modelIndicators = document.querySelectorAll('[class*="model"], [data-model]');
-    console.log(LOG_PREFIX, `Method 3 - Found ${modelIndicators.length} model indicators`);
-    for (const indicator of modelIndicators) {
-      const text = indicator.textContent.toLowerCase();
-      console.log(LOG_PREFIX, 'Model indicator:', text.substring(0, 100));
-      for (const [key, name] of Object.entries(MODEL_NAMES)) {
-        if (text.includes(key)) {
-          console.log(LOG_PREFIX, '✅ Found model via Method 3:', name);
-          return name;
-        }
-      }
-    }
-
-    // Method 4: Check page URL or local storage for model preference
+    // Method 1 (PRIMARY): Check localStorage for 'default-model' key
+    // This is where Claude Code stores the selected model (e.g., "claude-opus-4-5-20251101")
     try {
-      console.log(LOG_PREFIX, 'Method 4 - Checking localStorage...');
-      const allKeys = Object.keys(localStorage);
-      console.log(LOG_PREFIX, 'LocalStorage keys:', allKeys);
-
-      for (const key of allKeys) {
-        const value = localStorage.getItem(key);
-        if (value && (key.toLowerCase().includes('model') || value.toLowerCase().includes('opus') || value.toLowerCase().includes('sonnet') || value.toLowerCase().includes('haiku'))) {
-          console.log(LOG_PREFIX, `LocalStorage ${key}:`, value.substring(0, 200));
-        }
-      }
-
-      const stored = localStorage.getItem('selectedModel') || localStorage.getItem('model');
-      if (stored) {
-        const storedLower = stored.toLowerCase();
-        for (const [key, name] of Object.entries(MODEL_NAMES)) {
-          if (storedLower.includes(key)) {
-            console.log(LOG_PREFIX, '✅ Found model via Method 4:', name);
-            return name;
-          }
+      const defaultModel = localStorage.getItem('default-model');
+      console.log(LOG_PREFIX, 'Method 1 - default-model from localStorage:', defaultModel);
+      if (defaultModel) {
+        const parsed = parseModelId(defaultModel);
+        if (parsed) {
+          console.log(LOG_PREFIX, '✅ Found model via Method 1 (default-model):', parsed);
+          return parsed;
         }
       }
     } catch (e) {
       console.log(LOG_PREFIX, 'localStorage error:', e);
     }
 
-    // Method 5: Search entire page text for model names
-    console.log(LOG_PREFIX, 'Method 5 - Searching page text...');
-    const pageText = document.body.innerText.toLowerCase();
-    for (const [key, name] of Object.entries(MODEL_NAMES)) {
-      if (pageText.includes(key + ' 4.5')) {
-        console.log(LOG_PREFIX, `Found "${key}" in page text`);
+    // Method 2: Look for a checked/selected item in a model dropdown
+    const checkedItem = document.querySelector('[role="menuitemradio"][aria-checked="true"]');
+    console.log(LOG_PREFIX, 'Method 2 - menuitemradio checked:', checkedItem?.textContent);
+    if (checkedItem) {
+      const modelText = checkedItem.textContent;
+      for (const [key, name] of Object.entries(MODEL_NAMES)) {
+        if (modelText.toLowerCase().includes(key)) {
+          console.log(LOG_PREFIX, '✅ Found model via Method 2:', name);
+          return name;
+        }
       }
+    }
+
+    // Method 3: Look for checkmark icon next to model name
+    const menuItems = document.querySelectorAll('[role="menuitem"], [role="menuitemradio"], [role="option"]');
+    console.log(LOG_PREFIX, `Method 3 - Found ${menuItems.length} menu items`);
+    for (const item of menuItems) {
+      const hasCheck = item.querySelector('svg[data-state="checked"], .check-icon, [data-checked="true"]') ||
+                       item.querySelector('svg')?.innerHTML.includes('check') ||
+                       item.getAttribute('aria-checked') === 'true' ||
+                       item.getAttribute('data-state') === 'checked';
+
+      if (hasCheck) {
+        const text = item.textContent.toLowerCase();
+        for (const [key, name] of Object.entries(MODEL_NAMES)) {
+          if (text.includes(key)) {
+            console.log(LOG_PREFIX, '✅ Found model via Method 3:', name);
+            return name;
+          }
+        }
+      }
+    }
+
+    // Method 4: Check other localStorage keys
+    try {
+      console.log(LOG_PREFIX, 'Method 4 - Checking other localStorage keys...');
+      const stored = localStorage.getItem('selectedModel') || localStorage.getItem('model');
+      if (stored) {
+        const parsed = parseModelId(stored);
+        if (parsed) {
+          console.log(LOG_PREFIX, '✅ Found model via Method 4:', parsed);
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.log(LOG_PREFIX, 'localStorage error:', e);
     }
 
     console.log(LOG_PREFIX, '❌ No selected model found');
