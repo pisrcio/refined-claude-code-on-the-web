@@ -656,42 +656,44 @@
 
       console.log(LOG_PREFIX, `📋 Found Create PR button and branch: ${currentBranchName}`);
 
+      // Find the "Open in CLI" button to copy its exact styling
+      let openInCLIButton = null;
+      for (const btn of allButtons) {
+        const text = btn.textContent.trim();
+        if (text.includes('Open in CLI')) {
+          openInCLIButton = btn;
+          break;
+        }
+      }
+
       // Create the Pull Branch in CLI button
       const pullBranchBtn = document.createElement('button');
       pullBranchBtn.className = 'better-pull-branch-btn';
-      pullBranchBtn.textContent = 'Pull Branch in CLI';
       pullBranchBtn.title = `Copy: git fetch && git co ${currentBranchName} && git pull`;
 
-      // Style to match the Create PR button
-      const createPRStyles = window.getComputedStyle(createPRButton);
-      pullBranchBtn.style.cssText = `
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: ${createPRStyles.paddingTop} ${createPRStyles.paddingRight} ${createPRStyles.paddingBottom} ${createPRStyles.paddingLeft};
-        margin-right: 8px;
-        font-size: ${createPRStyles.fontSize};
-        font-family: ${createPRStyles.fontFamily};
-        font-weight: ${createPRStyles.fontWeight};
-        line-height: ${createPRStyles.lineHeight};
-        border-radius: ${createPRStyles.borderRadius};
-        border: 1px solid currentColor;
-        background: transparent;
-        color: inherit;
-        cursor: pointer;
-        transition: background 0.2s, opacity 0.2s;
-        opacity: 0.8;
+      // Add terminal icon (same as Open in CLI)
+      pullBranchBtn.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink: 0;">
+          <path d="M5.14648 7.14648C5.34175 6.95122 5.65825 6.95122 5.85352 7.14648L8.35352 9.64648C8.44728 9.74025 8.5 9.86739 8.5 10C8.5 10.0994 8.47037 10.1958 8.41602 10.2773L8.35352 10.3535L5.85352 12.8535C5.65825 13.0488 5.34175 13.0488 5.14648 12.8535C4.95122 12.6583 4.95122 12.3417 5.14648 12.1465L7.29297 10L5.14648 7.85352C4.95122 7.65825 4.95122 7.34175 5.14648 7.14648Z"></path>
+          <path d="M14.5 12C14.7761 12 15 12.2239 15 12.5C15 12.7761 14.7761 13 14.5 13H9.5C9.22386 13 9 12.7761 9 12.5C9 12.2239 9.22386 12 9.5 12H14.5Z"></path>
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M16.5 4C17.3284 4 18 4.67157 18 5.5V14.5C18 15.3284 17.3284 16 16.5 16H3.5C2.67157 16 2 15.3284 2 14.5V5.5C2 4.67157 2.67157 4 3.5 4H16.5ZM3.5 5C3.22386 5 3 5.22386 3 5.5V14.5C3 14.7761 3.22386 15 3.5 15H16.5C16.7761 15 17 14.7761 17 14.5V5.5C17 5.22386 16.7761 5 16.5 5H3.5Z"></path>
+        </svg>
+        <span>Pull Branch in CLI</span>
       `;
 
-      pullBranchBtn.addEventListener('mouseenter', () => {
-        pullBranchBtn.style.opacity = '1';
-        pullBranchBtn.style.background = 'rgba(128, 128, 128, 0.1)';
-      });
+      // Copy classes and styles from Open in CLI button if found, otherwise use Create PR button
+      const referenceButton = openInCLIButton || createPRButton;
+      if (referenceButton.className) {
+        pullBranchBtn.className = referenceButton.className + ' better-pull-branch-btn';
+      }
 
-      pullBranchBtn.addEventListener('mouseleave', () => {
-        pullBranchBtn.style.opacity = '0.8';
-        pullBranchBtn.style.background = 'transparent';
-      });
+      // Copy inline styles if any
+      if (referenceButton.style.cssText) {
+        pullBranchBtn.style.cssText = referenceButton.style.cssText;
+      }
+
+      // Add margin to separate from other buttons
+      pullBranchBtn.style.marginRight = '8px';
 
       pullBranchBtn.addEventListener('click', async (event) => {
         event.preventDefault();
@@ -705,7 +707,7 @@
         try {
           await navigator.clipboard.writeText(gitCommand);
           console.log(LOG_PREFIX, '✅ Git command copied to clipboard!');
-          showCopyFeedback('Copied: ' + gitCommand);
+          showCopyFeedback('Command copied to clipboard');
         } catch (err) {
           console.error(LOG_PREFIX, '❌ Failed to copy:', err);
           // Fallback: try execCommand
@@ -719,7 +721,7 @@
             document.execCommand('copy');
             document.body.removeChild(textArea);
             console.log(LOG_PREFIX, '✅ Git command copied via fallback!');
-            showCopyFeedback('Copied: ' + gitCommand);
+            showCopyFeedback('Command copied to clipboard');
           } catch (fallbackErr) {
             console.error(LOG_PREFIX, '❌ Fallback copy failed:', fallbackErr);
           }
