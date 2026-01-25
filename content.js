@@ -1273,12 +1273,12 @@
       return null;
     }
 
-    // Find the delete button to insert before
-    console.log(LOG_PREFIX, '>>> Looking for delete button...');
-    const deleteButton = findDeleteButton(sessionEl);
-    console.log(LOG_PREFIX, '>>> Delete button found:', deleteButton);
-    if (!deleteButton) {
-      console.log(LOG_PREFIX, '>>> Delete button not found, cannot add blocked button');
+    // Find the archive button to insert after (blocked button goes to the right)
+    console.log(LOG_PREFIX, '>>> Looking for archive button...');
+    const archiveButton = findArchiveButton(sessionEl);
+    console.log(LOG_PREFIX, '>>> Archive button found:', archiveButton);
+    if (!archiveButton) {
+      console.log(LOG_PREFIX, '>>> Archive button not found, cannot add blocked button');
       // Log all buttons in the session for debugging
       const allButtons = sessionEl.querySelectorAll('button');
       console.log(LOG_PREFIX, '>>> All buttons in session:', allButtons.length);
@@ -1289,15 +1289,12 @@
       return null;
     }
 
-    // Find the container - the delete button is wrapped in a span
-    console.log(LOG_PREFIX, '>>> Looking for delete wrapper span[data-state]...');
-    const deleteWrapper = deleteButton.closest('span[data-state]');
-    console.log(LOG_PREFIX, '>>> Delete wrapper found:', deleteWrapper);
-    if (!deleteWrapper) {
-      console.log(LOG_PREFIX, '>>> Delete button wrapper not found');
-      // Log parent elements for debugging
-      console.log(LOG_PREFIX, '>>> Delete button parent:', deleteButton.parentElement);
-      console.log(LOG_PREFIX, '>>> Delete button grandparent:', deleteButton.parentElement?.parentElement);
+    // Find the container - the archive button is wrapped in a div
+    console.log(LOG_PREFIX, '>>> Looking for archive wrapper div...');
+    const archiveWrapper = archiveButton.parentElement;
+    console.log(LOG_PREFIX, '>>> Archive wrapper found:', archiveWrapper);
+    if (!archiveWrapper) {
+      console.log(LOG_PREFIX, '>>> Archive button wrapper not found');
       return null;
     }
 
@@ -1306,16 +1303,15 @@
     const blockedButton = createBlockedButton();
     console.log(LOG_PREFIX, '>>> Blocked button created:', blockedButton);
 
-    // Create a wrapper span similar to the delete button wrapper
-    const blockedWrapper = document.createElement('span');
+    // Create a wrapper div similar to the archive button wrapper
+    const blockedWrapper = document.createElement('div');
     blockedWrapper.className = 'bcc-blocked-wrapper';
-    blockedWrapper.setAttribute('data-state', 'closed');
     blockedWrapper.appendChild(blockedButton);
 
-    // Insert before the delete button wrapper
-    console.log(LOG_PREFIX, '>>> Inserting blocked button before delete wrapper...');
-    console.log(LOG_PREFIX, '>>> deleteWrapper.parentNode:', deleteWrapper.parentNode);
-    deleteWrapper.parentNode.insertBefore(blockedWrapper, deleteWrapper);
+    // Insert after the archive button wrapper (to the right)
+    console.log(LOG_PREFIX, '>>> Inserting blocked button after archive wrapper...');
+    console.log(LOG_PREFIX, '>>> archiveWrapper.parentNode:', archiveWrapper.parentNode);
+    archiveWrapper.parentNode.insertBefore(blockedWrapper, archiveWrapper.nextSibling);
 
     console.log(LOG_PREFIX, '>>> SUCCESS: Added blocked button to session');
 
@@ -1447,23 +1443,23 @@
       return;
     }
 
-    // Find the title span to add indicator after
-    const titleSpan = sessionEl.querySelector('span.font-base.text-text-100.leading-relaxed');
-    if (!titleSpan) {
-      console.log(LOG_PREFIX, '>>> Title span not found for blocked indicator');
+    // Find the flex row container to add indicator at the end
+    const row = sessionEl.querySelector('.cursor-pointer');
+    if (!row) {
+      console.log(LOG_PREFIX, '>>> Row container not found for blocked indicator');
       return;
     }
 
     // Create the indicator
     const indicator = document.createElement('span');
     indicator.className = 'bcc-blocked-indicator';
-    indicator.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 256 256" style="vertical-align: middle; margin-left: 6px;"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"></path></svg>`;
-    indicator.style.cssText = 'color: #f59e0b; display: inline-flex; align-items: center; flex-shrink: 0;';
+    indicator.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"></path></svg>`;
+    indicator.style.cssText = 'color: #f59e0b; display: inline-flex; align-items: center; flex-shrink: 0; margin-left: auto; margin-right: 8px;';
     indicator.title = 'Session is blocked';
 
-    // Insert after the title text
-    titleSpan.parentNode.insertBefore(indicator, titleSpan.nextSibling);
-    console.log(LOG_PREFIX, '>>> Added blocked indicator to session');
+    // Append to row (will be at flex end due to margin-left: auto)
+    row.appendChild(indicator);
+    console.log(LOG_PREFIX, '>>> Added blocked indicator to session (flex end)');
   }
 
   /**
