@@ -1114,8 +1114,36 @@
 
     // Function to get the current project name from the page
     function getCurrentProjectName() {
-      // Try to find the project name from the sidebar or page
-      // Look for the active/selected project in the sidebar
+      // Try multiple approaches to find the project name
+
+      // 1. Look for GitHub repo links on the page
+      const githubLinks = document.querySelectorAll('a[href*="github.com"]');
+      for (const link of githubLinks) {
+        const href = link.getAttribute('href');
+        // Match github.com/owner/repo pattern
+        const repoMatch = href.match(/github\.com\/[^\/]+\/([^\/\?#]+)/);
+        if (repoMatch) {
+          console.log(LOG_PREFIX, `Found project name from GitHub link: ${repoMatch[1]}`);
+          return repoMatch[1];
+        }
+      }
+
+      // 2. Look for repo name in page text (near branch info)
+      const pageText = document.body.innerText || '';
+      // Look for patterns like "repo-name" followed by branch info
+      const repoPatterns = [
+        /pisrcio\/([a-zA-Z0-9_-]+)/,  // GitHub org/repo pattern
+        /([a-zA-Z0-9_-]+)\/claude\//,  // repo/claude/ pattern
+      ];
+      for (const pattern of repoPatterns) {
+        const match = pageText.match(pattern);
+        if (match && match[1]) {
+          console.log(LOG_PREFIX, `Found project name from page text: ${match[1]}`);
+          return match[1];
+        }
+      }
+
+      // 3. Try standard selectors
       const activeProject = document.querySelector('[data-testid="project-name"]') ||
                            document.querySelector('.truncate[title]') ||
                            document.querySelector('nav .truncate');
@@ -1125,16 +1153,16 @@
         if (name) return name;
       }
 
-      // Try to get from URL if it contains project info
+      // 4. Try to get from URL if it contains project info
       const urlMatch = window.location.pathname.match(/\/project\/([^\/]+)/);
       if (urlMatch) {
         return decodeURIComponent(urlMatch[1]);
       }
 
-      // Try to find from page title or header
-      const header = document.querySelector('h1, [role="heading"]');
-      if (header) {
-        return header.textContent?.trim();
+      // 5. Try to find from page title
+      const title = document.title;
+      if (title && !title.includes('Claude')) {
+        return title.split(' ')[0]; // First word of title
       }
 
       return null;
