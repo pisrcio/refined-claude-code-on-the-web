@@ -31,13 +31,6 @@
     // Apply inline styles to override page CSS
     modeButton.style.cssText = 'display: inline-flex !important; flex-direction: row !important; align-items: center !important; gap: 6px !important; padding: 6px 10px !important; background: transparent !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; border-radius: 8px !important; cursor: pointer !important; font-size: 13px !important; white-space: nowrap !important;';
     modeButton.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block !important; flex-shrink: 0 !important; vertical-align: middle !important;">
-        <circle cx="12" cy="12" r="3"></circle>
-        <path d="M12 1v6m0 6v10"></path>
-        <path d="m4.22 4.22 4.24 4.24m7.08 7.08 4.24 4.24"></path>
-        <path d="M1 12h6m6 0h10"></path>
-        <path d="m4.22 19.78 4.24-4.24m7.08-7.08 4.24-4.24"></path>
-      </svg>
       <span class="bcc-mode-label" style="display: inline !important; font-weight: 500 !important;">${currentMode}</span>
       <svg class="bcc-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block !important; opacity: 0.6 !important;">
         <path d="m6 9 6 6 6-6"></path>
