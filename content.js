@@ -6,45 +6,64 @@ console.log('[BetterClaudeCode] Content script loaded');
 function addBetterLabel() {
   console.log('[BetterClaudeCode] addBetterLabel() called');
 
-  // Find the "Claude Code" label by searching for elements containing that text
-  const allElements = document.querySelectorAll('*');
-  console.log('[BetterClaudeCode] Total elements on page:', allElements.length);
+  // Only search within the body, not the head (to avoid matching <title>)
+  const bodyElements = document.body.querySelectorAll('*');
+  console.log('[BetterClaudeCode] Total body elements:', bodyElements.length);
 
   let foundClaudeCode = false;
-  let matchingElements = [];
+  let potentialMatches = [];
 
-  for (const element of allElements) {
-    // Check if this element directly contains "Claude Code" text
-    const hasOneChild = element.childNodes.length === 1;
-    const isTextNode = element.childNodes[0]?.nodeType === Node.TEXT_NODE;
+  for (const element of bodyElements) {
     const textContent = element.textContent?.trim();
 
-    if (textContent === 'Claude Code') {
-      console.log('[BetterClaudeCode] Found element with "Claude Code" text:', {
-        tagName: element.tagName,
-        className: element.className,
-        hasOneChild,
-        isTextNode,
-        childNodesLength: element.childNodes.length,
-        firstChildNodeType: element.childNodes[0]?.nodeType,
-        parentElement: element.parentElement?.tagName,
-        parentClassName: element.parentElement?.className
-      });
-      matchingElements.push(element);
+    // First pass: find ALL elements that contain "Claude Code" somewhere
+    if (textContent && textContent.includes('Claude Code')) {
+      // Only log elements that are relatively small (likely the actual label, not a huge container)
+      if (textContent.length < 100) {
+        potentialMatches.push({
+          element,
+          tagName: element.tagName,
+          className: element.className,
+          textContent: textContent.substring(0, 50),
+          childNodesLength: element.childNodes.length,
+          innerHTML: element.innerHTML?.substring(0, 100)
+        });
+      }
     }
 
-    if (hasOneChild && isTextNode && textContent === 'Claude Code') {
+    // Check if this element's direct text content (not children) contains "Claude Code"
+    // This handles cases where the text might be in a span or other wrapper
+    let directText = '';
+    for (const node of element.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        directText += node.textContent;
+      }
+    }
+    directText = directText.trim();
+
+    // Match elements where direct text is "Claude Code" OR the element only contains "Claude Code"
+    const isExactMatch = directText === 'Claude Code' ||
+                         (textContent === 'Claude Code' && element.tagName !== 'TITLE');
+
+    if (isExactMatch) {
       foundClaudeCode = true;
-      console.log('[BetterClaudeCode] MATCH! Element passes all conditions');
+      console.log('[BetterClaudeCode] MATCH! Found Claude Code element:', {
+        tagName: element.tagName,
+        className: element.className,
+        directText,
+        textContent: textContent?.substring(0, 50),
+        parentTag: element.parentElement?.tagName,
+        parentClass: element.parentElement?.className
+      });
 
-      // Check if we already added the Better label
+      // Check if we already added the Better label (check parent and siblings)
       const parent = element.parentElement;
-      const existingLabel = parent?.querySelector('.better-label');
-      console.log('[BetterClaudeCode] Parent element:', parent?.tagName, parent?.className);
-      console.log('[BetterClaudeCode] Existing better-label:', existingLabel);
-
-      if (existingLabel) {
-        console.log('[BetterClaudeCode] Better label already exists, skipping');
+      if (parent?.querySelector('.better-label')) {
+        console.log('[BetterClaudeCode] Better label already exists in parent, skipping');
+        continue;
+      }
+      if (element.nextElementSibling?.classList?.contains('better-label')) {
+        console.log('[BetterClaudeCode] Better label already exists as sibling, skipping');
         continue;
       }
 
@@ -68,18 +87,18 @@ function addBetterLabel() {
         border-radius: 9999px;
       `;
 
-      // Insert after the Claude Code element's parent container
-      console.log('[BetterClaudeCode] Inserting Better label after element');
+      // Insert after the Claude Code element
+      console.log('[BetterClaudeCode] Inserting Better label');
       element.parentNode.insertBefore(betterLabel, element.nextSibling);
       console.log('[BetterClaudeCode] Better label inserted successfully');
     }
   }
 
   if (!foundClaudeCode) {
-    console.log('[BetterClaudeCode] No matching element found with exact conditions');
-    console.log('[BetterClaudeCode] Elements containing "Claude Code" text:', matchingElements.length);
-    matchingElements.forEach((el, i) => {
-      console.log(`[BetterClaudeCode] Element ${i}:`, el.outerHTML.substring(0, 200));
+    console.log('[BetterClaudeCode] No exact match found');
+    console.log('[BetterClaudeCode] Potential matches (elements containing "Claude Code"):', potentialMatches.length);
+    potentialMatches.forEach((match, i) => {
+      console.log(`[BetterClaudeCode] Potential match ${i}:`, match);
     });
   }
 }
