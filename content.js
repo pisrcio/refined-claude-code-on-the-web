@@ -1255,29 +1255,51 @@
    * @returns {HTMLButtonElement|null} The added button or null if already exists
    */
   function addBlockedButtonToSession(sessionEl) {
-    if (!sessionEl) return null;
+    console.log(LOG_PREFIX, '>>> addBlockedButtonToSession called', sessionEl);
+    if (!sessionEl) {
+      console.log(LOG_PREFIX, '>>> sessionEl is null/undefined');
+      return null;
+    }
 
     // Check if already added
-    if (findBlockedButton(sessionEl)) {
+    const existingBtn = findBlockedButton(sessionEl);
+    if (existingBtn) {
+      console.log(LOG_PREFIX, '>>> Blocked button already exists for this session');
       return null;
     }
 
     // Find the delete button to insert before
+    console.log(LOG_PREFIX, '>>> Looking for delete button...');
     const deleteButton = findDeleteButton(sessionEl);
+    console.log(LOG_PREFIX, '>>> Delete button found:', deleteButton);
     if (!deleteButton) {
-      console.log(LOG_PREFIX, 'Delete button not found, cannot add blocked button');
+      console.log(LOG_PREFIX, '>>> Delete button not found, cannot add blocked button');
+      // Log all buttons in the session for debugging
+      const allButtons = sessionEl.querySelectorAll('button');
+      console.log(LOG_PREFIX, '>>> All buttons in session:', allButtons.length);
+      allButtons.forEach((btn, i) => {
+        const svg = btn.querySelector('svg');
+        console.log(LOG_PREFIX, `>>>   Button ${i}:`, btn.className, 'SVG viewBox:', svg?.getAttribute('viewBox'));
+      });
       return null;
     }
 
     // Find the container - the delete button is wrapped in a span
+    console.log(LOG_PREFIX, '>>> Looking for delete wrapper span[data-state]...');
     const deleteWrapper = deleteButton.closest('span[data-state]');
+    console.log(LOG_PREFIX, '>>> Delete wrapper found:', deleteWrapper);
     if (!deleteWrapper) {
-      console.log(LOG_PREFIX, 'Delete button wrapper not found');
+      console.log(LOG_PREFIX, '>>> Delete button wrapper not found');
+      // Log parent elements for debugging
+      console.log(LOG_PREFIX, '>>> Delete button parent:', deleteButton.parentElement);
+      console.log(LOG_PREFIX, '>>> Delete button grandparent:', deleteButton.parentElement?.parentElement);
       return null;
     }
 
     // Create the blocked button
+    console.log(LOG_PREFIX, '>>> Creating blocked button...');
     const blockedButton = createBlockedButton();
+    console.log(LOG_PREFIX, '>>> Blocked button created:', blockedButton);
 
     // Create a wrapper span similar to the delete button wrapper
     const blockedWrapper = document.createElement('span');
@@ -1286,15 +1308,25 @@
     blockedWrapper.appendChild(blockedButton);
 
     // Insert before the delete button wrapper
+    console.log(LOG_PREFIX, '>>> Inserting blocked button before delete wrapper...');
+    console.log(LOG_PREFIX, '>>> deleteWrapper.parentNode:', deleteWrapper.parentNode);
     deleteWrapper.parentNode.insertBefore(blockedWrapper, deleteWrapper);
 
-    console.log(LOG_PREFIX, 'Added blocked button to session');
+    console.log(LOG_PREFIX, '>>> SUCCESS: Added blocked button to session');
 
     // Add click handler
     blockedButton.addEventListener('click', (e) => {
+      console.log(LOG_PREFIX, '>>> CLICK EVENT FIRED on blocked button!');
+      console.log(LOG_PREFIX, '>>> Event:', e);
+      console.log(LOG_PREFIX, '>>> Target:', e.target);
       e.preventDefault();
       e.stopPropagation();
       handleBlockedClick(sessionEl, blockedButton);
+    });
+
+    // Also add mousedown for debugging
+    blockedButton.addEventListener('mousedown', (e) => {
+      console.log(LOG_PREFIX, '>>> MOUSEDOWN EVENT on blocked button');
     });
 
     return blockedButton;
@@ -1306,29 +1338,42 @@
    * @param {HTMLButtonElement} button - The blocked button
    */
   function handleBlockedClick(sessionEl, button) {
+    console.log(LOG_PREFIX, '>>> handleBlockedClick called');
+    console.log(LOG_PREFIX, '>>> sessionEl:', sessionEl);
+    console.log(LOG_PREFIX, '>>> button:', button);
+
     const sessionData = getSessionData(sessionEl);
-    console.log(LOG_PREFIX, 'Blocked button clicked for session:', sessionData?.title);
+    console.log(LOG_PREFIX, '>>> sessionData:', sessionData);
+    console.log(LOG_PREFIX, '>>> Blocked button clicked for session:', sessionData?.title);
 
     // Toggle blocked state visually
+    console.log(LOG_PREFIX, '>>> Toggling bcc-blocked-active class...');
     const isBlocked = button.classList.toggle('bcc-blocked-active');
+    console.log(LOG_PREFIX, '>>> isBlocked after toggle:', isBlocked);
 
     if (isBlocked) {
+      console.log(LOG_PREFIX, '>>> Setting blocked state (amber color)');
       button.style.color = '#f59e0b';
       button.title = 'Marked as blocked - click to unblock';
+      console.log(LOG_PREFIX, '>>> Calling showBlockedFeedback...');
       showBlockedFeedback(`Session "${sessionData?.title}" marked as blocked`);
     } else {
+      console.log(LOG_PREFIX, '>>> Clearing blocked state');
       button.style.color = '';
       button.title = 'Mark as blocked';
+      console.log(LOG_PREFIX, '>>> Calling showBlockedFeedback...');
       showBlockedFeedback(`Session "${sessionData?.title}" unblocked`);
     }
 
     // Emit custom event for external listeners
+    console.log(LOG_PREFIX, '>>> Dispatching bcc:session-blocked event');
     window.dispatchEvent(new CustomEvent('bcc:session-blocked', {
       detail: {
         sessionData,
         isBlocked
       }
     }));
+    console.log(LOG_PREFIX, '>>> handleBlockedClick complete');
   }
 
   /**
@@ -1336,6 +1381,8 @@
    * @param {string} message - The message to display
    */
   function showBlockedFeedback(message) {
+    console.log(LOG_PREFIX, '>>> showBlockedFeedback called with message:', message);
+
     const feedback = document.createElement('div');
     feedback.textContent = message;
     feedback.style.cssText = `
@@ -1354,6 +1401,7 @@
 
     // Add animation keyframes if not already present
     if (!document.querySelector('#better-claude-animations')) {
+      console.log(LOG_PREFIX, '>>> Adding animation keyframes to document');
       const style = document.createElement('style');
       style.id = 'better-claude-animations';
       style.textContent = `
@@ -1367,48 +1415,83 @@
       document.head.appendChild(style);
     }
 
+    console.log(LOG_PREFIX, '>>> Appending feedback element to body');
     document.body.appendChild(feedback);
-    setTimeout(() => feedback.remove(), 2000);
+    console.log(LOG_PREFIX, '>>> Feedback element added, will remove in 2s');
+    setTimeout(() => {
+      feedback.remove();
+      console.log(LOG_PREFIX, '>>> Feedback element removed');
+    }, 2000);
   }
 
   /**
    * Add blocked buttons to all visible sessions
    */
   function addBlockedButtonsToAllSessions() {
+    console.log(LOG_PREFIX, '>>> addBlockedButtonsToAllSessions called');
     const sessions = getAllSessions();
+    console.log(LOG_PREFIX, `>>> Found ${sessions.length} sessions to process`);
     let addedCount = 0;
 
-    sessions.forEach(sessionEl => {
+    sessions.forEach((sessionEl, index) => {
+      console.log(LOG_PREFIX, `>>> Processing session ${index}...`);
       const button = addBlockedButtonToSession(sessionEl);
-      if (button) addedCount++;
+      if (button) {
+        addedCount++;
+        console.log(LOG_PREFIX, `>>> Button added for session ${index}`);
+      } else {
+        console.log(LOG_PREFIX, `>>> No button added for session ${index} (already exists or failed)`);
+      }
     });
 
-    if (addedCount > 0) {
-      console.log(LOG_PREFIX, `Added blocked buttons to ${addedCount} sessions`);
-    }
+    console.log(LOG_PREFIX, `>>> addBlockedButtonsToAllSessions complete. Added: ${addedCount}`);
   }
 
   /**
    * Set up observer to add blocked buttons when new sessions appear
    */
   function setupBlockedButtonObserver() {
-    // Find the sessions container
-    const sessionsContainer = document.querySelector('.flex.flex-col.gap-0\\.5.px-1');
+    console.log(LOG_PREFIX, '>>> setupBlockedButtonObserver called');
+
+    // Find the sessions container - try multiple selectors
+    let sessionsContainer = document.querySelector('.flex.flex-col.gap-0\\.5.px-1');
+    console.log(LOG_PREFIX, '>>> Sessions container (escaped selector):', sessionsContainer);
+
+    // Try alternative selectors if the first one fails
+    if (!sessionsContainer) {
+      sessionsContainer = document.querySelector('[data-index="0"]')?.closest('.flex.flex-col');
+      console.log(LOG_PREFIX, '>>> Sessions container (via data-index):', sessionsContainer);
+    }
 
     if (!sessionsContainer) {
-      console.log(LOG_PREFIX, 'Sessions container not found, will retry');
+      // Just find any container with data-index elements
+      const firstSession = document.querySelector('[data-index]');
+      if (firstSession) {
+        sessionsContainer = firstSession.parentElement;
+        console.log(LOG_PREFIX, '>>> Sessions container (via parent):', sessionsContainer);
+      }
+    }
+
+    if (!sessionsContainer) {
+      console.log(LOG_PREFIX, '>>> Sessions container not found, will retry in 1s');
       setTimeout(setupBlockedButtonObserver, 1000);
       return;
     }
 
+    console.log(LOG_PREFIX, '>>> Sessions container found:', sessionsContainer);
+
     // Add buttons to existing sessions
+    console.log(LOG_PREFIX, '>>> Adding buttons to existing sessions...');
     addBlockedButtonsToAllSessions();
 
     // Watch for new sessions
+    console.log(LOG_PREFIX, '>>> Setting up MutationObserver...');
     const observer = new MutationObserver((mutations) => {
+      console.log(LOG_PREFIX, '>>> MutationObserver triggered, mutations:', mutations.length);
       // Debounce to avoid excessive processing
       clearTimeout(observer._timeout);
       observer._timeout = setTimeout(() => {
+        console.log(LOG_PREFIX, '>>> Debounced: calling addBlockedButtonsToAllSessions');
         addBlockedButtonsToAllSessions();
       }, 100);
     });
@@ -1418,12 +1501,16 @@
       subtree: true
     });
 
-    console.log(LOG_PREFIX, 'Blocked button observer active');
+    console.log(LOG_PREFIX, '>>> Blocked button observer active and watching:', sessionsContainer);
     return observer;
   }
 
   // Initialize blocked button feature after a delay to ensure page is loaded
-  setTimeout(setupBlockedButtonObserver, 2000);
+  console.log(LOG_PREFIX, '>>> Scheduling setupBlockedButtonObserver in 2s...');
+  setTimeout(() => {
+    console.log(LOG_PREFIX, '>>> 2s delay complete, calling setupBlockedButtonObserver');
+    setupBlockedButtonObserver();
+  }, 2000);
 
   // Expose session utilities for debugging and external use
   window.BetterClaudeCode = window.BetterClaudeCode || {};
