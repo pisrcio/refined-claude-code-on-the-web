@@ -1483,19 +1483,16 @@
     });
 
     // Add hover handler to show tooltip
+    let tooltipElement = null;
     blockedButton.addEventListener('mouseenter', () => {
       getBlockedReason(sessionData).then((message) => {
         if (message) {
           // Create tooltip if it doesn't exist
-          let tooltip = blockedButton.querySelector('.bcc-blocked-tooltip');
-          if (!tooltip) {
-            tooltip = document.createElement('div');
-            tooltip.className = 'bcc-blocked-tooltip';
-            tooltip.style.cssText = `
-              position: absolute;
-              bottom: calc(100% + 8px);
-              left: 50%;
-              transform: translateX(-50%);
+          if (!tooltipElement) {
+            tooltipElement = document.createElement('div');
+            tooltipElement.className = 'bcc-blocked-tooltip';
+            tooltipElement.style.cssText = `
+              position: fixed;
               background: #1f2937;
               color: white;
               padding: 8px 12px;
@@ -1509,22 +1506,59 @@
               cursor: pointer;
               pointer-events: auto;
             `;
-            tooltip.textContent = message;
+            tooltipElement.textContent = message;
 
             // Edit on click
-            tooltip.addEventListener('click', (e) => {
+            tooltipElement.addEventListener('click', (e) => {
               e.stopPropagation();
               e.preventDefault();
+              if (tooltipElement && document.body.contains(tooltipElement)) {
+                tooltipElement.remove();
+                tooltipElement = null;
+              }
               showBlockedReasonEditor(blockedButton, sessionData, (newMessage) => {
-                tooltip.textContent = newMessage;
+                // Clear tooltip so it gets recreated with new message
+                if (tooltipElement) {
+                  tooltipElement.remove();
+                  tooltipElement = null;
+                }
               });
             });
 
-            blockedButton.style.position = 'relative';
-            blockedButton.appendChild(tooltip);
+            document.body.appendChild(tooltipElement);
           }
+
+          // Position the tooltip above the button
+          const buttonRect = blockedButton.getBoundingClientRect();
+          const tooltipWidth = tooltipElement.offsetWidth;
+          const tooltipHeight = tooltipElement.offsetHeight;
+
+          let left = buttonRect.left + buttonRect.width / 2 - tooltipWidth / 2;
+          let top = buttonRect.top - tooltipHeight - 8;
+
+          // Clamp to viewport bounds
+          const minMargin = 8;
+          if (left < minMargin) {
+            left = minMargin;
+          }
+          if (left + tooltipWidth > window.innerWidth - minMargin) {
+            left = window.innerWidth - tooltipWidth - minMargin;
+          }
+          if (top < minMargin) {
+            top = buttonRect.bottom + 8;
+          }
+
+          tooltipElement.style.left = left + 'px';
+          tooltipElement.style.top = top + 'px';
         }
       });
+    });
+
+    blockedButton.addEventListener('mouseleave', () => {
+      if (tooltipElement && document.body.contains(tooltipElement)) {
+        tooltipElement.remove();
+        tooltipElement = null;
+      }
     });
 
     // Also add mousedown for debugging
