@@ -1206,6 +1206,225 @@
     return sessions.filter(session => session.isRunning);
   }
 
+  // ============================================
+  // Blocked Button Feature
+  // ============================================
+
+  // Exclamation/warning icon SVG (Phosphor WarningCircle style, 256x256 viewBox to match other icons)
+  const BLOCKED_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"></path></svg>`;
+
+  // Path fragment to identify blocked button
+  const BLOCKED_ICON_PATH_FRAGMENT = 'M128,24A104,104,0,1,0,232,128';
+
+  /**
+   * Find the blocked button for a session element (if already added)
+   * @param {Element} sessionEl - The session element
+   * @returns {Element|null} The blocked button or null
+   */
+  function findBlockedButton(sessionEl) {
+    if (!sessionEl) return null;
+    return sessionEl.querySelector('.bcc-blocked-btn');
+  }
+
+  /**
+   * Create a blocked button element
+   * @returns {HTMLButtonElement} The blocked button element
+   */
+  function createBlockedButton() {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'bcc-blocked-btn inline-flex items-center justify-center relative shrink-0 can-focus select-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:drop-shadow-none border-transparent transition font-base duration-300 ease-[cubic-bezier(0.165,0.85,0.45,1)] h-6 w-6 rounded-md active:scale-95 bg-bg-300 text-text-500 hover:text-warning-100';
+    button.title = 'Mark as blocked';
+    button.innerHTML = BLOCKED_ICON_SVG;
+
+    // Add hover color style (warning/amber color)
+    button.style.cssText = '--hover-color: #f59e0b;';
+    button.addEventListener('mouseenter', () => {
+      button.style.color = '#f59e0b';
+    });
+    button.addEventListener('mouseleave', () => {
+      button.style.color = '';
+    });
+
+    return button;
+  }
+
+  /**
+   * Add blocked button to a session element
+   * @param {Element} sessionEl - The session element
+   * @returns {HTMLButtonElement|null} The added button or null if already exists
+   */
+  function addBlockedButtonToSession(sessionEl) {
+    if (!sessionEl) return null;
+
+    // Check if already added
+    if (findBlockedButton(sessionEl)) {
+      return null;
+    }
+
+    // Find the delete button to insert before
+    const deleteButton = findDeleteButton(sessionEl);
+    if (!deleteButton) {
+      console.log(LOG_PREFIX, 'Delete button not found, cannot add blocked button');
+      return null;
+    }
+
+    // Find the container - the delete button is wrapped in a span
+    const deleteWrapper = deleteButton.closest('span[data-state]');
+    if (!deleteWrapper) {
+      console.log(LOG_PREFIX, 'Delete button wrapper not found');
+      return null;
+    }
+
+    // Create the blocked button
+    const blockedButton = createBlockedButton();
+
+    // Create a wrapper span similar to the delete button wrapper
+    const blockedWrapper = document.createElement('span');
+    blockedWrapper.className = 'bcc-blocked-wrapper';
+    blockedWrapper.setAttribute('data-state', 'closed');
+    blockedWrapper.appendChild(blockedButton);
+
+    // Insert before the delete button wrapper
+    deleteWrapper.parentNode.insertBefore(blockedWrapper, deleteWrapper);
+
+    console.log(LOG_PREFIX, 'Added blocked button to session');
+
+    // Add click handler
+    blockedButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleBlockedClick(sessionEl, blockedButton);
+    });
+
+    return blockedButton;
+  }
+
+  /**
+   * Handle click on blocked button
+   * @param {Element} sessionEl - The session element
+   * @param {HTMLButtonElement} button - The blocked button
+   */
+  function handleBlockedClick(sessionEl, button) {
+    const sessionData = getSessionData(sessionEl);
+    console.log(LOG_PREFIX, 'Blocked button clicked for session:', sessionData?.title);
+
+    // Toggle blocked state visually
+    const isBlocked = button.classList.toggle('bcc-blocked-active');
+
+    if (isBlocked) {
+      button.style.color = '#f59e0b';
+      button.title = 'Marked as blocked - click to unblock';
+      showBlockedFeedback(`Session "${sessionData?.title}" marked as blocked`);
+    } else {
+      button.style.color = '';
+      button.title = 'Mark as blocked';
+      showBlockedFeedback(`Session "${sessionData?.title}" unblocked`);
+    }
+
+    // Emit custom event for external listeners
+    window.dispatchEvent(new CustomEvent('bcc:session-blocked', {
+      detail: {
+        sessionData,
+        isBlocked
+      }
+    }));
+  }
+
+  /**
+   * Show visual feedback when blocking/unblocking
+   * @param {string} message - The message to display
+   */
+  function showBlockedFeedback(message) {
+    const feedback = document.createElement('div');
+    feedback.textContent = message;
+    feedback.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #f59e0b;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 99999;
+      animation: fadeInOut 2s ease-in-out;
+    `;
+
+    // Add animation keyframes if not already present
+    if (!document.querySelector('#better-claude-animations')) {
+      const style = document.createElement('style');
+      style.id = 'better-claude-animations';
+      style.textContent = `
+        @keyframes fadeInOut {
+          0% { opacity: 0; transform: translateY(-10px); }
+          15% { opacity: 1; transform: translateY(0); }
+          85% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-10px); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    document.body.appendChild(feedback);
+    setTimeout(() => feedback.remove(), 2000);
+  }
+
+  /**
+   * Add blocked buttons to all visible sessions
+   */
+  function addBlockedButtonsToAllSessions() {
+    const sessions = getAllSessions();
+    let addedCount = 0;
+
+    sessions.forEach(sessionEl => {
+      const button = addBlockedButtonToSession(sessionEl);
+      if (button) addedCount++;
+    });
+
+    if (addedCount > 0) {
+      console.log(LOG_PREFIX, `Added blocked buttons to ${addedCount} sessions`);
+    }
+  }
+
+  /**
+   * Set up observer to add blocked buttons when new sessions appear
+   */
+  function setupBlockedButtonObserver() {
+    // Find the sessions container
+    const sessionsContainer = document.querySelector('.flex.flex-col.gap-0\\.5.px-1');
+
+    if (!sessionsContainer) {
+      console.log(LOG_PREFIX, 'Sessions container not found, will retry');
+      setTimeout(setupBlockedButtonObserver, 1000);
+      return;
+    }
+
+    // Add buttons to existing sessions
+    addBlockedButtonsToAllSessions();
+
+    // Watch for new sessions
+    const observer = new MutationObserver((mutations) => {
+      // Debounce to avoid excessive processing
+      clearTimeout(observer._timeout);
+      observer._timeout = setTimeout(() => {
+        addBlockedButtonsToAllSessions();
+      }, 100);
+    });
+
+    observer.observe(sessionsContainer, {
+      childList: true,
+      subtree: true
+    });
+
+    console.log(LOG_PREFIX, 'Blocked button observer active');
+    return observer;
+  }
+
+  // Initialize blocked button feature after a delay to ensure page is loaded
+  setTimeout(setupBlockedButtonObserver, 2000);
+
   // Expose session utilities for debugging and external use
   window.BetterClaudeCode = window.BetterClaudeCode || {};
   window.BetterClaudeCode.sessions = {
@@ -1217,9 +1436,12 @@
     getRunning: getRunningSessions,
     findDeleteButton,
     findArchiveButton,
+    findBlockedButton,
     getButtons: getSessionButtons,
     triggerHover: triggerSessionHover,
-    clearHover: clearSessionHover
+    clearHover: clearSessionHover,
+    addBlockedButton: addBlockedButtonToSession,
+    addBlockedButtonsToAll: addBlockedButtonsToAllSessions
   };
 
   console.log(LOG_PREFIX, 'Session detection utilities loaded. Access via window.BetterClaudeCode.sessions');
