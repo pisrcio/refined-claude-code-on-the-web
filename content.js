@@ -204,17 +204,80 @@
 
     // Create dropdown - append to body to avoid overflow clipping
     dropdown = document.createElement('div');
+    dropdown.id = 'bcc-dropdown-' + Date.now(); // Unique ID for CSS targeting
     dropdown.className = 'bcc-mode-dropdown';
-    // Apply inline styles for dropdown - use fixed positioning
-    dropdown.style.cssText = 'position: fixed !important; min-width: 120px !important; background: #ffffff !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; opacity: 0 !important; visibility: hidden !important; transform: translateY(4px) !important; transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s !important; overflow: hidden !important; z-index: 10001 !important;';
+
+    // Inject stylesheet with high specificity rules
+    if (!document.getElementById('bcc-dropdown-styles')) {
+      const styleEl = document.createElement('style');
+      styleEl.id = 'bcc-dropdown-styles';
+      styleEl.textContent = `
+        .bcc-mode-dropdown[id^="bcc-dropdown-"] {
+          position: fixed !important;
+          display: block !important;
+          min-width: 120px !important;
+          min-height: 40px !important;
+          padding: 4px 0 !important;
+          background: #ffffff !important;
+          border: 1px solid rgba(0, 0, 0, 0.1) !important;
+          border-radius: 8px !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+          z-index: 999999 !important;
+          overflow: visible !important;
+        }
+        .bcc-mode-dropdown[id^="bcc-dropdown-"].bcc-dropdown-hidden {
+          display: block !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+        }
+        .bcc-mode-dropdown[id^="bcc-dropdown-"].bcc-dropdown-visible {
+          display: block !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+          pointer-events: auto !important;
+        }
+        .bcc-mode-dropdown[id^="bcc-dropdown-"] .bcc-mode-option {
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: center !important;
+          gap: 8px !important;
+          padding: 10px 12px !important;
+          margin: 0 !important;
+          cursor: pointer !important;
+          font-size: 13px !important;
+          background: #ffffff !important;
+          color: #000000 !important;
+          min-height: 36px !important;
+          box-sizing: border-box !important;
+        }
+        .bcc-mode-dropdown[id^="bcc-dropdown-"] .bcc-mode-option:hover {
+          background: #f3f4f6 !important;
+        }
+        .bcc-mode-dropdown[id^="bcc-dropdown-"] .bcc-check {
+          display: inline-block !important;
+          width: 16px !important;
+          color: #10a37f !important;
+          font-weight: bold !important;
+        }
+        .bcc-mode-dropdown[id^="bcc-dropdown-"] span {
+          display: inline !important;
+          color: #000000 !important;
+        }
+      `;
+      document.head.appendChild(styleEl);
+      console.log(LOG_PREFIX, 'Injected dropdown stylesheet');
+    }
+
+    dropdown.classList.add('bcc-dropdown-hidden');
     dropdown.innerHTML = `
-      <div class="bcc-mode-option" data-mode="Agent" style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 8px !important; padding: 10px 12px !important; cursor: pointer !important; font-size: 13px !important; background: #ffffff !important;">
-        <span class="bcc-check" style="display: inline-block !important; width: 16px !important; color: #10a37f !important; font-weight: bold !important;">&#10003;</span>
-        <span style="color: #000000 !important;">Agent</span>
+      <div class="bcc-mode-option" data-mode="Agent">
+        <span class="bcc-check">&#10003;</span>
+        <span>Agent</span>
       </div>
-      <div class="bcc-mode-option" data-mode="Plan" style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 8px !important; padding: 10px 12px !important; cursor: pointer !important; font-size: 13px !important; background: #ffffff !important;">
-        <span class="bcc-check" style="display: inline-block !important; width: 16px !important; color: #10a37f !important; font-weight: bold !important;"></span>
-        <span style="color: #000000 !important;">Plan</span>
+      <div class="bcc-mode-option" data-mode="Plan">
+        <span class="bcc-check"></span>
+        <span>Plan</span>
       </div>
     `;
     console.log(LOG_PREFIX, 'Created dropdown:', dropdown);
@@ -270,9 +333,10 @@
       return;
     }
 
-    const isVisible = dropdown.style.visibility === 'visible';
-    console.log(LOG_PREFIX, 'Current dropdown.style.visibility:', dropdown.style.visibility);
-    console.log(LOG_PREFIX, 'isVisible check result:', isVisible);
+    // Check visibility using class instead of inline style
+    const isVisible = dropdown.classList.contains('bcc-dropdown-visible');
+    console.log(LOG_PREFIX, 'Has bcc-dropdown-visible class:', isVisible);
+    console.log(LOG_PREFIX, 'Has bcc-dropdown-hidden class:', dropdown.classList.contains('bcc-dropdown-hidden'));
 
     if (isVisible) {
       console.log(LOG_PREFIX, 'Dropdown is visible, closing...');
@@ -285,38 +349,21 @@
       console.log(LOG_PREFIX, 'Button rect:', JSON.stringify(buttonRect));
       console.log(LOG_PREFIX, 'Button rect values - top:', buttonRect.top, 'left:', buttonRect.left, 'width:', buttonRect.width, 'height:', buttonRect.height);
 
-      // First, make dropdown visible but transparent to measure its height
-      dropdown.style.setProperty('visibility', 'hidden', 'important');
-      dropdown.style.setProperty('opacity', '0', 'important');
-      dropdown.style.setProperty('display', 'block', 'important');
-      dropdown.style.setProperty('left', buttonRect.left + 'px', 'important');
-      dropdown.style.setProperty('top', '0px', 'important'); // Temporary position
+      // Set position using inline styles (these won't conflict with visibility classes)
+      dropdown.style.left = buttonRect.left + 'px';
 
-      // Force reflow to get accurate measurements
-      void dropdown.offsetHeight;
-
-      const dropdownHeight = dropdown.offsetHeight || 80;
-      const dropdownWidth = dropdown.offsetWidth;
-      console.log(LOG_PREFIX, 'Dropdown dimensions - height:', dropdownHeight, 'width:', dropdownWidth);
-
+      // Estimate dropdown height (since it's hidden, we use a reasonable default)
+      const dropdownHeight = 80; // Approximate height for 2 options
       const finalTop = buttonRect.top - dropdownHeight - 4;
-      const finalLeft = buttonRect.left;
-      console.log(LOG_PREFIX, 'Final position - top:', finalTop, 'left:', finalLeft);
+      console.log(LOG_PREFIX, 'Final position - top:', finalTop, 'left:', buttonRect.left);
 
-      dropdown.style.setProperty('top', finalTop + 'px', 'important');
-      dropdown.style.setProperty('left', finalLeft + 'px', 'important');
-      dropdown.style.setProperty('opacity', '1', 'important');
-      dropdown.style.setProperty('visibility', 'visible', 'important');
-      dropdown.style.setProperty('transform', 'translateY(0)', 'important');
+      dropdown.style.top = finalTop + 'px';
 
-      console.log(LOG_PREFIX, 'Dropdown styles after update:');
-      console.log(LOG_PREFIX, '  - display:', dropdown.style.display);
-      console.log(LOG_PREFIX, '  - visibility:', dropdown.style.visibility);
-      console.log(LOG_PREFIX, '  - opacity:', dropdown.style.opacity);
-      console.log(LOG_PREFIX, '  - top:', dropdown.style.top);
-      console.log(LOG_PREFIX, '  - left:', dropdown.style.left);
-      console.log(LOG_PREFIX, '  - position:', dropdown.style.position);
-      console.log(LOG_PREFIX, '  - zIndex:', dropdown.style.zIndex);
+      // Toggle classes for visibility (CSS handles opacity/visibility with !important)
+      dropdown.classList.remove('bcc-dropdown-hidden');
+      dropdown.classList.add('bcc-dropdown-visible');
+
+      console.log(LOG_PREFIX, 'Classes after toggle:', dropdown.className);
 
       // Check computed styles
       const computedStyle = window.getComputedStyle(dropdown);
@@ -346,11 +393,14 @@
       console.log(LOG_PREFIX, 'Event target:', e.target);
       console.log(LOG_PREFIX, 'Event type:', e.type);
     }
-    console.log(LOG_PREFIX, 'Stack trace:', new Error().stack);
-    dropdown.style.setProperty('opacity', '0', 'important');
-    dropdown.style.setProperty('visibility', 'hidden', 'important');
-    dropdown.style.setProperty('transform', 'translateY(4px)', 'important');
-    console.log(LOG_PREFIX, 'Dropdown hidden');
+    if (!dropdown) {
+      console.log(LOG_PREFIX, 'No dropdown to close');
+      return;
+    }
+    // Use class toggling for visibility (CSS handles the styles with !important)
+    dropdown.classList.remove('bcc-dropdown-visible');
+    dropdown.classList.add('bcc-dropdown-hidden');
+    console.log(LOG_PREFIX, 'Dropdown hidden, classes:', dropdown.className);
   }
 
   function selectMode(mode) {
