@@ -91,10 +91,12 @@
     }
   }
 
-  function isWithinSessionItem(element) {
+  function isWithinSessionItem(element, buttonIndex) {
+    log(`[Button #${buttonIndex}] isWithinSessionItem check started`);
     let current = element;
     for (let i = 0; i < 10 && current; i++) {
       const text = current.textContent || '';
+      const textPreview = text.substring(0, 80).replace(/\n/g, ' ');
 
       const hasTimestamp = /\d{1,2}:\d{2}\s*(am|pm)/i.test(text) ||
                           /\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/i.test(text);
@@ -103,16 +105,21 @@
       const isInputArea = current.querySelector('textarea, [contenteditable="true"]') ||
                          current.closest('textarea, [contenteditable="true"]');
 
+      log(`[Button #${buttonIndex}] Level ${i}: tag=${current.tagName}, hasTimestamp=${hasTimestamp}, hasRepoPattern=${hasRepoPattern}, isInputArea=${!!isInputArea}, text="${textPreview}..."`);
+
       if (isInputArea) {
+        log(`[Button #${buttonIndex}] REJECTED: input area found`);
         return false;
       }
 
       if (hasTimestamp && hasRepoPattern) {
+        log(`[Button #${buttonIndex}] ACCEPTED: found session item pattern`);
         return true;
       }
 
       current = current.parentElement;
     }
+    log(`[Button #${buttonIndex}] REJECTED: no session item pattern found after 10 levels`);
     return false;
   }
 
@@ -121,6 +128,24 @@
 
     const allButtons = document.querySelectorAll('button');
     log('Total buttons found on page:', allButtons.length);
+
+    // Log ALL buttons with SVG for debugging
+    log('=== LOGGING ALL BUTTONS WITH SVG ===');
+    allButtons.forEach((button, index) => {
+      const svg = button.querySelector('svg');
+      if (svg) {
+        const ariaLabel = button.getAttribute('aria-label') || '';
+        const title = button.title || '';
+        const className = button.className || '';
+        const parentTag = button.parentElement?.tagName || 'none';
+        const parentClass = button.parentElement?.className || '';
+        const siblingCount = button.parentElement?.querySelectorAll('button').length || 0;
+        const textContent = button.textContent?.trim().substring(0, 30) || '';
+
+        log(`[SVG Button #${index}] aria="${ariaLabel}", title="${title}", class="${className}", parent=${parentTag}, parentClass="${parentClass}", siblings=${siblingCount}, text="${textContent}"`);
+      }
+    });
+    log('=== END ALL SVG BUTTONS ===');
 
     let stats = {
       alreadyProcessed: 0,
@@ -143,7 +168,9 @@
         return;
       }
 
-      if (!isWithinSessionItem(button)) {
+      log(`[Button #${index}] Has SVG, checking if in session item...`);
+
+      if (!isWithinSessionItem(button, index)) {
         stats.notInSession++;
         return;
       }
@@ -156,21 +183,26 @@
       const isDeleteByAttr = ariaLabel.includes('delete') || title.includes('delete');
       const isLastOfTwo = siblingButtons.length === 2 && siblingButtons[1] === button;
 
+      log(`[Button #${index}] In session! ariaLabel="${ariaLabel}", title="${title}", isDeleteByAttr=${isDeleteByAttr}, siblingCount=${siblingButtons.length}, isLastOfTwo=${isLastOfTwo}`);
+
       const isDeleteButton = isDeleteByAttr || isLastOfTwo;
 
       if (!isDeleteButton) {
+        log(`[Button #${index}] NOT a delete button, skipping`);
         stats.notDeleteButton++;
         return;
       }
 
-      log('>>> Found delete button in session item #' + index);
+      log(`[Button #${index}] >>> IS DELETE BUTTON!`);
 
       const parent = button.parentElement;
       if (!parent) {
+        log(`[Button #${index}] No parent, skipping`);
         return;
       }
 
       if (parent.querySelector('.bcotw-blocked-btn')) {
+        log(`[Button #${index}] Already has blocked button, skipping`);
         stats.alreadyHasBlocked++;
         return;
       }
@@ -180,7 +212,7 @@
       const blockedButton = createBlockedButton();
       parent.insertBefore(blockedButton, button);
       stats.added++;
-      log('>>> INSERTED blocked button before delete button');
+      log(`[Button #${index}] >>> INSERTED blocked button before delete button!`);
 
       const taskItem = findSessionItem(button);
       if (taskItem) {
@@ -194,7 +226,7 @@
       }
     });
 
-    log('--- Summary ---');
+    log('=== FINAL SUMMARY ===');
     log('Stats:', stats);
     logGroupEnd();
   }
