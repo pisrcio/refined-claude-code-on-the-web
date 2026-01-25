@@ -14,22 +14,26 @@
     // Create container
     const container = document.createElement('div');
     container.className = 'bcc-mode-container';
+    // Apply inline styles to override page CSS
+    container.style.cssText = 'position: relative !important; display: inline-flex !important; flex-direction: row !important; align-items: center !important; margin-right: 8px !important; z-index: 1000 !important;';
     console.log('[BCC] Created container:', container);
 
     // Create button
     modeButton = document.createElement('button');
     modeButton.className = 'bcc-mode-button';
     modeButton.type = 'button'; // Prevent form submission
+    // Apply inline styles to override page CSS
+    modeButton.style.cssText = 'display: inline-flex !important; flex-direction: row !important; align-items: center !important; gap: 6px !important; padding: 6px 10px !important; background: transparent !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; border-radius: 8px !important; cursor: pointer !important; font-size: 13px !important; white-space: nowrap !important;';
     modeButton.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block !important; flex-shrink: 0 !important; vertical-align: middle !important;">
         <circle cx="12" cy="12" r="3"></circle>
         <path d="M12 1v6m0 6v10"></path>
         <path d="m4.22 4.22 4.24 4.24m7.08 7.08 4.24 4.24"></path>
         <path d="M1 12h6m6 0h10"></path>
         <path d="m4.22 19.78 4.24-4.24m7.08-7.08 4.24-4.24"></path>
       </svg>
-      <span class="bcc-mode-label">${currentMode}</span>
-      <svg class="bcc-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <span class="bcc-mode-label" style="display: inline !important; font-weight: 500 !important;">${currentMode}</span>
+      <svg class="bcc-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block !important; opacity: 0.6 !important;">
         <path d="m6 9 6 6 6-6"></path>
       </svg>
     `;
@@ -40,13 +44,15 @@
     // Create dropdown
     dropdown = document.createElement('div');
     dropdown.className = 'bcc-mode-dropdown';
+    // Apply inline styles for dropdown
+    dropdown.style.cssText = 'position: absolute !important; bottom: calc(100% + 4px) !important; left: 0 !important; min-width: 120px !important; background: #ffffff !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; opacity: 0 !important; visibility: hidden !important; transform: translateY(4px) !important; transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s !important; overflow: hidden !important;';
     dropdown.innerHTML = `
-      <div class="bcc-mode-option" data-mode="Agent">
-        <span class="bcc-check">&#10003;</span>
+      <div class="bcc-mode-option" data-mode="Agent" style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 8px !important; padding: 10px 12px !important; cursor: pointer !important; font-size: 13px !important;">
+        <span class="bcc-check" style="display: inline-block !important; width: 16px !important; color: #10a37f !important; font-weight: bold !important;">&#10003;</span>
         <span>Agent</span>
       </div>
-      <div class="bcc-mode-option" data-mode="Plan">
-        <span class="bcc-check"></span>
+      <div class="bcc-mode-option" data-mode="Plan" style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 8px !important; padding: 10px 12px !important; cursor: pointer !important; font-size: 13px !important;">
+        <span class="bcc-check" style="display: inline-block !important; width: 16px !important; color: #10a37f !important; font-weight: bold !important;"></span>
         <span>Plan</span>
       </div>
     `;
@@ -82,11 +88,18 @@
   function toggleDropdown(e) {
     console.log('[BCC] toggleDropdown() called');
     e.stopPropagation();
-    dropdown.classList.toggle('bcc-show');
-    console.log('[BCC] Dropdown visible:', dropdown.classList.contains('bcc-show'));
+    e.preventDefault();
+    const isVisible = dropdown.style.visibility === 'visible';
+    console.log('[BCC] Current visibility:', isVisible);
 
-    // Close on outside click
-    if (dropdown.classList.contains('bcc-show')) {
+    if (isVisible) {
+      closeDropdown();
+    } else {
+      dropdown.style.opacity = '1';
+      dropdown.style.visibility = 'visible';
+      dropdown.style.transform = 'translateY(0)';
+      console.log('[BCC] Dropdown now visible');
+      // Close on outside click
       setTimeout(() => {
         document.addEventListener('click', closeDropdown, { once: true });
       }, 0);
@@ -95,7 +108,9 @@
 
   function closeDropdown() {
     console.log('[BCC] closeDropdown() called');
-    dropdown.classList.remove('bcc-show');
+    dropdown.style.opacity = '0';
+    dropdown.style.visibility = 'hidden';
+    dropdown.style.transform = 'translateY(4px)';
   }
 
   function selectMode(mode) {
