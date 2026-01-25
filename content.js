@@ -1627,7 +1627,7 @@
       // Create input field
       const inputEl = document.createElement('input');
       inputEl.type = 'text';
-      inputEl.placeholder = 'Enter reason (e.g., "Waiting for approval")';
+      inputEl.placeholder = '(optional) block reason';
       inputEl.value = existingMessage || '';
       inputEl.style.cssText = `
         width: 100%;
@@ -1676,11 +1676,29 @@
       // Position the editor above the button
       setTimeout(() => {
         const buttonRect = blockedButton.getBoundingClientRect();
-        editor.style.left = (buttonRect.left + buttonRect.width / 2 - editor.offsetWidth / 2) + 'px';
-        editor.style.top = (buttonRect.top - editor.offsetHeight - 8) + 'px';
+        const editorWidth = 280; // Match min-width
+        const editorHeight = editor.offsetHeight;
+
+        let left = buttonRect.left + buttonRect.width / 2 - editorWidth / 2;
+        let top = buttonRect.top - editorHeight - 12;
+
+        // Clamp to viewport bounds
+        const minMargin = 8;
+        if (left < minMargin) {
+          left = minMargin;
+        }
+        if (left + editorWidth > window.innerWidth - minMargin) {
+          left = window.innerWidth - editorWidth - minMargin;
+        }
+        if (top < minMargin) {
+          top = buttonRect.bottom + 8;
+        }
+
+        editor.style.left = left + 'px';
+        editor.style.top = top + 'px';
         inputEl.focus();
         inputEl.select();
-      }, 50);
+      }, 0);
     });
   }
 
