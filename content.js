@@ -183,7 +183,8 @@
 
   let modeButton = null;
   let dropdown = null;
-  let currentMode = 'Agent';
+  const MODE_STORAGE_KEY = 'bcc-mode-preference';
+  let currentMode = localStorage.getItem(MODE_STORAGE_KEY) || 'Agent';
 
   function createModeButton() {
     console.log(LOG_PREFIX, 'createModeButton() called');
@@ -285,11 +286,11 @@
     dropdown.classList.add('bcc-dropdown-hidden');
     dropdown.innerHTML = `
       <div class="bcc-mode-option" data-mode="Agent">
-        <span class="bcc-check">&#10003;</span>
+        <span class="bcc-check">${currentMode === 'Agent' ? '&#10003;' : ''}</span>
         <span>Agent</span>
       </div>
       <div class="bcc-mode-option" data-mode="Plan">
-        <span class="bcc-check"></span>
+        <span class="bcc-check">${currentMode === 'Plan' ? '&#10003;' : ''}</span>
         <span>Plan</span>
       </div>
     `;
@@ -418,6 +419,7 @@
   function selectMode(mode) {
     console.log(LOG_PREFIX, 'selectMode() called with:', mode);
     currentMode = mode;
+    localStorage.setItem(MODE_STORAGE_KEY, mode);
     modeButton.querySelector('.bcc-mode-label').textContent = mode;
     console.log(LOG_PREFIX, 'Updated label to:', mode);
 
@@ -556,11 +558,13 @@
       return;
     }
 
+    let injected = false;
     if (insertionPoint) {
       console.log(LOG_PREFIX, 'Injecting into insertionPoint');
       const modeContainer = createModeButton();
       insertionPoint.insertBefore(modeContainer, insertionPoint.firstChild);
       console.log(LOG_PREFIX, 'Injection complete');
+      injected = true;
     } else {
       const form = document.querySelector('form') || document.querySelector('[contenteditable="true"]')?.closest('div');
       console.log(LOG_PREFIX, 'Fallback - form:', form);
@@ -571,9 +575,19 @@
         form.style.position = 'relative';
         form.insertBefore(modeContainer, form.firstChild);
         console.log(LOG_PREFIX, 'Floating injection complete');
+        injected = true;
       } else {
         console.log(LOG_PREFIX, 'No injection point found!');
       }
+    }
+
+    // Apply plan prefix if Plan mode is active after injection
+    if (injected && currentMode === 'Plan') {
+      console.log(LOG_PREFIX, 'Plan mode is active, applying prefix to text field');
+      // Small delay to ensure text field is ready
+      setTimeout(() => {
+        addPlanPrefix();
+      }, 100);
     }
   }
 
