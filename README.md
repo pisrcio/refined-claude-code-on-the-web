@@ -1,4 +1,4 @@
-# Better Claude Code on the Web
+# Refined Claude Code on the Web
 
 A Chrome extension to enhance the Claude web experience with improved code editing capabilities.
 

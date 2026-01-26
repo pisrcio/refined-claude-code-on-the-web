@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Project Overview
 
-This is a Chrome extension project called "Better Claude Code on the Web". The extension aims to enhance the Claude web experience with improved code editing capabilities.
+This is a Chrome extension project called "Refined Claude Code on the Web". The extension aims to enhance the Claude web experience with improved code editing capabilities.
 
 ## Project Structure
 
@@ -97,7 +97,7 @@ for (const button of buttons) {
 
 ### API Access
 
-The extension exposes utilities at `window.BetterClaudeCode.sessions`:
+The extension exposes utilities at `window.RefinedClaudeCode.sessions`:
 - `getAll()` - Get all session elements
 - `getAllWithData()` - Get sessions with parsed data
 - `findByTitle(title)` - Find session by title

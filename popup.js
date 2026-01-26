@@ -1,10 +1,10 @@
-// Better Claude Code - Popup Control Panel
+// Refined Claude Code - Popup Control Panel
 
 const DEFAULT_SETTINGS = {
   allEnabled: true,
   modeButton: true,
   showModel: true,
-  betterLabel: true,
+  refinedLabel: true,
   pullBranch: true,
   mergeBranch: true,
   projectColors: true,

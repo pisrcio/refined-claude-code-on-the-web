@@ -1,5 +1,5 @@
-// Better Claude Code on the Web - Content Script
-// Features: Mode Button, Show Actual Model, Better Label, Pull Branch in CLI
+// Refined Claude Code on the Web - Content Script
+// Features: Mode Button, Show Actual Model, Refined Label, Pull Branch in CLI
 
 (function() {
   'use strict';
@@ -18,7 +18,7 @@
     allEnabled: true,
     modeButton: true,
     showModel: true,
-    betterLabel: true,
+    refinedLabel: true,
     pullBranch: true,
     mergeBranch: true,
     projectColors: true,
@@ -92,8 +92,8 @@
   function applySettings() {
     console.log(LOG_PREFIX, 'Applying settings:', currentSettings);
 
-    // Update Better label appearance
-    updateBetterLabelState();
+    // Update Refined label appearance
+    updateRefinedLabelState();
 
     // Toggle mode button
     const modeContainer = document.querySelector('.bcc-mode-container');
@@ -102,13 +102,13 @@
     }
 
     // Toggle pull branch button
-    const pullBranchBtn = document.querySelector('.better-pull-branch-btn');
+    const pullBranchBtn = document.querySelector('.refined-pull-branch-btn');
     if (pullBranchBtn) {
       pullBranchBtn.style.display = isFeatureEnabled('pullBranch') ? 'flex' : 'none';
     }
 
     // Toggle merge branch button
-    const mergeBranchBtn = document.querySelector('.better-merge-branch-btn');
+    const mergeBranchBtn = document.querySelector('.refined-merge-branch-btn');
     if (mergeBranchBtn) {
       mergeBranchBtn.style.display = isFeatureEnabled('mergeBranch') ? 'flex' : 'none';
     }
@@ -131,16 +131,16 @@
     applyProjectColors();
   }
 
-  // Update Better label appearance based on settings
-  function updateBetterLabelState() {
-    const betterLabel = document.querySelector('.better-label');
-    if (!betterLabel) return;
+  // Update Refined label appearance based on settings
+  function updateRefinedLabelState() {
+    const refinedLabel = document.querySelector('.refined-label');
+    if (!refinedLabel) return;
 
     const allEnabled = currentSettings.allEnabled;
 
     if (allEnabled) {
-      betterLabel.classList.remove('better-label-disabled');
-      betterLabel.style.cssText = `
+      refinedLabel.classList.remove('refined-label-disabled');
+      refinedLabel.style.cssText = `
         display: inline-flex;
         align-items: center;
         padding: 2px 8px;
@@ -157,8 +157,8 @@
         text-decoration: none;
       `;
     } else {
-      betterLabel.classList.add('better-label-disabled');
-      betterLabel.style.cssText = `
+      refinedLabel.classList.add('refined-label-disabled');
+      refinedLabel.style.cssText = `
         display: inline-flex;
         align-items: center;
         padding: 2px 8px;
@@ -747,17 +747,17 @@
   }
 
   // ============================================
-  // Better Label Feature
+  // Refined Label Feature
   // ============================================
 
-  function addBetterLabel() {
-    console.log(LOG_PREFIX, 'addBetterLabel() called');
+  function addRefinedLabel() {
+    console.log(LOG_PREFIX, 'addRefinedLabel() called');
 
-    // Check if betterLabel feature is enabled (but we always show the label itself)
-    if (!isFeatureEnabled('betterLabel') && !currentSettings.allEnabled === false) {
-      // Only hide label if betterLabel specifically disabled but allEnabled is true
-      const existingLabel = document.querySelector('.better-label');
-      if (existingLabel && currentSettings.allEnabled && !currentSettings.betterLabel) {
+    // Check if refinedLabel feature is enabled (but we always show the label itself)
+    if (!isFeatureEnabled('refinedLabel') && !currentSettings.allEnabled === false) {
+      // Only hide label if refinedLabel specifically disabled but allEnabled is true
+      const existingLabel = document.querySelector('.refined-label');
+      if (existingLabel && currentSettings.allEnabled && !currentSettings.refinedLabel) {
         existingLabel.style.display = 'none';
         return true;
       }
@@ -777,26 +777,26 @@
     });
 
     const parent = claudeCodeLink.parentElement;
-    if (parent?.querySelector('.better-label')) {
-      console.log(LOG_PREFIX, 'Better label already exists in parent, updating state');
-      updateBetterLabelState();
+    if (parent?.querySelector('.refined-label')) {
+      console.log(LOG_PREFIX, 'Refined label already exists in parent, updating state');
+      updateRefinedLabelState();
       return true;
     }
-    if (claudeCodeLink.nextElementSibling?.classList?.contains('better-label')) {
-      console.log(LOG_PREFIX, 'Better label already exists as sibling, updating state');
-      updateBetterLabelState();
+    if (claudeCodeLink.nextElementSibling?.classList?.contains('refined-label')) {
+      console.log(LOG_PREFIX, 'Refined label already exists as sibling, updating state');
+      updateRefinedLabelState();
       return true;
     }
 
-    const betterLabel = document.createElement('span');
-    betterLabel.textContent = 'Better';
-    betterLabel.className = 'better-label';
-    betterLabel.title = 'Click to toggle all extension features';
+    const refinedLabel = document.createElement('span');
+    refinedLabel.textContent = 'Refined';
+    refinedLabel.className = 'refined-label';
+    refinedLabel.title = 'Click to toggle all extension features';
 
     // Apply initial style based on current settings
     const allEnabled = currentSettings.allEnabled;
     if (allEnabled) {
-      betterLabel.style.cssText = `
+      refinedLabel.style.cssText = `
         display: inline-flex;
         align-items: center;
         padding: 2px 8px;
@@ -813,8 +813,8 @@
         text-decoration: none;
       `;
     } else {
-      betterLabel.classList.add('better-label-disabled');
-      betterLabel.style.cssText = `
+      refinedLabel.classList.add('refined-label-disabled');
+      refinedLabel.style.cssText = `
         display: inline-flex;
         align-items: center;
         padding: 2px 8px;
@@ -833,7 +833,7 @@
     }
 
     // Add click handler to toggle all features
-    betterLabel.addEventListener('click', async (e) => {
+    refinedLabel.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -852,16 +852,16 @@
     });
 
     // Add hover effect
-    betterLabel.addEventListener('mouseenter', () => {
-      betterLabel.style.opacity = '0.8';
+    refinedLabel.addEventListener('mouseenter', () => {
+      refinedLabel.style.opacity = '0.8';
     });
-    betterLabel.addEventListener('mouseleave', () => {
-      betterLabel.style.opacity = '1';
+    refinedLabel.addEventListener('mouseleave', () => {
+      refinedLabel.style.opacity = '1';
     });
 
-    console.log(LOG_PREFIX, 'Inserting Better label');
-    claudeCodeLink.parentNode.insertBefore(betterLabel, claudeCodeLink.nextSibling);
-    console.log(LOG_PREFIX, 'Better label inserted successfully');
+    console.log(LOG_PREFIX, 'Inserting Refined label');
+    claudeCodeLink.parentNode.insertBefore(refinedLabel, claudeCodeLink.nextSibling);
+    console.log(LOG_PREFIX, 'Refined label inserted successfully');
 
     return true;
   }
@@ -885,9 +885,9 @@
     `;
 
     // Add animation keyframes if not already present
-    if (!document.querySelector('#better-claude-animations')) {
+    if (!document.querySelector('#refined-claude-animations')) {
       const style = document.createElement('style');
-      style.id = 'better-claude-animations';
+      style.id = 'refined-claude-animations';
       style.textContent = `
         @keyframes fadeInOut {
           0% { opacity: 0; transform: translateY(-10px); }
@@ -957,7 +957,7 @@
     // Function to add the Pull Branch in CLI button
     function addPullBranchButton() {
       // Check if button already exists
-      if (document.querySelector('.better-pull-branch-btn')) {
+      if (document.querySelector('.refined-pull-branch-btn')) {
         return;
       }
 
@@ -991,7 +991,7 @@
       // Create the Pull Branch in CLI button with exact same structure as Open in CLI
       const pullBranchBtn = document.createElement('button');
       pullBranchBtn.type = 'button';
-      pullBranchBtn.className = 'group flex items-center gap-[6px] px-[10px] py-2 bg-bg-000 border-0.5 border-border-300 rounded-[6px] shadow-sm hover:bg-bg-100 transition-colors better-pull-branch-btn';
+      pullBranchBtn.className = 'group flex items-center gap-[6px] px-[10px] py-2 bg-bg-000 border-0.5 border-border-300 rounded-[6px] shadow-sm hover:bg-bg-100 transition-colors refined-pull-branch-btn';
       pullBranchBtn.title = `Copy: git fetch && git co ${currentBranchName} && git pull`;
 
       // Match exact HTML structure: text span first, then icon in wrapper div
@@ -1087,9 +1087,9 @@
       `;
 
       // Add animation keyframes if not already present
-      if (!document.querySelector('#better-claude-animations')) {
+      if (!document.querySelector('#refined-claude-animations')) {
         const style = document.createElement('style');
-        style.id = 'better-claude-animations';
+        style.id = 'refined-claude-animations';
         style.textContent = `
           @keyframes fadeInOut {
             0% { opacity: 0; transform: translateY(-10px); }
@@ -1156,7 +1156,7 @@
     // Function to add the Merge Branch button
     function addMergeBranchButton() {
       // Check if button already exists
-      if (document.querySelector('.better-merge-branch-btn')) {
+      if (document.querySelector('.refined-merge-branch-btn')) {
         return;
       }
 
@@ -1186,7 +1186,7 @@
       // Create the Merge Branch button with similar styling
       const mergeBranchBtn = document.createElement('button');
       mergeBranchBtn.type = 'button';
-      mergeBranchBtn.className = 'group flex items-center gap-[6px] px-[10px] py-2 bg-bg-000 border-0.5 border-border-300 rounded-[6px] shadow-sm hover:bg-bg-100 transition-colors better-merge-branch-btn';
+      mergeBranchBtn.className = 'group flex items-center gap-[6px] px-[10px] py-2 bg-bg-000 border-0.5 border-border-300 rounded-[6px] shadow-sm hover:bg-bg-100 transition-colors refined-merge-branch-btn';
       mergeBranchBtn.title = `Insert merge request into text field`;
 
       // Match exact HTML structure with merge icon - branch name in italics
@@ -1254,7 +1254,7 @@
       wrapper.appendChild(mergeBranchBtn);
 
       // Find Pull Branch wrapper if it exists to insert after it
-      const pullBranchBtn = document.querySelector('.better-pull-branch-btn');
+      const pullBranchBtn = document.querySelector('.refined-pull-branch-btn');
       const pullBranchWrapper = pullBranchBtn?.closest('.animate-\\[fade_300ms_ease-out\\]');
 
       if (pullBranchWrapper && pullBranchWrapper.parentNode === flexContainer) {
@@ -1293,9 +1293,9 @@
       `;
 
       // Add animation keyframes if not already present
-      if (!document.querySelector('#better-claude-animations')) {
+      if (!document.querySelector('#refined-claude-animations')) {
         const style = document.createElement('style');
-        style.id = 'better-claude-animations';
+        style.id = 'refined-claude-animations';
         style.textContent = `
           @keyframes fadeInOut {
             0% { opacity: 0; transform: translateY(-10px); }
@@ -2064,10 +2064,10 @@
     `;
 
     // Add animation keyframes if not already present
-    if (!document.querySelector('#better-claude-animations')) {
+    if (!document.querySelector('#refined-claude-animations')) {
       console.log(LOG_PREFIX, '>>> Adding animation keyframes to document');
       const style = document.createElement('style');
-      style.id = 'better-claude-animations';
+      style.id = 'refined-claude-animations';
       style.textContent = `
         @keyframes fadeInOut {
           0% { opacity: 0; transform: translateY(-10px); }
@@ -2239,8 +2239,8 @@
   }, 2000);
 
   // Expose session utilities for debugging and external use
-  window.BetterClaudeCode = window.BetterClaudeCode || {};
-  window.BetterClaudeCode.sessions = {
+  window.RefinedClaudeCode = window.RefinedClaudeCode || {};
+  window.RefinedClaudeCode.sessions = {
     getAll: getAllSessions,
     getAllWithData: getAllSessionsWithData,
     findByTitle: findSessionByTitle,
@@ -2257,7 +2257,7 @@
     addBlockedButtonsToAll: addBlockedButtonsToAllSessions
   };
 
-  console.log(LOG_PREFIX, 'Session detection utilities loaded. Access via window.BetterClaudeCode.sessions');
+  console.log(LOG_PREFIX, 'Session detection utilities loaded. Access via window.RefinedClaudeCode.sessions');
 
   // ============================================
   // Project Colors Feature
@@ -2328,10 +2328,10 @@
   // ============================================
 
   let debounceTimer = null;
-  function debouncedAddBetterLabel() {
+  function debouncedAddRefinedLabel() {
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
-      addBetterLabel();
+      addRefinedLabel();
     }, 100);
   }
 
@@ -2362,7 +2362,7 @@
         if (isFeatureEnabled('modeButton')) {
           setTimeout(findAndInjectModeButton, 1000);
         }
-        addBetterLabel(); // Always add the label (it's the toggle)
+        addRefinedLabel(); // Always add the label (it's the toggle)
         if (isFeatureEnabled('showModel')) {
           updateModelSelector();
         }
@@ -2402,16 +2402,16 @@
         console.log(LOG_PREFIX, 'MutationObserver: mode container missing, re-injecting');
         findAndInjectModeButton();
       }
-      // Re-add better label if missing (always, since it's the toggle control)
-      debouncedAddBetterLabel();
+      // Re-add refined label if missing (always, since it's the toggle control)
+      debouncedAddRefinedLabel();
 
       // Re-add pull branch button if missing and enabled
-      if (isFeatureEnabled('pullBranch') && !document.querySelector('.better-pull-branch-btn')) {
+      if (isFeatureEnabled('pullBranch') && !document.querySelector('.refined-pull-branch-btn')) {
         // The watcher handles this, but we can trigger a check
       }
 
       // Re-add merge branch button if missing and enabled
-      if (isFeatureEnabled('mergeBranch') && !document.querySelector('.better-merge-branch-btn')) {
+      if (isFeatureEnabled('mergeBranch') && !document.querySelector('.refined-merge-branch-btn')) {
         // The watcher handles this, but we can trigger a check
       }
 
@@ -2428,7 +2428,7 @@
 
   init().catch(e => {
     console.error(LOG_PREFIX, 'Init failed:', e);
-    // Fallback: try to add the better label anyway
-    setTimeout(() => addBetterLabel(), 1000);
+    // Fallback: try to add the refined label anyway
+    setTimeout(() => addRefinedLabel(), 1000);
   });
 })();

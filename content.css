@@ -1,4 +1,4 @@
-/* Better Claude Code on the Web - Mode Button Styles */
+/* Refined Claude Code on the Web - Mode Button Styles */
 
 .bcc-mode-container {
   position: relative !important;
@@ -150,18 +150,18 @@ html.dark .bcc-mode-option:hover,
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Better Label Styles */
-.better-label {
+/* Refined Label Styles */
+.refined-label {
   cursor: pointer !important;
   transition: all 0.2s ease !important;
   user-select: none !important;
 }
 
-.better-label:hover {
+.refined-label:hover {
   opacity: 0.8 !important;
 }
 
-.better-label-disabled {
+.refined-label-disabled {
   color: #9ca3af !important;
   background-color: #f3f4f6 !important;
   text-decoration: line-through !important;
@@ -169,14 +169,14 @@ html.dark .bcc-mode-option:hover,
 
 /* Dark mode support for disabled label */
 @media (prefers-color-scheme: dark) {
-  .better-label-disabled {
+  .refined-label-disabled {
     color: #6b7280 !important;
     background-color: #374151 !important;
   }
 }
 
-html.dark .better-label-disabled,
-[data-theme="dark"] .better-label-disabled {
+html.dark .refined-label-disabled,
+[data-theme="dark"] .refined-label-disabled {
   color: #6b7280 !important;
   background-color: #374151 !important;
 }
