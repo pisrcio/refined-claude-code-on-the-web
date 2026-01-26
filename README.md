@@ -2,9 +2,45 @@
 
 A Chrome extension to enhance the Claude web experience with improved code editing capabilities.
 
+> **Naming Inspiration**: The name "Refined Claude Code on the Web" is inspired by the excellent [Refined GitHub](https://github.com/refined-github/refined-github) Chrome extension, which enhances the GitHub experience with thoughtful UI improvements.
+
 ## Features
 
-- (Coming soon)
+### Mode Button (Agent/Plan Toggle)
+Switch between Agent and Plan modes directly from the input area. Plan mode uses the `@agent-plan` prefix to enable planning-only responses.
+
+![Mode Button](screenshots/mode-button.png)
+
+**Credits**: Thanks to [@bchan7](https://reddit.com/u/bchan7) and [@batout](https://reddit.com/u/batout) for sharing the [plan mode discovery](https://www.reddit.com/r/ClaudeCode/comments/1p0hypc/changing_to_plan_mode_in_claude_code_on_the_web/).
+
+### Show Actual Model
+Displays the actual model being used (e.g., "Opus 4", "Sonnet 4") instead of the generic "..." button.
+
+![Show Model](screenshots/show-model.png)
+
+### Pull Branch Button
+Adds a convenient button to copy the `git pull` command for the current branch directly to your clipboard.
+
+![Pull Branch](screenshots/pull-branch.png)
+
+### Merge Branch Button
+Adds a button next to PRs to copy the merge command for quick branch merging.
+
+![Merge Branch](screenshots/merge-branch.png)
+
+### Project Colors
+Customize sidebar project entries with distinct colors for easier visual identification.
+
+![Project Colors](screenshots/project-colors.png)
+
+### Refined Label
+Shows a "Refined" badge in the header indicating the extension is active. Click to toggle all features on/off.
+
+![Refined Label](screenshots/refined-label.png)
+
+## Screenshots
+
+> **Note**: Screenshots are located in the `screenshots/` folder. If you're contributing, please add screenshots for any new features.
 
 ## Installation
 
