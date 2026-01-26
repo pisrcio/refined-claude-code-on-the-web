@@ -4,7 +4,7 @@ A Chrome extension to enhance the Claude web experience with improved code editi
 
 > **Naming Inspiration**: The name "Refined Claude Code on the Web" is inspired by the excellent [Refined GitHub](https://github.com/refined-github/refined-github) Chrome extension, which enhances the GitHub experience with thoughtful UI improvements.
 
-> **Recommended Workflow**: Check out [this video](https://www.youtube.com/watch?v=3bej6c3O8d0) for an excellent workflow using Claude Code on the web.
+> **Recommended Workflow**: This extension is built around [this workflow](https://www.youtube.com/watch?v=3bej6c3O8d0), which inspired most of the "refined" features here.
 
 ## Features
 
