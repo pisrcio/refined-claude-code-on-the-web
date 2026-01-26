@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <!-- Gradient inspired by Claude's warm tones but shifted -->
+    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E8956A"/>
+      <stop offset="100%" style="stop-color:#D4704D"/>
+    </linearGradient>
+    <!-- Sparkle gradient -->
+    <linearGradient id="sparkleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD93D"/>
+      <stop offset="100%" style="stop-color:#F5A623"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="url(#mainGradient)"/>
+
+  <!-- Code brackets < > -->
+  <g fill="white" font-family="Monaco, 'Courier New', monospace" font-weight="bold">
+    <!-- Left bracket < -->
+    <path d="M28 64 L48 44 L52 48 L36 64 L52 80 L48 84 Z" fill="white"/>
+    <!-- Right bracket > -->
+    <path d="M100 64 L80 44 L76 48 L92 64 L76 80 L80 84 Z" fill="white"/>
+  </g>
+
+  <!-- Center plus/enhancement symbol -->
+  <g fill="white">
+    <rect x="60" y="50" width="8" height="28" rx="2"/>
+    <rect x="50" y="60" width="28" height="8" rx="2"/>
+  </g>
+
+  <!-- Sparkle top-right -->
+  <g fill="url(#sparkleGradient)">
+    <!-- 4-point star sparkle -->
+    <path d="M98 20 L100 26 L106 28 L100 30 L98 36 L96 30 L90 28 L96 26 Z"/>
+    <!-- Small diamond sparkle -->
+    <path d="M108 38 L110 42 L114 44 L110 46 L108 50 L106 46 L102 44 L106 42 Z" transform="scale(0.7) translate(45, 15)"/>
+  </g>
+
+  <!-- Small sparkle top-left -->
+  <g fill="url(#sparkleGradient)">
+    <path d="M26 18 L28 22 L32 24 L28 26 L26 30 L24 26 L20 24 L24 22 Z" transform="scale(0.8) translate(5, 5)"/>
+  </g>
+</svg>

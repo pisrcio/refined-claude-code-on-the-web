@@ -1313,6 +1313,933 @@
   }
 
   // ============================================
+  // Session Detection Feature
+  // ============================================
+
+  /**
+   * Session detection utilities for reliably finding sessions and their action buttons.
+   *
+   * Structure of a session item in the sidebar:
+   * - Wrapper: div[data-index="N"] (N = 0, 1, 2, ...)
+   * - Inside: div.group > div.cursor-pointer > ...
+   * - Title: span.font-base.text-text-100.leading-relaxed
+   * - Buttons container: div.group-hover:opacity-100 (appears on hover)
+   * - Delete button: contains trash icon SVG (viewBox="0 0 256 256")
+   * - Archive button: contains archive/box icon SVG (viewBox="0 0 20 20")
+   */
+
+  // SVG path fragments for identifying button types
+  const DELETE_ICON_PATH_START = 'M216,48H176V40a24';  // Trash icon path
+  const ARCHIVE_ICON_PATH_FRAGMENT = 'M11.5 9.5C11.7761';  // Archive/box icon path
+
+  /**
+   * Get all session elements from the sidebar
+   * @returns {NodeListOf<Element>} All session wrapper elements
+   */
+  function getAllSessions() {
+    // Sessions are in elements with data-index attribute
+    // They're inside the scrollable session list container
+    const sessions = document.querySelectorAll('[data-index]');
+    console.log(LOG_PREFIX, `Found ${sessions.length} sessions`);
+    return sessions;
+  }
+
+  /**
+   * Get session data from a session element
+   * @param {Element} sessionEl - The session element (with data-index)
+   * @returns {Object|null} Session data or null if not parseable
+   */
+  function getSessionData(sessionEl) {
+    if (!sessionEl || !sessionEl.hasAttribute('data-index')) {
+      return null;
+    }
+
+    const index = parseInt(sessionEl.getAttribute('data-index'), 10);
+
+    // Find the title span
+    const titleSpan = sessionEl.querySelector('span.font-base.text-text-100.leading-relaxed');
+    const title = titleSpan ? titleSpan.textContent.trim() : null;
+
+    // Find metadata (repo name, date, diff stats)
+    const metaSpan = sessionEl.querySelector('span.text-xs.text-text-500');
+    const metadata = metaSpan ? metaSpan.textContent.trim() : null;
+
+    // Check if this session is currently selected (has bg-bg-300 class on the row)
+    const row = sessionEl.querySelector('.cursor-pointer');
+    const isSelected = row ? row.classList.contains('bg-bg-300') : false;
+
+    // Check if session is currently running (has the spinner animation)
+    const spinner = sessionEl.querySelector('.code-spinner-animate');
+    const isRunning = !!spinner;
+
+    return {
+      element: sessionEl,
+      index,
+      title,
+      metadata,
+      isSelected,
+      isRunning
+    };
+  }
+
+  /**
+   * Get all sessions with their data
+   * @returns {Array<Object>} Array of session data objects
+   */
+  function getAllSessionsWithData() {
+    const sessions = getAllSessions();
+    const sessionData = [];
+
+    sessions.forEach(sessionEl => {
+      const data = getSessionData(sessionEl);
+      if (data) {
+        sessionData.push(data);
+      }
+    });
+
+    return sessionData;
+  }
+
+  /**
+   * Find a session by its title
+   * @param {string} title - The session title to search for
+   * @returns {Object|null} Session data or null if not found
+   */
+  function findSessionByTitle(title) {
+    const sessions = getAllSessions();
+
+    for (const sessionEl of sessions) {
+      const data = getSessionData(sessionEl);
+      if (data && data.title === title) {
+        return data;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Find the delete button for a session element
+   * @param {Element} sessionEl - The session element
+   * @returns {Element|null} The delete button or null
+   */
+  function findDeleteButton(sessionEl) {
+    if (!sessionEl) return null;
+
+    // Find all buttons in the session
+    const buttons = sessionEl.querySelectorAll('button');
+
+    for (const button of buttons) {
+      // Look for the trash icon SVG
+      const svg = button.querySelector('svg');
+      if (!svg) continue;
+
+      // Check viewBox for the trash icon (256x256)
+      const viewBox = svg.getAttribute('viewBox');
+      if (viewBox !== '0 0 256 256') continue;
+
+      // Check path for trash icon pattern
+      const path = svg.querySelector('path');
+      if (path) {
+        const d = path.getAttribute('d') || '';
+        if (d.startsWith(DELETE_ICON_PATH_START)) {
+          console.log(LOG_PREFIX, 'Found delete button for session');
+          return button;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Find the archive button for a session element
+   * @param {Element} sessionEl - The session element
+   * @returns {Element|null} The archive button or null
+   */
+  function findArchiveButton(sessionEl) {
+    if (!sessionEl) return null;
+
+    // Find all buttons in the session
+    const buttons = sessionEl.querySelectorAll('button');
+
+    for (const button of buttons) {
+      // Look for the archive icon SVG
+      const svg = button.querySelector('svg');
+      if (!svg) continue;
+
+      // Check viewBox for the archive icon (20x20)
+      const viewBox = svg.getAttribute('viewBox');
+      if (viewBox !== '0 0 20 20') continue;
+
+      // Check paths for archive icon pattern
+      const paths = svg.querySelectorAll('path');
+      for (const path of paths) {
+        const d = path.getAttribute('d') || '';
+        if (d.includes(ARCHIVE_ICON_PATH_FRAGMENT)) {
+          console.log(LOG_PREFIX, 'Found archive button for session');
+          return button;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Get action buttons for a session
+   * @param {Element} sessionEl - The session element
+   * @returns {Object} Object with deleteButton and archiveButton properties
+   */
+  function getSessionButtons(sessionEl) {
+    return {
+      deleteButton: findDeleteButton(sessionEl),
+      archiveButton: findArchiveButton(sessionEl)
+    };
+  }
+
+  /**
+   * Trigger hover state on a session to reveal buttons
+   * The buttons are hidden by default and only appear on hover
+   * @param {Element} sessionEl - The session element
+   * @returns {Promise<void>} Resolves when hover events are dispatched
+   */
+  function triggerSessionHover(sessionEl) {
+    return new Promise((resolve) => {
+      if (!sessionEl) {
+        resolve();
+        return;
+      }
+
+      // Find the group container that has hover effects
+      const groupEl = sessionEl.querySelector('.group');
+      if (groupEl) {
+        // Dispatch mouseenter to trigger hover state
+        groupEl.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      }
+
+      // Give time for CSS transitions
+      setTimeout(resolve, 100);
+    });
+  }
+
+  /**
+   * Clear hover state on a session
+   * @param {Element} sessionEl - The session element
+   */
+  function clearSessionHover(sessionEl) {
+    if (!sessionEl) return;
+
+    const groupEl = sessionEl.querySelector('.group');
+    if (groupEl) {
+      groupEl.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+    }
+  }
+
+  /**
+   * Find the currently selected/active session
+   * @returns {Object|null} Session data for the active session or null
+   */
+  function getActiveSession() {
+    const sessions = getAllSessions();
+
+    for (const sessionEl of sessions) {
+      const row = sessionEl.querySelector('.cursor-pointer');
+      if (row && row.classList.contains('bg-bg-300')) {
+        return getSessionData(sessionEl);
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Find sessions that are currently running (have the spinner)
+   * @returns {Array<Object>} Array of running session data objects
+   */
+  function getRunningSessions() {
+    const sessions = getAllSessionsWithData();
+    return sessions.filter(session => session.isRunning);
+  }
+
+  // ============================================
+  // Blocked Button Feature
+  // ============================================
+
+  // Exclamation/warning icon SVG (Phosphor WarningCircle style, 256x256 viewBox to match other icons)
+  const BLOCKED_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"></path></svg>`;
+
+  // Path fragment to identify blocked button
+  const BLOCKED_ICON_PATH_FRAGMENT = 'M128,24A104,104,0,1,0,232,128';
+
+  /**
+   * Find the blocked button for a session element (if already added)
+   * @param {Element} sessionEl - The session element
+   * @returns {Element|null} The blocked button or null
+   */
+  function findBlockedButton(sessionEl) {
+    if (!sessionEl) return null;
+    return sessionEl.querySelector('.bcc-blocked-btn');
+  }
+
+  /**
+   * Create a blocked button element
+   * @returns {HTMLButtonElement} The blocked button element
+   */
+  function createBlockedButton() {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'bcc-blocked-btn inline-flex items-center justify-center relative shrink-0 can-focus select-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:drop-shadow-none border-transparent transition font-base duration-300 ease-[cubic-bezier(0.165,0.85,0.45,1)] h-6 w-6 rounded-md active:scale-95 bg-bg-300 text-text-500 hover:text-warning-100';
+    button.title = 'Mark as blocked';
+    button.innerHTML = BLOCKED_ICON_SVG;
+
+    // Ensure button is visible with explicit inline styles
+    button.style.cssText = `
+      display: inline-flex !important;
+      width: 24px !important;
+      height: 24px !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      background-color: rgba(0, 0, 0, 0.05) !important;
+      border: none !important;
+      border-radius: 6px !important;
+      cursor: pointer !important;
+      flex-shrink: 0 !important;
+      color: #6b7280 !important;
+      transition: all 0.2s !important;
+    `;
+
+    return button;
+  }
+
+  /**
+   * Add blocked button to a session element
+   * @param {Element} sessionEl - The session element
+   * @returns {HTMLButtonElement|null} The added button or null if already exists
+   */
+  function addBlockedButtonToSession(sessionEl) {
+    console.log(LOG_PREFIX, '>>> addBlockedButtonToSession called', sessionEl);
+    if (!sessionEl) {
+      console.log(LOG_PREFIX, '>>> sessionEl is null/undefined');
+      return null;
+    }
+
+    // Check if already added
+    const existingBtn = findBlockedButton(sessionEl);
+    if (existingBtn) {
+      console.log(LOG_PREFIX, '>>> Blocked button already exists for this session');
+      return null;
+    }
+
+    // Find the archive button to insert after (blocked button goes to the right)
+    console.log(LOG_PREFIX, '>>> Looking for archive button...');
+    const archiveButton = findArchiveButton(sessionEl);
+    console.log(LOG_PREFIX, '>>> Archive button found:', archiveButton);
+    if (!archiveButton) {
+      console.log(LOG_PREFIX, '>>> Archive button not found, cannot add blocked button');
+      // Log all buttons in the session for debugging
+      const allButtons = sessionEl.querySelectorAll('button');
+      console.log(LOG_PREFIX, '>>> All buttons in session:', allButtons.length);
+      allButtons.forEach((btn, i) => {
+        const svg = btn.querySelector('svg');
+        console.log(LOG_PREFIX, `>>>   Button ${i}:`, btn.className, 'SVG viewBox:', svg?.getAttribute('viewBox'));
+      });
+      return null;
+    }
+
+    // Find the container - the archive button is wrapped in a div
+    console.log(LOG_PREFIX, '>>> Looking for archive wrapper div...');
+    const archiveWrapper = archiveButton.parentElement;
+    console.log(LOG_PREFIX, '>>> Archive wrapper found:', archiveWrapper);
+    if (!archiveWrapper) {
+      console.log(LOG_PREFIX, '>>> Archive button wrapper not found');
+      return null;
+    }
+
+    // Create the blocked button
+    console.log(LOG_PREFIX, '>>> Creating blocked button...');
+    const blockedButton = createBlockedButton();
+    console.log(LOG_PREFIX, '>>> Blocked button created:', blockedButton);
+
+    // Create a wrapper div similar to the archive button wrapper
+    const blockedWrapper = document.createElement('div');
+    blockedWrapper.className = 'bcc-blocked-wrapper';
+    blockedWrapper.appendChild(blockedButton);
+
+    // Insert after the archive button wrapper (to the right)
+    console.log(LOG_PREFIX, '>>> Inserting blocked button after archive wrapper...');
+    console.log(LOG_PREFIX, '>>> archiveWrapper.parentNode:', archiveWrapper.parentNode);
+    archiveWrapper.parentNode.insertBefore(blockedWrapper, archiveWrapper.nextSibling);
+
+    console.log(LOG_PREFIX, '>>> SUCCESS: Added blocked button to session');
+
+    // Check if this session was previously blocked (restore state from storage)
+    const sessionData = getSessionData(sessionEl);
+    getBlockedReason(sessionData).then((reason) => {
+      if (reason) {
+        console.log(LOG_PREFIX, '>>> Found stored blocked reason, restoring blocked state');
+        // Mark as blocked without showing modal
+        blockedButton.classList.add('bcc-blocked-active');
+        blockedButton.style.color = '#f59e0b';
+        blockedButton.title = 'Marked as blocked - click to unblock';
+        addBlockedIndicator(sessionEl);
+      }
+    });
+
+    // Add click handler
+    blockedButton.addEventListener('click', (e) => {
+      console.log(LOG_PREFIX, '>>> CLICK EVENT FIRED on blocked button!');
+      console.log(LOG_PREFIX, '>>> Event:', e);
+      console.log(LOG_PREFIX, '>>> Target:', e.target);
+      e.preventDefault();
+      e.stopPropagation();
+      handleBlockedClick(sessionEl, blockedButton);
+    });
+
+    // Add hover handler to show tooltip
+    let tooltipElement = null;
+    blockedButton.addEventListener('mouseenter', () => {
+      getBlockedReason(sessionData).then((message) => {
+        if (message) {
+          // Create tooltip if it doesn't exist
+          if (!tooltipElement) {
+            tooltipElement = document.createElement('div');
+            tooltipElement.className = 'bcc-blocked-tooltip';
+            tooltipElement.style.cssText = `
+              position: fixed;
+              background: #1f2937;
+              color: white;
+              padding: 8px 12px;
+              border-radius: 6px;
+              font-size: 13px;
+              white-space: normal;
+              max-width: 250px;
+              word-wrap: break-word;
+              z-index: 100001;
+              line-height: 1.4;
+              cursor: pointer;
+              pointer-events: auto;
+            `;
+            tooltipElement.textContent = message;
+
+            // Edit on click
+            tooltipElement.addEventListener('click', (e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (tooltipElement && document.body.contains(tooltipElement)) {
+                tooltipElement.remove();
+                tooltipElement = null;
+              }
+              showBlockedReasonEditor(blockedButton, sessionData, (newMessage) => {
+                // Clear tooltip so it gets recreated with new message
+                if (tooltipElement) {
+                  tooltipElement.remove();
+                  tooltipElement = null;
+                }
+              });
+            });
+
+            document.body.appendChild(tooltipElement);
+          }
+
+          // Position the tooltip above the button
+          const buttonRect = blockedButton.getBoundingClientRect();
+          const tooltipWidth = tooltipElement.offsetWidth;
+          const tooltipHeight = tooltipElement.offsetHeight;
+
+          let left = buttonRect.left + buttonRect.width / 2 - tooltipWidth / 2;
+          let top = buttonRect.top - tooltipHeight - 8;
+
+          // Clamp to viewport bounds
+          const minMargin = 8;
+          if (left < minMargin) {
+            left = minMargin;
+          }
+          if (left + tooltipWidth > window.innerWidth - minMargin) {
+            left = window.innerWidth - tooltipWidth - minMargin;
+          }
+          if (top < minMargin) {
+            top = buttonRect.bottom + 8;
+          }
+
+          tooltipElement.style.left = left + 'px';
+          tooltipElement.style.top = top + 'px';
+        }
+      });
+    });
+
+    blockedButton.addEventListener('mouseleave', () => {
+      if (tooltipElement && document.body.contains(tooltipElement)) {
+        tooltipElement.remove();
+        tooltipElement = null;
+      }
+    });
+
+    // Also add mousedown for debugging
+    blockedButton.addEventListener('mousedown', (e) => {
+      console.log(LOG_PREFIX, '>>> MOUSEDOWN EVENT on blocked button');
+    });
+
+    return blockedButton;
+  }
+
+  /**
+   * Get session ID for storage (based on title)
+   * @param {Object} sessionData - The session data object
+   * @returns {string} Session identifier
+   */
+  function getSessionStorageId(sessionData) {
+    // Use title as the session identifier
+    return `bcc-blocked-reason-${sessionData?.title?.replace(/[^a-zA-Z0-9-_]/g, '_')}`;
+  }
+
+  /**
+   * Save blocked reason message to storage
+   * @param {Object} sessionData - The session data object
+   * @param {string} message - The blocked reason message
+   */
+  function saveBlockedReason(sessionData, message) {
+    const storageKey = getSessionStorageId(sessionData);
+    if (typeof chrome !== 'undefined' && chrome.storage) {
+      const data = {};
+      data[storageKey] = message;
+      chrome.storage.sync.set(data, () => {
+        console.log(LOG_PREFIX, '>>> Saved blocked reason to chrome storage:', storageKey);
+      });
+    } else {
+      // Fallback to localStorage
+      localStorage.setItem(storageKey, message);
+      console.log(LOG_PREFIX, '>>> Saved blocked reason to localStorage:', storageKey);
+    }
+  }
+
+  /**
+   * Get blocked reason message from storage
+   * @param {Object} sessionData - The session data object
+   * @returns {Promise<string|null>} The blocked reason message or null
+   */
+  function getBlockedReason(sessionData) {
+    return new Promise((resolve) => {
+      const storageKey = getSessionStorageId(sessionData);
+
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        chrome.storage.sync.get([storageKey], (result) => {
+          if (chrome.runtime.lastError) {
+            console.log(LOG_PREFIX, '>>> Error reading from chrome storage:', chrome.runtime.lastError);
+            // Fallback to localStorage
+            const localValue = localStorage.getItem(storageKey);
+            resolve(localValue);
+          } else {
+            resolve(result[storageKey] || null);
+          }
+        });
+      } else {
+        // Use localStorage
+        const localValue = localStorage.getItem(storageKey);
+        resolve(localValue);
+      }
+    });
+  }
+
+  /**
+   * Create and show tooltip-style inline editor for blocked reason
+   * @param {HTMLButtonElement} blockedButton - The blocked button element
+   * @param {Object} sessionData - The session data object
+   * @param {Function} onSave - Callback when message is saved
+   */
+  function showBlockedReasonEditor(blockedButton, sessionData, onSave) {
+    console.log(LOG_PREFIX, '>>> showBlockedReasonEditor called');
+
+    // Remove any existing editor
+    const existingEditor = blockedButton.querySelector('.bcc-reason-editor');
+    if (existingEditor) {
+      existingEditor.remove();
+    }
+
+    // Get existing message
+    getBlockedReason(sessionData).then((existingMessage) => {
+      // Create editor container (positioned above the button)
+      const editor = document.createElement('div');
+      editor.className = 'bcc-reason-editor';
+      editor.style.cssText = `
+        position: fixed;
+        background: white;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 8px;
+        z-index: 100001;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        min-width: 280px;
+      `;
+
+      // Create input field
+      const inputEl = document.createElement('input');
+      inputEl.type = 'text';
+      inputEl.placeholder = '(optional) block reason';
+      inputEl.value = existingMessage || '';
+      inputEl.style.cssText = `
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: 13px;
+        font-family: inherit;
+        box-sizing: border-box;
+        outline: none;
+        color: #1f2937 !important;
+        background-color: white !important;
+      `;
+
+      // Save function (only on Enter)
+      const saveMessage = () => {
+        const message = inputEl.value.trim();
+        saveBlockedReason(sessionData, message);
+        editor.remove();
+        if (onSave) onSave(message);
+      };
+
+      // Handle Enter key only for saving
+      inputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveMessage();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          editor.remove();
+        }
+      });
+
+      // Handle focus loss (clicking outside) - just dismiss, don't save
+      inputEl.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (document.body.contains(editor)) {
+            editor.remove();
+          }
+        }, 100);
+      });
+
+      editor.appendChild(inputEl);
+      document.body.appendChild(editor);
+
+      // Position the editor above the button
+      setTimeout(() => {
+        const buttonRect = blockedButton.getBoundingClientRect();
+        const editorWidth = 280; // Match min-width
+        const editorHeight = editor.offsetHeight;
+
+        let left = buttonRect.left + buttonRect.width / 2 - editorWidth / 2;
+        let top = buttonRect.top - editorHeight - 12;
+
+        // Clamp to viewport bounds
+        const minMargin = 8;
+        if (left < minMargin) {
+          left = minMargin;
+        }
+        if (left + editorWidth > window.innerWidth - minMargin) {
+          left = window.innerWidth - editorWidth - minMargin;
+        }
+        if (top < minMargin) {
+          top = buttonRect.bottom + 8;
+        }
+
+        editor.style.left = left + 'px';
+        editor.style.top = top + 'px';
+        inputEl.focus();
+        inputEl.select();
+      }, 0);
+    });
+  }
+
+  /**
+   * Handle click on blocked button
+   * @param {Element} sessionEl - The session element
+   * @param {HTMLButtonElement} button - The blocked button
+   */
+  function handleBlockedClick(sessionEl, button) {
+    console.log(LOG_PREFIX, '>>> handleBlockedClick called');
+    console.log(LOG_PREFIX, '>>> sessionEl:', sessionEl);
+    console.log(LOG_PREFIX, '>>> button:', button);
+
+    const sessionData = getSessionData(sessionEl);
+    console.log(LOG_PREFIX, '>>> sessionData:', sessionData);
+    console.log(LOG_PREFIX, '>>> Blocked button clicked for session:', sessionData?.title);
+
+    // Toggle blocked state visually
+    console.log(LOG_PREFIX, '>>> Toggling bcc-blocked-active class...');
+    const isBlocked = button.classList.toggle('bcc-blocked-active');
+    console.log(LOG_PREFIX, '>>> isBlocked after toggle:', isBlocked);
+
+    if (isBlocked) {
+      console.log(LOG_PREFIX, '>>> Setting blocked state (amber color)');
+      button.style.color = '#f59e0b';
+      button.title = 'Marked as blocked - click to unblock';
+      // Add always-visible blocked indicator next to title
+      addBlockedIndicator(sessionEl);
+      console.log(LOG_PREFIX, '>>> Showing modal for reason input...');
+      // Show inline editor for entering reason
+      showBlockedReasonEditor(button, sessionData, (message) => {
+        showBlockedFeedback(`Session "${sessionData?.title}" marked as blocked`, true);
+      });
+    } else {
+      console.log(LOG_PREFIX, '>>> Clearing blocked state');
+      button.style.color = '';
+      button.title = 'Mark as blocked';
+      // Remove the blocked indicator
+      removeBlockedIndicator(sessionEl);
+      // Remove any existing tooltip from the button
+      const existingTooltip = button.querySelector('.bcc-blocked-tooltip');
+      if (existingTooltip) {
+        existingTooltip.remove();
+        console.log(LOG_PREFIX, '>>> Removed tooltip from button');
+      }
+      // Clear the stored reason
+      const storageKey = getSessionStorageId(sessionData);
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        chrome.storage.sync.remove([storageKey], () => {
+          console.log(LOG_PREFIX, '>>> Removed blocked reason from storage');
+        });
+      } else {
+        localStorage.removeItem(storageKey);
+      }
+      console.log(LOG_PREFIX, '>>> Calling showBlockedFeedback...');
+      showBlockedFeedback(`Session "${sessionData?.title}" unblocked`, false);
+    }
+
+    // Emit custom event for external listeners
+    console.log(LOG_PREFIX, '>>> Dispatching bcc:session-blocked event');
+    window.dispatchEvent(new CustomEvent('bcc:session-blocked', {
+      detail: {
+        sessionData,
+        isBlocked
+      }
+    }));
+    console.log(LOG_PREFIX, '>>> handleBlockedClick complete');
+  }
+
+  /**
+   * Show visual feedback when blocking/unblocking
+   * @param {string} message - The message to display
+   * @param {boolean} isBlocked - True for blocked (amber), false for unblocked (green)
+   */
+  function showBlockedFeedback(message, isBlocked = true) {
+    console.log(LOG_PREFIX, '>>> showBlockedFeedback called with message:', message, 'isBlocked:', isBlocked);
+
+    const bgColor = isBlocked ? '#f59e0b' : '#059669'; // amber for blocked, green for unblocked
+    const feedback = document.createElement('div');
+    feedback.textContent = message;
+    feedback.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: ${bgColor};
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 99999;
+      animation: fadeInOut 2s ease-in-out;
+    `;
+
+    // Add animation keyframes if not already present
+    if (!document.querySelector('#better-claude-animations')) {
+      console.log(LOG_PREFIX, '>>> Adding animation keyframes to document');
+      const style = document.createElement('style');
+      style.id = 'better-claude-animations';
+      style.textContent = `
+        @keyframes fadeInOut {
+          0% { opacity: 0; transform: translateY(-10px); }
+          15% { opacity: 1; transform: translateY(0); }
+          85% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-10px); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    console.log(LOG_PREFIX, '>>> Appending feedback element to body');
+    document.body.appendChild(feedback);
+    console.log(LOG_PREFIX, '>>> Feedback element added, will remove in 2s');
+    setTimeout(() => {
+      feedback.remove();
+      console.log(LOG_PREFIX, '>>> Feedback element removed');
+    }, 2000);
+  }
+
+  /**
+   * Add an always-visible blocked indicator to a session row
+   * @param {Element} sessionEl - The session element
+   */
+  function addBlockedIndicator(sessionEl) {
+    if (!sessionEl) return;
+
+    // Check if indicator already exists
+    if (sessionEl.querySelector('.bcc-blocked-indicator')) {
+      return;
+    }
+
+    // Find the relative container inside buttons area (parent of hover container)
+    const relativeContainer = sessionEl.querySelector('.flex-shrink-0 .relative');
+    if (!relativeContainer) {
+      console.log(LOG_PREFIX, '>>> Relative container not found for blocked indicator');
+      return;
+    }
+
+    const sessionData = getSessionData(sessionEl);
+
+    // Create the indicator (same size as button: h-6 w-6 = 24x24, with 14x14 icon inside)
+    const indicator = document.createElement('span');
+    indicator.className = 'bcc-blocked-indicator inline-flex items-center justify-center h-6 w-6';
+    indicator.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"></path></svg>`;
+    indicator.title = 'Session is blocked - hover to see reason';
+
+    // Hide indicator on hover (when buttons become visible)
+    const groupEl = sessionEl.querySelector('.group');
+
+    // Check if currently hovering (indicator should be hidden if so)
+    const isCurrentlyHovering = groupEl && groupEl.matches(':hover');
+    indicator.style.cssText = `color: #f59e0b; display: ${isCurrentlyHovering ? 'none' : 'inline-flex'}; position: relative;`;
+
+    if (groupEl) {
+      groupEl.addEventListener('mouseenter', () => {
+        indicator.style.display = 'none';
+      });
+      groupEl.addEventListener('mouseleave', () => {
+        indicator.style.display = 'inline-flex';
+      });
+    }
+
+    // Append to relative container (sibling of hover buttons container)
+    relativeContainer.appendChild(indicator);
+    console.log(LOG_PREFIX, '>>> Added blocked indicator to relative container (hides on hover)');
+  }
+
+  /**
+   * Remove the blocked indicator from a session row
+   * @param {Element} sessionEl - The session element
+   */
+  function removeBlockedIndicator(sessionEl) {
+    if (!sessionEl) return;
+
+    const indicator = sessionEl.querySelector('.bcc-blocked-indicator');
+    if (indicator) {
+      indicator.remove();
+      console.log(LOG_PREFIX, '>>> Removed blocked indicator from session');
+    }
+  }
+
+  /**
+   * Add blocked buttons to all visible sessions
+   */
+  function addBlockedButtonsToAllSessions() {
+    console.log(LOG_PREFIX, '>>> addBlockedButtonsToAllSessions called');
+    const sessions = getAllSessions();
+    console.log(LOG_PREFIX, `>>> Found ${sessions.length} sessions to process`);
+    let addedCount = 0;
+
+    sessions.forEach((sessionEl, index) => {
+      console.log(LOG_PREFIX, `>>> Processing session ${index}...`);
+      const button = addBlockedButtonToSession(sessionEl);
+      if (button) {
+        addedCount++;
+        console.log(LOG_PREFIX, `>>> Button added for session ${index}`);
+      } else {
+        console.log(LOG_PREFIX, `>>> No button added for session ${index} (already exists or failed)`);
+      }
+    });
+
+    console.log(LOG_PREFIX, `>>> addBlockedButtonsToAllSessions complete. Added: ${addedCount}`);
+  }
+
+  /**
+   * Set up observer to add blocked buttons when new sessions appear
+   */
+  function setupBlockedButtonObserver() {
+    console.log(LOG_PREFIX, '>>> setupBlockedButtonObserver called');
+
+    // Find the sessions container - try multiple selectors
+    let sessionsContainer = document.querySelector('.flex.flex-col.gap-0\\.5.px-1');
+    console.log(LOG_PREFIX, '>>> Sessions container (escaped selector):', sessionsContainer);
+
+    // Try alternative selectors if the first one fails
+    if (!sessionsContainer) {
+      sessionsContainer = document.querySelector('[data-index="0"]')?.closest('.flex.flex-col');
+      console.log(LOG_PREFIX, '>>> Sessions container (via data-index):', sessionsContainer);
+    }
+
+    if (!sessionsContainer) {
+      // Just find any container with data-index elements
+      const firstSession = document.querySelector('[data-index]');
+      if (firstSession) {
+        sessionsContainer = firstSession.parentElement;
+        console.log(LOG_PREFIX, '>>> Sessions container (via parent):', sessionsContainer);
+      }
+    }
+
+    if (!sessionsContainer) {
+      console.log(LOG_PREFIX, '>>> Sessions container not found, will retry in 1s');
+      setTimeout(setupBlockedButtonObserver, 1000);
+      return;
+    }
+
+    console.log(LOG_PREFIX, '>>> Sessions container found:', sessionsContainer);
+
+    // Add buttons to existing sessions
+    console.log(LOG_PREFIX, '>>> Adding buttons to existing sessions...');
+    addBlockedButtonsToAllSessions();
+
+    // Watch for new sessions
+    console.log(LOG_PREFIX, '>>> Setting up MutationObserver...');
+    const observer = new MutationObserver((mutations) => {
+      console.log(LOG_PREFIX, '>>> MutationObserver triggered, mutations:', mutations.length);
+      // Debounce to avoid excessive processing
+      clearTimeout(observer._timeout);
+      observer._timeout = setTimeout(() => {
+        console.log(LOG_PREFIX, '>>> Debounced: calling addBlockedButtonsToAllSessions');
+        addBlockedButtonsToAllSessions();
+      }, 100);
+    });
+
+    observer.observe(sessionsContainer, {
+      childList: true,
+      subtree: true
+    });
+
+    console.log(LOG_PREFIX, '>>> Blocked button observer active and watching:', sessionsContainer);
+    return observer;
+  }
+
+  // Initialize blocked button feature after a delay to ensure page is loaded
+  console.log(LOG_PREFIX, '>>> Scheduling setupBlockedButtonObserver in 2s...');
+  setTimeout(() => {
+    console.log(LOG_PREFIX, '>>> 2s delay complete, calling setupBlockedButtonObserver');
+    setupBlockedButtonObserver();
+  }, 2000);
+
+  // Expose session utilities for debugging and external use
+  window.BetterClaudeCode = window.BetterClaudeCode || {};
+  window.BetterClaudeCode.sessions = {
+    getAll: getAllSessions,
+    getAllWithData: getAllSessionsWithData,
+    findByTitle: findSessionByTitle,
+    getData: getSessionData,
+    getActive: getActiveSession,
+    getRunning: getRunningSessions,
+    findDeleteButton,
+    findArchiveButton,
+    findBlockedButton,
+    getButtons: getSessionButtons,
+    triggerHover: triggerSessionHover,
+    clearHover: clearSessionHover,
+    addBlockedButton: addBlockedButtonToSession,
+    addBlockedButtonsToAll: addBlockedButtonsToAllSessions
+  };
+
+  console.log(LOG_PREFIX, 'Session detection utilities loaded. Access via window.BetterClaudeCode.sessions');
+
+  // ============================================
   // Project Colors Feature
   // ============================================
 
