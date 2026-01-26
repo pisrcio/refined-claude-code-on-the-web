@@ -6,8 +6,10 @@ const DEFAULT_SETTINGS = {
   showModel: true,
   betterLabel: true,
   pullBranch: true,
+  mergeBranch: true,
   projectColors: true,
-  projectColorMap: {} // { "project-name": "#hexcolor" }
+  projectColorMap: {}, // { "project-name": "#hexcolor" }
+  projectMainBranch: {} // { "project-name": "main" }
 };
 
 // Predefined color palette for project colors
@@ -92,12 +94,12 @@ function updateUI(settings) {
     }
   }
 
-  // Render project colors
-  renderProjectColors(settings.projectColorMap || {});
+  // Render project settings
+  renderProjectSettings(settings.projectColorMap || {}, settings.projectMainBranch || {});
 }
 
-// Render project color entries
-function renderProjectColors(projectColorMap) {
+// Render project settings entries
+function renderProjectSettings(projectColorMap, projectMainBranch) {
   const list = document.getElementById('projectColorsList');
   const noItemsMsg = document.getElementById('noProjectColors');
 
@@ -111,14 +113,15 @@ function renderProjectColors(projectColorMap) {
   } else {
     noItemsMsg.style.display = 'none';
     entries.forEach(([projectName, color]) => {
-      const entry = createProjectColorEntry(projectName, color);
+      const mainBranch = projectMainBranch[projectName] || 'main';
+      const entry = createProjectSettingsEntry(projectName, color, mainBranch);
       list.appendChild(entry);
     });
   }
 }
 
-// Create a project color entry element
-function createProjectColorEntry(projectName, color) {
+// Create a project settings entry element
+function createProjectSettingsEntry(projectName, color, mainBranch) {
   const entry = document.createElement('div');
   entry.className = 'project-color-entry';
   entry.dataset.project = projectName;
@@ -130,7 +133,18 @@ function createProjectColorEntry(projectName, color) {
   input.value = projectName;
   input.placeholder = 'Project name';
   input.addEventListener('change', async (e) => {
-    await renameProjectColor(projectName, e.target.value.trim());
+    await renameProjectSettings(projectName, e.target.value.trim());
+  });
+
+  // Main branch input
+  const branchInput = document.createElement('input');
+  branchInput.type = 'text';
+  branchInput.className = 'project-branch-input';
+  branchInput.value = mainBranch;
+  branchInput.placeholder = 'main';
+  branchInput.title = 'Main branch name for merge';
+  branchInput.addEventListener('change', async (e) => {
+    await updateProjectMainBranch(projectName, e.target.value.trim() || 'main');
   });
 
   // Color picker wrapper
@@ -179,12 +193,13 @@ function createProjectColorEntry(projectName, color) {
   deleteBtn.type = 'button';
   deleteBtn.className = 'delete-btn';
   deleteBtn.innerHTML = '×';
-  deleteBtn.title = 'Remove project color';
+  deleteBtn.title = 'Remove project settings';
   deleteBtn.addEventListener('click', async () => {
-    await deleteProjectColor(projectName);
+    await deleteProjectSettings(projectName);
   });
 
   entry.appendChild(input);
+  entry.appendChild(branchInput);
   entry.appendChild(colorWrapper);
   entry.appendChild(deleteBtn);
 
@@ -211,10 +226,11 @@ document.addEventListener('click', () => {
   });
 });
 
-// Add new project color
+// Add new project settings
 async function addProjectColor() {
   const settings = await loadSettings();
   const projectColorMap = settings.projectColorMap || {};
+  const projectMainBranch = settings.projectMainBranch || {};
 
   // Generate a unique placeholder name
   let counter = 1;
@@ -228,8 +244,9 @@ async function addProjectColor() {
   const randomColor = COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)].value;
 
   projectColorMap[newName] = randomColor;
-  await saveSettings({ projectColorMap });
-  renderProjectColors(projectColorMap);
+  projectMainBranch[newName] = 'main';
+  await saveSettings({ projectColorMap, projectMainBranch });
+  renderProjectSettings(projectColorMap, projectMainBranch);
 }
 
 // Update project color
@@ -243,30 +260,49 @@ async function updateProjectColor(projectName, newColor) {
   }
 }
 
-// Rename project color
-async function renameProjectColor(oldName, newName) {
+// Update project main branch
+async function updateProjectMainBranch(projectName, newBranch) {
+  const settings = await loadSettings();
+  const projectMainBranch = settings.projectMainBranch || {};
+
+  projectMainBranch[projectName] = newBranch;
+  await saveSettings({ projectMainBranch });
+}
+
+// Rename project settings
+async function renameProjectSettings(oldName, newName) {
   if (!newName || oldName === newName) return;
 
   const settings = await loadSettings();
   const projectColorMap = settings.projectColorMap || {};
+  const projectMainBranch = settings.projectMainBranch || {};
 
   if (projectColorMap[oldName]) {
+    // Move color
     const color = projectColorMap[oldName];
     delete projectColorMap[oldName];
     projectColorMap[newName] = color;
-    await saveSettings({ projectColorMap });
-    renderProjectColors(projectColorMap);
+
+    // Move main branch
+    const branch = projectMainBranch[oldName] || 'main';
+    delete projectMainBranch[oldName];
+    projectMainBranch[newName] = branch;
+
+    await saveSettings({ projectColorMap, projectMainBranch });
+    renderProjectSettings(projectColorMap, projectMainBranch);
   }
 }
 
-// Delete project color
-async function deleteProjectColor(projectName) {
+// Delete project settings
+async function deleteProjectSettings(projectName) {
   const settings = await loadSettings();
   const projectColorMap = settings.projectColorMap || {};
+  const projectMainBranch = settings.projectMainBranch || {};
 
   delete projectColorMap[projectName];
-  await saveSettings({ projectColorMap });
-  renderProjectColors(projectColorMap);
+  delete projectMainBranch[projectName];
+  await saveSettings({ projectColorMap, projectMainBranch });
+  renderProjectSettings(projectColorMap, projectMainBranch);
 }
 
 // Initialize popup
