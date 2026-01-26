@@ -961,20 +961,21 @@
         return;
       }
 
-      // Find the Create PR button
+      // Find the Create PR or View PR button
       const allButtons = document.querySelectorAll('button');
-      let createPRButton = null;
+      let prButton = null;
 
       for (const btn of allButtons) {
         const text = btn.textContent.trim();
-        if (text.includes('Create PR') || text.includes('Create pull request')) {
-          createPRButton = btn;
+        if (text.includes('Create PR') || text.includes('Create pull request') ||
+            text.includes('View PR') || text.includes('View pull request')) {
+          prButton = btn;
           break;
         }
       }
 
-      if (!createPRButton) {
-        console.log(LOG_PREFIX, 'Create PR button not found yet');
+      if (!prButton) {
+        console.log(LOG_PREFIX, 'PR button not found yet');
         return;
       }
 
@@ -985,7 +986,7 @@
         return;
       }
 
-      console.log(LOG_PREFIX, `📋 Found Create PR button and branch: ${currentBranchName}`);
+      console.log(LOG_PREFIX, `📋 Found PR button and branch: ${currentBranchName}`);
 
       // Create the Pull Branch in CLI button with exact same structure as Open in CLI
       const pullBranchBtn = document.createElement('button');
@@ -1039,8 +1040,8 @@
         }
       });
 
-      // Insert button before the Create PR button
-      createPRButton.parentNode.insertBefore(pullBranchBtn, createPRButton);
+      // Insert button before the PR button
+      prButton.parentNode.insertBefore(pullBranchBtn, prButton);
       console.log(LOG_PREFIX, '✅ Pull Branch in CLI button added');
     }
 
@@ -1083,7 +1084,7 @@
       setTimeout(() => feedback.remove(), 2000);
     }
 
-    // Watch for DOM changes to detect when Create PR button appears
+    // Watch for DOM changes to detect when PR button appears
     const observer = new MutationObserver((mutations) => {
       // Check periodically for the Create PR button
       addPullBranchButton();
