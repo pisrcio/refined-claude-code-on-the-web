@@ -1039,18 +1039,30 @@
         }
       });
 
-      // Insert button into the flex container (parent of the animate wrapper)
-      // Structure: <div class="flex items-center gap-2"> <div class="animate-..."> <button>View PR</button> </div> </div>
-      const animateWrapper = prButton.parentNode;
-      const flexContainer = animateWrapper.parentNode;
+      // Find the flex container - structure varies between Create PR and View PR
+      // View PR: prButton > animate-wrapper > flex-container
+      // Create PR: prButton > flex-h-8 > animate-wrapper > flex-container
+      const flexContainer = prButton.closest('.flex.items-center.gap-2');
+
+      if (!flexContainer) {
+        console.log(LOG_PREFIX, 'Flex container not found');
+        return;
+      }
+
+      // Find the Open in CLI button wrapper to insert before it
+      const openInCLIBtn = Array.from(flexContainer.querySelectorAll('button')).find(
+        btn => btn.textContent.includes('Open in CLI')
+      );
+      const insertBeforeEl = openInCLIBtn?.closest('.animate-\\[fade_300ms_ease-out\\]') ||
+                             flexContainer.lastElementChild;
 
       // Create our own wrapper div to match the existing structure
       const wrapper = document.createElement('div');
       wrapper.className = 'animate-[fade_300ms_ease-out]';
       wrapper.appendChild(pullBranchBtn);
 
-      // Insert before the View PR wrapper
-      flexContainer.insertBefore(wrapper, animateWrapper);
+      // Insert before Open in CLI
+      flexContainer.insertBefore(wrapper, insertBeforeEl);
       console.log(LOG_PREFIX, '✅ Pull Branch in CLI button added');
     }
 
@@ -1228,26 +1240,34 @@
         }
       });
 
-      // Insert button into the flex container
-      // Structure: <div class="flex items-center gap-2"> <div class="animate-..."> <button>...</button> </div> </div>
-      const animateWrapper = prButton.parentNode;
-      const flexContainer = animateWrapper.parentNode;
+      // Find the flex container - structure varies between Create PR and View PR
+      const flexContainer = prButton.closest('.flex.items-center.gap-2');
+
+      if (!flexContainer) {
+        console.log(LOG_PREFIX, 'Flex container not found for merge button');
+        return;
+      }
 
       // Create our own wrapper div to match the existing structure
       const wrapper = document.createElement('div');
       wrapper.className = 'animate-[fade_300ms_ease-out]';
       wrapper.appendChild(mergeBranchBtn);
 
-      // Find Pull Branch wrapper if it exists to insert after it, otherwise insert before View PR
+      // Find Pull Branch wrapper if it exists to insert after it
       const pullBranchBtn = document.querySelector('.better-pull-branch-btn');
-      const pullBranchWrapper = pullBranchBtn?.parentNode;
+      const pullBranchWrapper = pullBranchBtn?.closest('.animate-\\[fade_300ms_ease-out\\]');
 
       if (pullBranchWrapper && pullBranchWrapper.parentNode === flexContainer) {
         // Insert after Pull Branch (before the next sibling)
         flexContainer.insertBefore(wrapper, pullBranchWrapper.nextSibling);
       } else {
-        // Insert before View PR wrapper
-        flexContainer.insertBefore(wrapper, animateWrapper);
+        // Find Open in CLI to insert before it
+        const openInCLIBtn = Array.from(flexContainer.querySelectorAll('button')).find(
+          btn => btn.textContent.includes('Open in CLI')
+        );
+        const insertBeforeEl = openInCLIBtn?.closest('.animate-\\[fade_300ms_ease-out\\]') ||
+                               flexContainer.lastElementChild;
+        flexContainer.insertBefore(wrapper, insertBeforeEl);
       }
       console.log(LOG_PREFIX, '✅ Merge Branch button added');
     }
