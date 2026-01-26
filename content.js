@@ -1139,15 +1139,23 @@
         return;
       }
 
-      // Find the Pull Branch in CLI button to place our button before it
-      const pullBranchBtn = document.querySelector('.better-pull-branch-btn');
+      // Find the Create PR or View PR button (same as Pull Branch uses)
+      const allButtons = document.querySelectorAll('button');
+      let prButton = null;
 
-      if (!pullBranchBtn) {
-        console.log(LOG_PREFIX, 'Pull Branch in CLI button not found yet');
-        return;
+      for (const btn of allButtons) {
+        const text = btn.textContent.trim();
+        if (text.includes('Create PR') || text.includes('Create pull request') ||
+            text.includes('View PR') || text.includes('View pull request')) {
+          prButton = btn;
+          break;
+        }
       }
 
-      const targetButton = pullBranchBtn;
+      if (!prButton) {
+        console.log(LOG_PREFIX, 'PR button not found yet for merge button');
+        return;
+      }
 
       // Get main branch from settings (defaults to 'main')
       const mainBranch = getMainBranchFromSettings();
@@ -1221,8 +1229,10 @@
         }
       });
 
-      // Insert button before the target button
-      targetButton.parentNode.insertBefore(mergeBranchBtn, targetButton);
+      // Insert button before Pull Branch button if it exists, otherwise before PR button
+      const pullBranchBtn = document.querySelector('.better-pull-branch-btn');
+      const insertTarget = pullBranchBtn || prButton;
+      insertTarget.parentNode.insertBefore(mergeBranchBtn, insertTarget);
       console.log(LOG_PREFIX, '✅ Merge Branch button added');
     }
 
