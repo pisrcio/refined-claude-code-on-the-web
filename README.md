@@ -12,13 +12,13 @@ Switch between Agent and Plan modes directly from the input area. Plan mode uses
 ![Mode Button](screenshots/mode-button.png)
 
 **How it works:**
-When you switch to **Plan mode**, the extension automatically adds this text to the beginning of your prompt:
+When you submit a prompt in **Plan mode**, the extension automatically prepends this text to your message:
 ```
 DO NOT write any code yet. I just need the plan for me to review.
 
 use @agent-plan : [your prompt here]
 ```
-When you switch back to **Agent mode**, this text is automatically removed.
+Your mode preference is saved and persists across sessions.
 
 **Credits**: Thanks to [@bchan7](https://reddit.com/u/bchan7) and [@batout](https://reddit.com/u/batout) for sharing the [plan mode discovery](https://www.reddit.com/r/ClaudeCode/comments/1p0hypc/changing_to_plan_mode_in_claude_code_on_the_web/).
 
