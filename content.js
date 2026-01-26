@@ -1249,14 +1249,16 @@
       wrapper.className = 'animate-[fade_300ms_ease-out]';
       wrapper.appendChild(mergeBranchBtn);
 
-      // Find Pull Branch wrapper if it exists to insert before it, otherwise insert at the beginning
+      // Find Pull Branch wrapper if it exists to insert after it, otherwise insert before View PR
       const pullBranchBtn = document.querySelector('.better-pull-branch-btn');
       const pullBranchWrapper = pullBranchBtn?.parentNode;
 
       if (pullBranchWrapper && pullBranchWrapper.parentNode === flexContainer) {
-        flexContainer.insertBefore(wrapper, pullBranchWrapper);
+        // Insert after Pull Branch (before the next sibling)
+        flexContainer.insertBefore(wrapper, pullBranchWrapper.nextSibling);
       } else {
-        flexContainer.insertBefore(wrapper, flexContainer.firstChild);
+        // Insert before View PR wrapper
+        flexContainer.insertBefore(wrapper, animateWrapper);
       }
       console.log(LOG_PREFIX, '✅ Merge Branch button added');
     }
