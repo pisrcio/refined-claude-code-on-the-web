@@ -1198,31 +1198,21 @@
         const mergeMessage = `Merge in ${branch} branch and fix merge conflicts.`;
         console.log(LOG_PREFIX, `📋 Inserting merge message: ${mergeMessage}`);
 
-        // Find the main chat text field (not sidebar fields)
-        // The main reply input is at the bottom of the screen, in the right panel
-        // Look for contenteditable elements and find the one that's:
-        // 1. In the bottom portion of the viewport (main chat input is always at bottom)
-        // 2. Not in the sidebar (which is on the left, narrower)
-        const allContentEditable = Array.from(document.querySelectorAll('div[contenteditable="true"]'));
-        const viewportHeight = window.innerHeight;
-        const viewportWidth = window.innerWidth;
+        // Find the main chat text field - look for contenteditable near the merge button
+        // The button and input are in the same main content area
+        const buttonRect = mergeBranchBtn.getBoundingClientRect();
 
+        // Find contenteditable that's below the button (the input is below the button row)
+        const allContentEditable = Array.from(document.querySelectorAll('div[contenteditable="true"]'));
         const textField = allContentEditable.find(el => {
           const rect = el.getBoundingClientRect();
-          // Main chat input is typically:
-          // - In the bottom half of the screen
-          // - In the right portion of the screen (not sidebar)
-          // - Has reasonable width (not too narrow)
-          const isInBottomHalf = rect.top > viewportHeight * 0.4;
-          const isInRightArea = rect.left > viewportWidth * 0.3; // Not in left sidebar
-          const hasReasonableWidth = rect.width > 200;
-
-          return isInBottomHalf && isInRightArea && hasReasonableWidth;
-        }) || allContentEditable.find(el => {
-          // Fallback: just find one that's not in the sidebar
-          const rect = el.getBoundingClientRect();
-          return rect.left > viewportWidth * 0.3 && rect.width > 200;
-        });
+          // The input should be:
+          // - Below or near the button vertically
+          // - In a similar horizontal area (same panel)
+          const isBelow = rect.top > buttonRect.top;
+          const isSimilarHorizontal = Math.abs(rect.left - buttonRect.left) < 500;
+          return isBelow && isSimilarHorizontal && rect.width > 100;
+        }) || allContentEditable[allContentEditable.length - 1]; // Fallback to last one (usually the main input)
 
         if (textField) {
           if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
