@@ -183,7 +183,8 @@
 
   let modeButton = null;
   let dropdown = null;
-  let currentMode = 'Agent';
+  const MODE_STORAGE_KEY = 'bcc-mode-preference';
+  let currentMode = localStorage.getItem(MODE_STORAGE_KEY) || 'Agent';
 
   function createModeButton() {
     console.log(LOG_PREFIX, 'createModeButton() called');
@@ -285,11 +286,11 @@
     dropdown.classList.add('bcc-dropdown-hidden');
     dropdown.innerHTML = `
       <div class="bcc-mode-option" data-mode="Agent">
-        <span class="bcc-check">&#10003;</span>
+        <span class="bcc-check">${currentMode === 'Agent' ? '&#10003;' : ''}</span>
         <span>Agent</span>
       </div>
       <div class="bcc-mode-option" data-mode="Plan">
-        <span class="bcc-check"></span>
+        <span class="bcc-check">${currentMode === 'Plan' ? '&#10003;' : ''}</span>
         <span>Plan</span>
       </div>
     `;
@@ -418,6 +419,7 @@
   function selectMode(mode) {
     console.log(LOG_PREFIX, 'selectMode() called with:', mode);
     currentMode = mode;
+    localStorage.setItem(MODE_STORAGE_KEY, mode);
     modeButton.querySelector('.bcc-mode-label').textContent = mode;
     console.log(LOG_PREFIX, 'Updated label to:', mode);
 
@@ -428,89 +430,89 @@
     });
 
     closeDropdown();
-
-    // Handle mode change
-    if (mode === 'Plan') {
-      console.log(LOG_PREFIX, 'Calling addPlanPrefix()');
-      addPlanPrefix();
-    } else if (mode === 'Agent') {
-      console.log(LOG_PREFIX, 'Calling removePlanPrefix()');
-      removePlanPrefix();
-    }
+    console.log(LOG_PREFIX, 'Mode changed to:', mode);
   }
 
-  function addPlanPrefix() {
-    console.log(LOG_PREFIX, 'addPlanPrefix() called');
+  const PLAN_INSTRUCTION = 'DO NOT write any code yet. I just need the plan for me to review.';
+  const PLAN_PREFIX = 'use @agent-plan : ';
+  const PLAN_FULL_PREFIX = PLAN_INSTRUCTION + '\n\n' + PLAN_PREFIX;
+
+  // Prepend plan mode text to the input field (called just before submit)
+  function prependPlanModeText() {
+    console.log(LOG_PREFIX, 'prependPlanModeText() called');
     const textField = document.querySelector('div[contenteditable="true"]') ||
                       document.querySelector('textarea') ||
                       document.querySelector('[data-placeholder]');
 
-    console.log(LOG_PREFIX, 'Found textField:', textField);
+    if (!textField) return false;
 
-    if (textField) {
-      const prefix = 'use @agent-plan : ';
-
-      if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
-        if (!textField.value.startsWith(prefix)) {
-          textField.value = prefix + textField.value;
-          textField.focus();
-          textField.setSelectionRange(textField.value.length, textField.value.length);
-          textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log(LOG_PREFIX, 'Added prefix, new value:', textField.value);
-        }
-      } else {
-        const currentText = textField.innerText || textField.textContent || '';
-        if (!currentText.startsWith(prefix)) {
-          textField.focus();
-          textField.innerText = prefix + currentText;
-          const range = document.createRange();
-          const sel = window.getSelection();
-          range.selectNodeContents(textField);
-          range.collapse(false);
-          sel.removeAllRanges();
-          sel.addRange(range);
-          textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log(LOG_PREFIX, 'Added prefix, new text:', textField.innerText);
-        }
+    if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
+      const currentValue = textField.value;
+      if (currentValue.trim() && !currentValue.startsWith(PLAN_INSTRUCTION)) {
+        textField.value = PLAN_FULL_PREFIX + currentValue;
+        textField.dispatchEvent(new Event('input', { bubbles: true }));
+        console.log(LOG_PREFIX, 'Prepended plan text, new value:', textField.value);
+        return true;
+      }
+    } else {
+      const currentText = textField.innerText || textField.textContent || '';
+      if (currentText.trim() && !currentText.startsWith(PLAN_INSTRUCTION)) {
+        textField.innerText = PLAN_FULL_PREFIX + currentText;
+        textField.dispatchEvent(new Event('input', { bubbles: true }));
+        console.log(LOG_PREFIX, 'Prepended plan text, new text:', textField.innerText);
+        return true;
       }
     }
+    return false;
   }
 
-  function removePlanPrefix() {
-    console.log(LOG_PREFIX, 'removePlanPrefix() called');
-    const textField = document.querySelector('div[contenteditable="true"]') ||
-                      document.querySelector('textarea') ||
-                      document.querySelector('[data-placeholder]');
+  // Setup submit handler to intercept form submission in Plan mode
+  let submitHandlerSetup = false;
+  function setupPlanModeSubmitHandler() {
+    if (submitHandlerSetup) return;
 
-    console.log(LOG_PREFIX, 'Found textField:', textField);
+    console.log(LOG_PREFIX, 'Setting up plan mode submit handler');
 
-    if (textField) {
-      const prefix = 'use @agent-plan : ';
-
-      if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
-        if (textField.value.startsWith(prefix)) {
-          textField.value = textField.value.slice(prefix.length);
-          textField.focus();
-          textField.setSelectionRange(textField.value.length, textField.value.length);
-          textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log(LOG_PREFIX, 'Removed prefix, new value:', textField.value);
-        }
-      } else {
-        const currentText = textField.innerText || textField.textContent || '';
-        if (currentText.startsWith(prefix)) {
-          textField.focus();
-          textField.innerText = currentText.slice(prefix.length);
-          const range = document.createRange();
-          const sel = window.getSelection();
-          range.selectNodeContents(textField);
-          range.collapse(false);
-          sel.removeAllRanges();
-          sel.addRange(range);
-          textField.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log(LOG_PREFIX, 'Removed prefix, new text:', textField.innerText);
+    // Intercept Enter key press on text field
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && currentMode === 'Plan') {
+        const textField = document.querySelector('div[contenteditable="true"]') ||
+                          document.querySelector('textarea');
+        if (textField && (e.target === textField || textField.contains(e.target))) {
+          console.log(LOG_PREFIX, 'Enter pressed in Plan mode, prepending text');
+          prependPlanModeText();
         }
       }
-    }
+    }, true); // Use capture phase to run before other handlers
+
+    // Intercept send button clicks
+    document.addEventListener('click', (e) => {
+      if (currentMode !== 'Plan') return;
+
+      // Check if clicked element is or is inside a send button
+      const button = e.target.closest('button');
+      if (button) {
+        // Look for send button by aria-label or by being inside a form
+        const ariaLabel = button.getAttribute('aria-label') || '';
+        const isInForm = button.closest('form');
+        const isSendButton = ariaLabel.toLowerCase().includes('send') ||
+                            ariaLabel.toLowerCase().includes('submit') ||
+                            (isInForm && button.type === 'submit') ||
+                            (isInForm && button.querySelector('svg') && !button.querySelector('[aria-label]'));
+
+        // Also check for the specific send button (usually has an arrow icon and is in form)
+        const formButtons = document.querySelectorAll('form button');
+        const isLastFormButton = Array.from(formButtons).pop() === button;
+
+        if (isSendButton || isLastFormButton) {
+          console.log(LOG_PREFIX, 'Send button clicked in Plan mode, prepending text');
+          prependPlanModeText();
+        }
+      }
+    }, true); // Use capture phase
+
+    submitHandlerSetup = true;
+    console.log(LOG_PREFIX, 'Plan mode submit handler setup complete');
   }
 
   function findAndInjectModeButton() {
@@ -556,11 +558,13 @@
       return;
     }
 
+    let injected = false;
     if (insertionPoint) {
       console.log(LOG_PREFIX, 'Injecting into insertionPoint');
       const modeContainer = createModeButton();
       insertionPoint.insertBefore(modeContainer, insertionPoint.firstChild);
       console.log(LOG_PREFIX, 'Injection complete');
+      injected = true;
     } else {
       const form = document.querySelector('form') || document.querySelector('[contenteditable="true"]')?.closest('div');
       console.log(LOG_PREFIX, 'Fallback - form:', form);
@@ -571,9 +575,15 @@
         form.style.position = 'relative';
         form.insertBefore(modeContainer, form.firstChild);
         console.log(LOG_PREFIX, 'Floating injection complete');
+        injected = true;
       } else {
         console.log(LOG_PREFIX, 'No injection point found!');
       }
+    }
+
+    // Setup submit handler to prepend plan mode text on form submission
+    if (injected) {
+      setupPlanModeSubmitHandler();
     }
   }
 
