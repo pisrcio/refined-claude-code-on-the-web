@@ -1040,8 +1040,18 @@
         }
       });
 
-      // Insert button before the PR button
-      prButton.parentNode.insertBefore(pullBranchBtn, prButton);
+      // Insert button into the flex container (parent of the animate wrapper)
+      // Structure: <div class="flex items-center gap-2"> <div class="animate-..."> <button>View PR</button> </div> </div>
+      const animateWrapper = prButton.parentNode;
+      const flexContainer = animateWrapper.parentNode;
+
+      // Create our own wrapper div to match the existing structure
+      const wrapper = document.createElement('div');
+      wrapper.className = 'animate-[fade_300ms_ease-out]';
+      wrapper.appendChild(pullBranchBtn);
+
+      // Insert before the View PR wrapper
+      flexContainer.insertBefore(wrapper, animateWrapper);
       console.log(LOG_PREFIX, '✅ Pull Branch in CLI button added');
     }
 
@@ -1229,10 +1239,25 @@
         }
       });
 
-      // Insert button before Pull Branch button if it exists, otherwise before PR button
+      // Insert button into the flex container
+      // Structure: <div class="flex items-center gap-2"> <div class="animate-..."> <button>...</button> </div> </div>
+      const animateWrapper = prButton.parentNode;
+      const flexContainer = animateWrapper.parentNode;
+
+      // Create our own wrapper div to match the existing structure
+      const wrapper = document.createElement('div');
+      wrapper.className = 'animate-[fade_300ms_ease-out]';
+      wrapper.appendChild(mergeBranchBtn);
+
+      // Find Pull Branch wrapper if it exists to insert before it, otherwise insert at the beginning
       const pullBranchBtn = document.querySelector('.better-pull-branch-btn');
-      const insertTarget = pullBranchBtn || prButton;
-      insertTarget.parentNode.insertBefore(mergeBranchBtn, insertTarget);
+      const pullBranchWrapper = pullBranchBtn?.parentNode;
+
+      if (pullBranchWrapper && pullBranchWrapper.parentNode === flexContainer) {
+        flexContainer.insertBefore(wrapper, pullBranchWrapper);
+      } else {
+        flexContainer.insertBefore(wrapper, flexContainer.firstChild);
+      }
       console.log(LOG_PREFIX, '✅ Merge Branch button added');
     }
 
