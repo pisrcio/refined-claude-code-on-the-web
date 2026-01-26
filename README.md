@@ -4,6 +4,21 @@ A Chrome extension to enhance the Claude web experience with improved code editi
 
 > **Naming Inspiration**: The name "Refined Claude Code on the Web" is inspired by the excellent [Refined GitHub](https://github.com/refined-github/refined-github) Chrome extension, which enhances the GitHub experience with thoughtful UI improvements.
 
+> **Recommended Workflow**: This extension is built around [this workflow](https://www.youtube.com/watch?v=3bej6c3O8d0), which inspired most of the "refined" features here.
+
+## The Refined Workflow
+
+1. **Plan** - Use Plan mode to design your approach
+2. **Execute** - Switch to Agent mode and let Claude implement the changes
+3. **Pull** - Click the "Pull Branch" button to get the code locally
+4. **Test** - Run your tests locally
+5. **Teleport** - If needed, click "Open in CLI" to continue in your local environment
+6. **Repeat** - Iterate until the feature is complete
+7. **Create PR** - Open a pull request for review
+8. **Resolve conflicts** - If conflicts exist, click the "Merge [main]" button
+9. **Test again** - Verify everything works after merging
+10. **Merge PR** - Complete the pull request
+
 ## Features
 
 ### Mode Button (Agent/Plan Toggle)
