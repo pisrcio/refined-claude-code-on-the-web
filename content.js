@@ -993,7 +993,6 @@
       pullBranchBtn.type = 'button';
       pullBranchBtn.className = 'group flex items-center gap-[6px] px-[10px] py-2 bg-bg-000 border-0.5 border-border-300 rounded-[6px] shadow-sm hover:bg-bg-100 transition-colors better-pull-branch-btn';
       pullBranchBtn.title = `Copy: git fetch && git co ${currentBranchName} && git pull`;
-      pullBranchBtn.style.marginRight = '8px';
 
       // Match exact HTML structure: text span first, then icon in wrapper div
       pullBranchBtn.innerHTML = `
@@ -1177,7 +1176,6 @@
       mergeBranchBtn.type = 'button';
       mergeBranchBtn.className = 'group flex items-center gap-[6px] px-[10px] py-2 bg-bg-000 border-0.5 border-border-300 rounded-[6px] shadow-sm hover:bg-bg-100 transition-colors better-merge-branch-btn';
       mergeBranchBtn.title = `Insert merge request into text field`;
-      mergeBranchBtn.style.marginRight = '8px';
 
       // Match exact HTML structure with merge icon - branch name in italics
       mergeBranchBtn.innerHTML = `
