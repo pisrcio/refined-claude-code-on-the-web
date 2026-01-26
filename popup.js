@@ -4,7 +4,7 @@ const DEFAULT_SETTINGS = {
   allEnabled: true,
   modeButton: true,
   showModel: true,
-  betterLabel: true,
+  refinedLabel: true,
   pullBranch: true,
   projectColors: true,
   projectColorMap: {} // { "project-name": "#hexcolor" }

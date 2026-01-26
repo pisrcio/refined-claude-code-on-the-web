@@ -4,7 +4,7 @@
 (function() {
   'use strict';
 
-  const LOG_PREFIX = '[BCC]';
+  const LOG_PREFIX = '[RCC]';
 
   console.log(LOG_PREFIX, 'Script loaded');
   console.log(LOG_PREFIX, 'URL:', window.location.href);
@@ -18,7 +18,7 @@
     allEnabled: true,
     modeButton: true,
     showModel: true,
-    betterLabel: true,
+    refinedLabel: true,
     pullBranch: true,
     projectColors: true,
     projectColorMap: {} // { "project-name": "#hexcolor" }
@@ -90,17 +90,17 @@
   function applySettings() {
     console.log(LOG_PREFIX, 'Applying settings:', currentSettings);
 
-    // Update Better label appearance
-    updateBetterLabelState();
+    // Update Refined label appearance
+    updateRefinedLabelState();
 
     // Toggle mode button
-    const modeContainer = document.querySelector('.bcc-mode-container');
+    const modeContainer = document.querySelector('.rcc-mode-container');
     if (modeContainer) {
       modeContainer.style.display = isFeatureEnabled('modeButton') ? 'inline-flex' : 'none';
     }
 
     // Toggle pull branch button
-    const pullBranchBtn = document.querySelector('.better-pull-branch-btn');
+    const pullBranchBtn = document.querySelector('.refined-pull-branch-btn');
     if (pullBranchBtn) {
       pullBranchBtn.style.display = isFeatureEnabled('pullBranch') ? 'flex' : 'none';
     }
@@ -123,16 +123,16 @@
     applyProjectColors();
   }
 
-  // Update Better label appearance based on settings
-  function updateBetterLabelState() {
-    const betterLabel = document.querySelector('.better-label');
-    if (!betterLabel) return;
+  // Update Refined label appearance based on settings
+  function updateRefinedLabelState() {
+    const refinedLabel = document.querySelector('.refined-label');
+    if (!refinedLabel) return;
 
     const allEnabled = currentSettings.allEnabled;
 
     if (allEnabled) {
-      betterLabel.classList.remove('better-label-disabled');
-      betterLabel.style.cssText = `
+      refinedLabel.classList.remove('refined-label-disabled');
+      refinedLabel.style.cssText = `
         display: inline-flex;
         align-items: center;
         padding: 2px 8px;
@@ -149,8 +149,8 @@
         text-decoration: none;
       `;
     } else {
-      betterLabel.classList.add('better-label-disabled');
-      betterLabel.style.cssText = `
+      refinedLabel.classList.add('refined-label-disabled');
+      refinedLabel.style.cssText = `
         display: inline-flex;
         align-items: center;
         padding: 2px 8px;
@@ -182,20 +182,20 @@
 
     // Create container
     const container = document.createElement('div');
-    container.className = 'bcc-mode-container';
+    container.className = 'rcc-mode-container';
     // Apply inline styles to override page CSS
     container.style.cssText = 'position: relative !important; display: inline-flex !important; flex-direction: row !important; align-items: center !important; margin-right: 8px !important; z-index: 1000 !important;';
     console.log(LOG_PREFIX, 'Created container:', container);
 
     // Create button
     modeButton = document.createElement('button');
-    modeButton.className = 'bcc-mode-button';
+    modeButton.className = 'rcc-mode-button';
     modeButton.type = 'button'; // Prevent form submission
     // Apply inline styles to override page CSS
     modeButton.style.cssText = 'display: inline-flex !important; flex-direction: row !important; align-items: center !important; gap: 6px !important; padding: 6px 10px !important; background: transparent !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; border-radius: 8px !important; cursor: pointer !important; font-size: 13px !important; white-space: nowrap !important;';
     modeButton.innerHTML = `
-      <span class="bcc-mode-label" style="display: inline !important; font-weight: 500 !important;">${currentMode}</span>
-      <svg class="bcc-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block !important; opacity: 0.6 !important;">
+      <span class="rcc-mode-label" style="display: inline !important; font-weight: 500 !important;">${currentMode}</span>
+      <svg class="rcc-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block !important; opacity: 0.6 !important;">
         <path d="m6 9 6 6 6-6"></path>
       </svg>
     `;
@@ -210,14 +210,14 @@
     // Create dropdown - append to body to avoid overflow clipping
     dropdown = document.createElement('div');
     dropdown.id = 'bcc-dropdown-' + Date.now(); // Unique ID for CSS targeting
-    dropdown.className = 'bcc-mode-dropdown';
+    dropdown.className = 'rcc-mode-dropdown';
 
     // Inject stylesheet with high specificity rules
-    if (!document.getElementById('bcc-dropdown-styles')) {
+    if (!document.getElementById('rcc-dropdown-styles')) {
       const styleEl = document.createElement('style');
-      styleEl.id = 'bcc-dropdown-styles';
+      styleEl.id = 'rcc-dropdown-styles';
       styleEl.textContent = `
-        .bcc-mode-dropdown[id^="bcc-dropdown-"] {
+        .rcc-mode-dropdown[id^="bcc-dropdown-"] {
           position: fixed !important;
           display: block !important;
           min-width: 120px !important;
@@ -230,19 +230,19 @@
           z-index: 999999 !important;
           overflow: visible !important;
         }
-        .bcc-mode-dropdown[id^="bcc-dropdown-"].bcc-dropdown-hidden {
+        .rcc-mode-dropdown[id^="bcc-dropdown-"].rcc-dropdown-hidden {
           display: block !important;
           opacity: 0 !important;
           visibility: hidden !important;
           pointer-events: none !important;
         }
-        .bcc-mode-dropdown[id^="bcc-dropdown-"].bcc-dropdown-visible {
+        .rcc-mode-dropdown[id^="bcc-dropdown-"].rcc-dropdown-visible {
           display: block !important;
           opacity: 1 !important;
           visibility: visible !important;
           pointer-events: auto !important;
         }
-        .bcc-mode-dropdown[id^="bcc-dropdown-"] .bcc-mode-option {
+        .rcc-mode-dropdown[id^="bcc-dropdown-"] .rcc-mode-option {
           display: flex !important;
           flex-direction: row !important;
           align-items: center !important;
@@ -256,16 +256,16 @@
           min-height: 36px !important;
           box-sizing: border-box !important;
         }
-        .bcc-mode-dropdown[id^="bcc-dropdown-"] .bcc-mode-option:hover {
+        .rcc-mode-dropdown[id^="bcc-dropdown-"] .rcc-mode-option:hover {
           background: #f3f4f6 !important;
         }
-        .bcc-mode-dropdown[id^="bcc-dropdown-"] .bcc-check {
+        .rcc-mode-dropdown[id^="bcc-dropdown-"] .rcc-check {
           display: inline-block !important;
           width: 16px !important;
           color: #10a37f !important;
           font-weight: bold !important;
         }
-        .bcc-mode-dropdown[id^="bcc-dropdown-"] span {
+        .rcc-mode-dropdown[id^="bcc-dropdown-"] span {
           display: inline !important;
           color: #000000 !important;
         }
@@ -274,21 +274,21 @@
       console.log(LOG_PREFIX, 'Injected dropdown stylesheet');
     }
 
-    dropdown.classList.add('bcc-dropdown-hidden');
+    dropdown.classList.add('rcc-dropdown-hidden');
     dropdown.innerHTML = `
-      <div class="bcc-mode-option" data-mode="Agent">
-        <span class="bcc-check">&#10003;</span>
+      <div class="rcc-mode-option" data-mode="Agent">
+        <span class="rcc-check">&#10003;</span>
         <span>Agent</span>
       </div>
-      <div class="bcc-mode-option" data-mode="Plan">
-        <span class="bcc-check"></span>
+      <div class="rcc-mode-option" data-mode="Plan">
+        <span class="rcc-check"></span>
         <span>Plan</span>
       </div>
     `;
     console.log(LOG_PREFIX, 'Created dropdown:', dropdown);
 
     // Add hover effect for dropdown options
-    dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
+    dropdown.querySelectorAll('.rcc-mode-option').forEach(option => {
       option.addEventListener('mouseenter', () => {
         option.style.backgroundColor = '#f3f4f6';
       });
@@ -339,9 +339,9 @@
     }
 
     // Check visibility using class instead of inline style
-    const isVisible = dropdown.classList.contains('bcc-dropdown-visible');
-    console.log(LOG_PREFIX, 'Has bcc-dropdown-visible class:', isVisible);
-    console.log(LOG_PREFIX, 'Has bcc-dropdown-hidden class:', dropdown.classList.contains('bcc-dropdown-hidden'));
+    const isVisible = dropdown.classList.contains('rcc-dropdown-visible');
+    console.log(LOG_PREFIX, 'Has rcc-dropdown-visible class:', isVisible);
+    console.log(LOG_PREFIX, 'Has rcc-dropdown-hidden class:', dropdown.classList.contains('rcc-dropdown-hidden'));
 
     if (isVisible) {
       console.log(LOG_PREFIX, 'Dropdown is visible, closing...');
@@ -364,8 +364,8 @@
       dropdown.style.left = finalLeft + 'px';
 
       // Toggle classes for visibility (CSS handles opacity/visibility with !important)
-      dropdown.classList.remove('bcc-dropdown-hidden');
-      dropdown.classList.add('bcc-dropdown-visible');
+      dropdown.classList.remove('rcc-dropdown-hidden');
+      dropdown.classList.add('rcc-dropdown-visible');
 
       console.log(LOG_PREFIX, 'Classes after toggle:', dropdown.className);
 
@@ -402,20 +402,20 @@
       return;
     }
     // Use class toggling for visibility (CSS handles the styles with !important)
-    dropdown.classList.remove('bcc-dropdown-visible');
-    dropdown.classList.add('bcc-dropdown-hidden');
+    dropdown.classList.remove('rcc-dropdown-visible');
+    dropdown.classList.add('rcc-dropdown-hidden');
     console.log(LOG_PREFIX, 'Dropdown hidden, classes:', dropdown.className);
   }
 
   function selectMode(mode) {
     console.log(LOG_PREFIX, 'selectMode() called with:', mode);
     currentMode = mode;
-    modeButton.querySelector('.bcc-mode-label').textContent = mode;
+    modeButton.querySelector('.rcc-mode-label').textContent = mode;
     console.log(LOG_PREFIX, 'Updated label to:', mode);
 
     // Update checkmarks
-    dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
-      const check = option.querySelector('.bcc-check');
+    dropdown.querySelectorAll('.rcc-mode-option').forEach(option => {
+      const check = option.querySelector('.rcc-check');
       check.textContent = option.dataset.mode === mode ? '✓' : '';
     });
 
@@ -543,7 +543,7 @@
       }
     }
 
-    if (document.querySelector('.bcc-mode-container')) {
+    if (document.querySelector('.rcc-mode-container')) {
       console.log(LOG_PREFIX, 'Already injected, skipping');
       return;
     }
@@ -556,10 +556,10 @@
     } else {
       const form = document.querySelector('form') || document.querySelector('[contenteditable="true"]')?.closest('div');
       console.log(LOG_PREFIX, 'Fallback - form:', form);
-      if (form && !document.querySelector('.bcc-mode-container')) {
+      if (form && !document.querySelector('.rcc-mode-container')) {
         console.log(LOG_PREFIX, 'Using floating fallback');
         const modeContainer = createModeButton();
-        modeContainer.classList.add('bcc-floating');
+        modeContainer.classList.add('rcc-floating');
         form.style.position = 'relative';
         form.insertBefore(modeContainer, form.firstChild);
         console.log(LOG_PREFIX, 'Floating injection complete');
@@ -739,17 +739,17 @@
   }
 
   // ============================================
-  // Better Label Feature
+  // Refined Label Feature
   // ============================================
 
-  function addBetterLabel() {
-    console.log(LOG_PREFIX, 'addBetterLabel() called');
+  function addRefinedLabel() {
+    console.log(LOG_PREFIX, 'addRefinedLabel() called');
 
-    // Check if betterLabel feature is enabled (but we always show the label itself)
-    if (!isFeatureEnabled('betterLabel') && !currentSettings.allEnabled === false) {
-      // Only hide label if betterLabel specifically disabled but allEnabled is true
-      const existingLabel = document.querySelector('.better-label');
-      if (existingLabel && currentSettings.allEnabled && !currentSettings.betterLabel) {
+    // Check if refinedLabel feature is enabled (but we always show the label itself)
+    if (!isFeatureEnabled('refinedLabel') && !currentSettings.allEnabled === false) {
+      // Only hide label if refinedLabel specifically disabled but allEnabled is true
+      const existingLabel = document.querySelector('.refined-label');
+      if (existingLabel && currentSettings.allEnabled && !currentSettings.refinedLabel) {
         existingLabel.style.display = 'none';
         return true;
       }
@@ -769,26 +769,26 @@
     });
 
     const parent = claudeCodeLink.parentElement;
-    if (parent?.querySelector('.better-label')) {
+    if (parent?.querySelector('.refined-label')) {
       console.log(LOG_PREFIX, 'Better label already exists in parent, updating state');
-      updateBetterLabelState();
+      updateRefinedLabelState();
       return true;
     }
     if (claudeCodeLink.nextElementSibling?.classList?.contains('better-label')) {
       console.log(LOG_PREFIX, 'Better label already exists as sibling, updating state');
-      updateBetterLabelState();
+      updateRefinedLabelState();
       return true;
     }
 
-    const betterLabel = document.createElement('span');
-    betterLabel.textContent = 'Better';
-    betterLabel.className = 'better-label';
-    betterLabel.title = 'Click to toggle all extension features';
+    const refinedLabel = document.createElement('span');
+    refinedLabel.textContent = 'Better';
+    refinedLabel.className = 'better-label';
+    refinedLabel.title = 'Click to toggle all extension features';
 
     // Apply initial style based on current settings
     const allEnabled = currentSettings.allEnabled;
     if (allEnabled) {
-      betterLabel.style.cssText = `
+      refinedLabel.style.cssText = `
         display: inline-flex;
         align-items: center;
         padding: 2px 8px;
@@ -805,8 +805,8 @@
         text-decoration: none;
       `;
     } else {
-      betterLabel.classList.add('better-label-disabled');
-      betterLabel.style.cssText = `
+      refinedLabel.classList.add('refined-label-disabled');
+      refinedLabel.style.cssText = `
         display: inline-flex;
         align-items: center;
         padding: 2px 8px;
@@ -825,7 +825,7 @@
     }
 
     // Add click handler to toggle all features
-    betterLabel.addEventListener('click', async (e) => {
+    refinedLabel.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -844,15 +844,15 @@
     });
 
     // Add hover effect
-    betterLabel.addEventListener('mouseenter', () => {
-      betterLabel.style.opacity = '0.8';
+    refinedLabel.addEventListener('mouseenter', () => {
+      refinedLabel.style.opacity = '0.8';
     });
-    betterLabel.addEventListener('mouseleave', () => {
-      betterLabel.style.opacity = '1';
+    refinedLabel.addEventListener('mouseleave', () => {
+      refinedLabel.style.opacity = '1';
     });
 
     console.log(LOG_PREFIX, 'Inserting Better label');
-    claudeCodeLink.parentNode.insertBefore(betterLabel, claudeCodeLink.nextSibling);
+    claudeCodeLink.parentNode.insertBefore(refinedLabel, claudeCodeLink.nextSibling);
     console.log(LOG_PREFIX, 'Better label inserted successfully');
 
     return true;
@@ -877,9 +877,9 @@
     `;
 
     // Add animation keyframes if not already present
-    if (!document.querySelector('#better-claude-animations')) {
+    if (!document.querySelector('#refined-claude-animations')) {
       const style = document.createElement('style');
-      style.id = 'better-claude-animations';
+      style.id = 'refined-claude-animations';
       style.textContent = `
         @keyframes fadeInOut {
           0% { opacity: 0; transform: translateY(-10px); }
@@ -949,7 +949,7 @@
     // Function to add the Pull Branch in CLI button
     function addPullBranchButton() {
       // Check if button already exists
-      if (document.querySelector('.better-pull-branch-btn')) {
+      if (document.querySelector('.refined-pull-branch-btn')) {
         return;
       }
 
@@ -982,7 +982,7 @@
       // Create the Pull Branch in CLI button with exact same structure as Open in CLI
       const pullBranchBtn = document.createElement('button');
       pullBranchBtn.type = 'button';
-      pullBranchBtn.className = 'group flex items-center gap-[6px] px-[10px] py-2 bg-bg-000 border-0.5 border-border-300 rounded-[6px] shadow-sm hover:bg-bg-100 transition-colors better-pull-branch-btn';
+      pullBranchBtn.className = 'group flex items-center gap-[6px] px-[10px] py-2 bg-bg-000 border-0.5 border-border-300 rounded-[6px] shadow-sm hover:bg-bg-100 transition-colors refined-pull-branch-btn';
       pullBranchBtn.title = `Copy: git fetch && git co ${currentBranchName} && git pull`;
       pullBranchBtn.style.marginRight = '8px';
 
@@ -1057,9 +1057,9 @@
       `;
 
       // Add animation keyframes if not already present
-      if (!document.querySelector('#better-claude-animations')) {
+      if (!document.querySelector('#refined-claude-animations')) {
         const style = document.createElement('style');
-        style.id = 'better-claude-animations';
+        style.id = 'refined-claude-animations';
         style.textContent = `
           @keyframes fadeInOut {
             0% { opacity: 0; transform: translateY(-10px); }
@@ -1363,7 +1363,7 @@
    */
   function findBlockedButton(sessionEl) {
     if (!sessionEl) return null;
-    return sessionEl.querySelector('.bcc-blocked-btn');
+    return sessionEl.querySelector('.rcc-blocked-btn');
   }
 
   /**
@@ -1373,7 +1373,7 @@
   function createBlockedButton() {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'bcc-blocked-btn inline-flex items-center justify-center relative shrink-0 can-focus select-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:drop-shadow-none border-transparent transition font-base duration-300 ease-[cubic-bezier(0.165,0.85,0.45,1)] h-6 w-6 rounded-md active:scale-95 bg-bg-300 text-text-500 hover:text-warning-100';
+    button.className = 'rcc-blocked-btn inline-flex items-center justify-center relative shrink-0 can-focus select-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:drop-shadow-none border-transparent transition font-base duration-300 ease-[cubic-bezier(0.165,0.85,0.45,1)] h-6 w-6 rounded-md active:scale-95 bg-bg-300 text-text-500 hover:text-warning-100';
     button.title = 'Mark as blocked';
     button.innerHTML = BLOCKED_ICON_SVG;
 
@@ -1449,7 +1449,7 @@
 
     // Create a wrapper div similar to the archive button wrapper
     const blockedWrapper = document.createElement('div');
-    blockedWrapper.className = 'bcc-blocked-wrapper';
+    blockedWrapper.className = 'rcc-blocked-wrapper';
     blockedWrapper.appendChild(blockedButton);
 
     // Insert after the archive button wrapper (to the right)
@@ -1465,7 +1465,7 @@
       if (reason) {
         console.log(LOG_PREFIX, '>>> Found stored blocked reason, restoring blocked state');
         // Mark as blocked without showing modal
-        blockedButton.classList.add('bcc-blocked-active');
+        blockedButton.classList.add('rcc-blocked-active');
         blockedButton.style.color = '#f59e0b';
         blockedButton.title = 'Marked as blocked - click to unblock';
         addBlockedIndicator(sessionEl);
@@ -1490,7 +1490,7 @@
           // Create tooltip if it doesn't exist
           if (!tooltipElement) {
             tooltipElement = document.createElement('div');
-            tooltipElement.className = 'bcc-blocked-tooltip';
+            tooltipElement.className = 'rcc-blocked-tooltip';
             tooltipElement.style.cssText = `
               position: fixed;
               background: #1f2937;
@@ -1637,7 +1637,7 @@
     console.log(LOG_PREFIX, '>>> showBlockedReasonEditor called');
 
     // Remove any existing editor
-    const existingEditor = blockedButton.querySelector('.bcc-reason-editor');
+    const existingEditor = blockedButton.querySelector('.rcc-reason-editor');
     if (existingEditor) {
       existingEditor.remove();
     }
@@ -1646,7 +1646,7 @@
     getBlockedReason(sessionData).then((existingMessage) => {
       // Create editor container (positioned above the button)
       const editor = document.createElement('div');
-      editor.className = 'bcc-reason-editor';
+      editor.className = 'rcc-reason-editor';
       editor.style.cssText = `
         position: fixed;
         background: white;
@@ -1751,8 +1751,8 @@
     console.log(LOG_PREFIX, '>>> Blocked button clicked for session:', sessionData?.title);
 
     // Toggle blocked state visually
-    console.log(LOG_PREFIX, '>>> Toggling bcc-blocked-active class...');
-    const isBlocked = button.classList.toggle('bcc-blocked-active');
+    console.log(LOG_PREFIX, '>>> Toggling rcc-blocked-active class...');
+    const isBlocked = button.classList.toggle('rcc-blocked-active');
     console.log(LOG_PREFIX, '>>> isBlocked after toggle:', isBlocked);
 
     if (isBlocked) {
@@ -1773,7 +1773,7 @@
       // Remove the blocked indicator
       removeBlockedIndicator(sessionEl);
       // Remove any existing tooltip from the button
-      const existingTooltip = button.querySelector('.bcc-blocked-tooltip');
+      const existingTooltip = button.querySelector('.rcc-blocked-tooltip');
       if (existingTooltip) {
         existingTooltip.remove();
         console.log(LOG_PREFIX, '>>> Removed tooltip from button');
@@ -1792,8 +1792,8 @@
     }
 
     // Emit custom event for external listeners
-    console.log(LOG_PREFIX, '>>> Dispatching bcc:session-blocked event');
-    window.dispatchEvent(new CustomEvent('bcc:session-blocked', {
+    console.log(LOG_PREFIX, '>>> Dispatching rcc:session-blocked event');
+    window.dispatchEvent(new CustomEvent('rcc:session-blocked', {
       detail: {
         sessionData,
         isBlocked
@@ -1828,10 +1828,10 @@
     `;
 
     // Add animation keyframes if not already present
-    if (!document.querySelector('#better-claude-animations')) {
+    if (!document.querySelector('#refined-claude-animations')) {
       console.log(LOG_PREFIX, '>>> Adding animation keyframes to document');
       const style = document.createElement('style');
-      style.id = 'better-claude-animations';
+      style.id = 'refined-claude-animations';
       style.textContent = `
         @keyframes fadeInOut {
           0% { opacity: 0; transform: translateY(-10px); }
@@ -1860,7 +1860,7 @@
     if (!sessionEl) return;
 
     // Check if indicator already exists
-    if (sessionEl.querySelector('.bcc-blocked-indicator')) {
+    if (sessionEl.querySelector('.rcc-blocked-indicator')) {
       return;
     }
 
@@ -1875,7 +1875,7 @@
 
     // Create the indicator (same size as button: h-6 w-6 = 24x24, with 14x14 icon inside)
     const indicator = document.createElement('span');
-    indicator.className = 'bcc-blocked-indicator inline-flex items-center justify-center h-6 w-6';
+    indicator.className = 'rcc-blocked-indicator inline-flex items-center justify-center h-6 w-6';
     indicator.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"></path></svg>`;
     indicator.title = 'Session is blocked - hover to see reason';
 
@@ -1907,7 +1907,7 @@
   function removeBlockedIndicator(sessionEl) {
     if (!sessionEl) return;
 
-    const indicator = sessionEl.querySelector('.bcc-blocked-indicator');
+    const indicator = sessionEl.querySelector('.rcc-blocked-indicator');
     if (indicator) {
       indicator.remove();
       console.log(LOG_PREFIX, '>>> Removed blocked indicator from session');
@@ -2003,8 +2003,8 @@
   }, 2000);
 
   // Expose session utilities for debugging and external use
-  window.BetterClaudeCode = window.BetterClaudeCode || {};
-  window.BetterClaudeCode.sessions = {
+  window.RefinedClaudeCode = window.RefinedClaudeCode || {};
+  window.RefinedClaudeCode.sessions = {
     getAll: getAllSessions,
     getAllWithData: getAllSessionsWithData,
     findByTitle: findSessionByTitle,
@@ -2021,7 +2021,7 @@
     addBlockedButtonsToAll: addBlockedButtonsToAllSessions
   };
 
-  console.log(LOG_PREFIX, 'Session detection utilities loaded. Access via window.BetterClaudeCode.sessions');
+  console.log(LOG_PREFIX, 'Session detection utilities loaded. Access via window.RefinedClaudeCode.sessions');
 
   // ============================================
   // Project Colors Feature
@@ -2030,10 +2030,10 @@
   function applyProjectColors() {
     if (!isFeatureEnabled('projectColors')) {
       // Remove any applied colors
-      document.querySelectorAll('[data-bcc-colored]').forEach(el => {
+      document.querySelectorAll('[data-rcc-colored]').forEach(el => {
         el.style.removeProperty('color');
         el.style.removeProperty('font-weight');
-        el.removeAttribute('data-bcc-colored');
+        el.removeAttribute('data-rcc-colored');
       });
       return;
     }
@@ -2068,12 +2068,12 @@
       if (matchedColor) {
         span.style.color = matchedColor;
         span.style.fontWeight = '600';
-        span.setAttribute('data-bcc-colored', 'true');
-      } else if (span.hasAttribute('data-bcc-colored')) {
+        span.setAttribute('data-rcc-colored', 'true');
+      } else if (span.hasAttribute('data-rcc-colored')) {
         // Remove color if previously applied but no longer matches
         span.style.removeProperty('color');
         span.style.removeProperty('font-weight');
-        span.removeAttribute('data-bcc-colored');
+        span.removeAttribute('data-rcc-colored');
       }
     });
   }
@@ -2092,10 +2092,10 @@
   // ============================================
 
   let debounceTimer = null;
-  function debouncedAddBetterLabel() {
+  function debouncedAddRefinedLabel() {
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
-      addBetterLabel();
+      addRefinedLabel();
     }, 100);
   }
 
@@ -2126,7 +2126,7 @@
         if (isFeatureEnabled('modeButton')) {
           setTimeout(findAndInjectModeButton, 1000);
         }
-        addBetterLabel(); // Always add the label (it's the toggle)
+        addRefinedLabel(); // Always add the label (it's the toggle)
         if (isFeatureEnabled('showModel')) {
           updateModelSelector();
         }
@@ -2157,15 +2157,15 @@
     // Watch for DOM changes (SPA navigation)
     const observer = new MutationObserver((mutations) => {
       // Re-inject mode button if missing and enabled
-      if (isFeatureEnabled('modeButton') && !document.querySelector('.bcc-mode-container')) {
+      if (isFeatureEnabled('modeButton') && !document.querySelector('.rcc-mode-container')) {
         console.log(LOG_PREFIX, 'MutationObserver: mode container missing, re-injecting');
         findAndInjectModeButton();
       }
-      // Re-add better label if missing (always, since it's the toggle control)
-      debouncedAddBetterLabel();
+      // Re-add refined label if missing (always, since it's the toggle control)
+      debouncedAddRefinedLabel();
 
       // Re-add pull branch button if missing and enabled
-      if (isFeatureEnabled('pullBranch') && !document.querySelector('.better-pull-branch-btn')) {
+      if (isFeatureEnabled('pullBranch') && !document.querySelector('.refined-pull-branch-btn')) {
         // The watcher handles this, but we can trigger a check
       }
 
@@ -2182,7 +2182,7 @@
 
   init().catch(e => {
     console.error(LOG_PREFIX, 'Init failed:', e);
-    // Fallback: try to add the better label anyway
-    setTimeout(() => addBetterLabel(), 1000);
+    // Fallback: try to add the refined label anyway
+    setTimeout(() => addRefinedLabel(), 1000);
   });
 })();
