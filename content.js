@@ -1193,7 +1193,7 @@
 
         // Get main branch from settings
         const branch = getMainBranchFromSettings();
-        const mergeMessage = `Merge in ${branch} branch and fix merge conflicts.`;
+        const mergeMessage = `Merge the "${branch}" branch in and fix merge conflicts.`;
         console.log(LOG_PREFIX, `📋 Inserting merge message: ${mergeMessage}`);
 
         // Find the main chat text field
