@@ -1,4 +1,4 @@
-// Better Claude Code - Popup Control Panel
+// Refined Claude Code - Popup Control Panel
 
 const DEFAULT_SETTINGS = {
   allEnabled: true,

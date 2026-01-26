@@ -1,4 +1,4 @@
-# Better Claude Code on the Web
+# Refined Claude Code on the Web
 
 A Chrome extension to enhance the Claude web experience with improved code editing capabilities.
 
@@ -12,7 +12,7 @@ A Chrome extension to enhance the Claude web experience with improved code editi
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/pisrcio/better-claude-code-on-the-web.git
+   git clone https://github.com/pisrcio/refined-claude-code-on-the-web.git
    ```
 
 2. Open Chrome and navigate to `chrome://extensions/`

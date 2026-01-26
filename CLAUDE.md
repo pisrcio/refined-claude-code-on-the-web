@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Project Overview
 
-This is a Chrome extension project called "Better Claude Code on the Web". The extension aims to enhance the Claude web experience with improved code editing capabilities.
+This is a Chrome extension project called "Refined Claude Code on the Web". The extension aims to enhance the Claude web experience with improved code editing capabilities.
 
 ## Project Structure
 

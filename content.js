@@ -1,4 +1,4 @@
-// Better Claude Code on the Web - Content Script
+// Refined Claude Code on the Web - Content Script
 // Features: Mode Button, Show Actual Model, Better Label, Pull Branch in CLI
 
 (function() {
