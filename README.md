@@ -11,6 +11,11 @@ Switch between Agent and Plan modes directly from the input area. Plan mode uses
 
 ![Mode Button](screenshots/mode-button.png)
 
+**Usage Tips:**
+- When using **Plan mode**, add this sentence at the end of your prompt for best results:
+  > DO NOT write any code yet. I just need the plan for me to review.
+- When switching back to **Agent mode**, remember to remove this sentence from your prompt.
+
 **Credits**: Thanks to [@bchan7](https://reddit.com/u/bchan7) and [@batout](https://reddit.com/u/batout) for sharing the [plan mode discovery](https://www.reddit.com/r/ClaudeCode/comments/1p0hypc/changing_to_plan_mode_in_claude_code_on_the_web/).
 
 ### Show Actual Model
