@@ -439,6 +439,10 @@
     }
   }
 
+  const PLAN_INSTRUCTION = 'DO NOT write any code yet. I just need the plan for me to review.';
+  const PLAN_PREFIX = 'use @agent-plan : ';
+  const PLAN_FULL_PREFIX = PLAN_INSTRUCTION + '\n\n' + PLAN_PREFIX;
+
   function addPlanPrefix() {
     console.log(LOG_PREFIX, 'addPlanPrefix() called');
     const textField = document.querySelector('div[contenteditable="true"]') ||
@@ -448,11 +452,9 @@
     console.log(LOG_PREFIX, 'Found textField:', textField);
 
     if (textField) {
-      const prefix = 'use @agent-plan : ';
-
       if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
-        if (!textField.value.startsWith(prefix)) {
-          textField.value = prefix + textField.value;
+        if (!textField.value.startsWith(PLAN_INSTRUCTION)) {
+          textField.value = PLAN_FULL_PREFIX + textField.value;
           textField.focus();
           textField.setSelectionRange(textField.value.length, textField.value.length);
           textField.dispatchEvent(new Event('input', { bubbles: true }));
@@ -460,9 +462,9 @@
         }
       } else {
         const currentText = textField.innerText || textField.textContent || '';
-        if (!currentText.startsWith(prefix)) {
+        if (!currentText.startsWith(PLAN_INSTRUCTION)) {
           textField.focus();
-          textField.innerText = prefix + currentText;
+          textField.innerText = PLAN_FULL_PREFIX + currentText;
           const range = document.createRange();
           const sel = window.getSelection();
           range.selectNodeContents(textField);
@@ -485,11 +487,9 @@
     console.log(LOG_PREFIX, 'Found textField:', textField);
 
     if (textField) {
-      const prefix = 'use @agent-plan : ';
-
       if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
-        if (textField.value.startsWith(prefix)) {
-          textField.value = textField.value.slice(prefix.length);
+        if (textField.value.startsWith(PLAN_INSTRUCTION)) {
+          textField.value = textField.value.slice(PLAN_FULL_PREFIX.length);
           textField.focus();
           textField.setSelectionRange(textField.value.length, textField.value.length);
           textField.dispatchEvent(new Event('input', { bubbles: true }));
@@ -497,9 +497,9 @@
         }
       } else {
         const currentText = textField.innerText || textField.textContent || '';
-        if (currentText.startsWith(prefix)) {
+        if (currentText.startsWith(PLAN_INSTRUCTION)) {
           textField.focus();
-          textField.innerText = currentText.slice(prefix.length);
+          textField.innerText = currentText.slice(PLAN_FULL_PREFIX.length);
           const range = document.createRange();
           const sel = window.getSelection();
           range.selectNodeContents(textField);
