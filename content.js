@@ -1196,21 +1196,12 @@
         const mergeMessage = `Merge in ${branch} branch and fix merge conflicts.`;
         console.log(LOG_PREFIX, `📋 Inserting merge message: ${mergeMessage}`);
 
-        // Find the main chat text field - look for contenteditable near the merge button
-        // The button and input are in the same main content area
-        const buttonRect = mergeBranchBtn.getBoundingClientRect();
-
-        // Find contenteditable that's below the button (the input is below the button row)
-        const allContentEditable = Array.from(document.querySelectorAll('div[contenteditable="true"]'));
-        const textField = allContentEditable.find(el => {
-          const rect = el.getBoundingClientRect();
-          // The input should be:
-          // - Below or near the button vertically
-          // - In a similar horizontal area (same panel)
-          const isBelow = rect.top > buttonRect.top;
-          const isSimilarHorizontal = Math.abs(rect.left - buttonRect.left) < 500;
-          return isBelow && isSimilarHorizontal && rect.width > 100;
-        }) || allContentEditable[allContentEditable.length - 1]; // Fallback to last one (usually the main input)
+        // Find the main chat text field
+        // Look for the textarea with id="turn-textarea" or placeholder="Reply..."
+        const textField = document.querySelector('textarea#turn-textarea') ||
+                          document.querySelector('textarea[placeholder="Reply..."]') ||
+                          document.querySelector('form textarea') ||
+                          document.querySelector('div[contenteditable="true"]');
 
         if (textField) {
           if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
