@@ -9,7 +9,13 @@
 <body>
   <div class="container">
     <header class="header">
-      <h1>Refined Claude Code</h1>
+      <div class="title-block">
+        <h1>Refined</h1>
+        <div class="title-right">
+          <span class="title-secondary">Claude Code</span>
+          <span class="subtitle">on the web</span>
+        </div>
+      </div>
       <div class="header-right">
         <span id="savedNotification" class="saved-notification">Saved</span>
         <div class="master-toggle">
@@ -21,6 +27,11 @@
         </div>
       </div>
     </header>
+
+    <div class="info-panel">
+      <span class="version">v0.9.0</span>
+      <p class="disclaimer">Not affiliated with Anthropic.<br>Claude and Claude Code are trademarks of Anthropic, PBC.</p>
+    </div>
 
     <div class="features-list">
       <div class="feature-item" data-feature="modeButton">
@@ -116,9 +127,6 @@
       </div>
     </div>
 
-    <footer class="footer">
-      <span class="version">v0.9.0</span>
-    </footer>
   </div>
 
   <script src="popup.js"></script>
