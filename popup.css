@@ -31,7 +31,12 @@ body {
 .title-block {
   display: flex;
   flex-direction: column;
-  line-height: 1.2;
+}
+
+.title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
 }
 
 .header h1 {
