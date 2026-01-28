@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Promo Tile - 440x280</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .tile {
+      width: 440px;
+      height: 280px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .tile::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 60%);
+    }
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      z-index: 1;
+    }
+    .icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    .title {
+      z-index: 1;
+    }
+    .title .refined {
+      color: #10b981;
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .title .claude-code {
+      color: #ffffff;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    .subtitle {
+      color: #94a3b8;
+      font-size: 13px;
+      margin-top: 8px;
+      z-index: 1;
+    }
+    .features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 20px;
+      justify-content: center;
+      z-index: 1;
+    }
+    .feature {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 11px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .tagline {
+      color: #64748b;
+      font-size: 11px;
+      margin-top: 16px;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="tile">
+    <div class="logo-row">
+      <div class="icon">R</div>
+      <div class="title">
+        <span class="refined">Refined</span>
+        <span class="claude-code">Claude Code</span>
+      </div>
+    </div>
+    <div class="subtitle">Enhance your Claude.ai code experience</div>
+    <div class="features">
+      <span class="feature">Agent/Plan Toggle</span>
+      <span class="feature">Show Model</span>
+      <span class="feature">Git Commands</span>
+      <span class="feature">Project Colors</span>
+      <span class="feature">Blocked Sessions</span>
+    </div>
+    <div class="tagline">Inspired by Refined GitHub</div>
+  </div>
+
+  <p style="margin: 20px; color: #666; font-size: 14px;">
+    <strong>Instructions:</strong> Open this file in Chrome, then:<br>
+    1. Right-click → Inspect → Device toolbar (Ctrl+Shift+M)<br>
+    2. Set dimensions to exactly 440x280<br>
+    3. Screenshot the tile area<br>
+    4. Save as <code>promo-tile-440x280.png</code>
+  </p>
+</body>
+</html>
