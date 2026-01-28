@@ -47,9 +47,30 @@ async function loadSettings() {
 async function saveSettings(settings) {
   return new Promise((resolve) => {
     chrome.storage.sync.set(settings, () => {
+      showSavedNotification();
       resolve();
     });
   });
+}
+
+// Show "Saved" notification briefly
+let notificationTimeout = null;
+function showSavedNotification() {
+  const notification = document.getElementById('savedNotification');
+  if (!notification) return;
+
+  // Clear any existing timeout
+  if (notificationTimeout) {
+    clearTimeout(notificationTimeout);
+  }
+
+  // Show notification
+  notification.classList.add('visible');
+
+  // Hide after 1.5 seconds
+  notificationTimeout = setTimeout(() => {
+    notification.classList.remove('visible');
+  }, 1500);
 }
 
 // Reload all Claude tabs
