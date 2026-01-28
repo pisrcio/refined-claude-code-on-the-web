@@ -51,7 +51,7 @@ Configure which mode new sessions start with via the extension popup:
 - **Always Agent** - New sessions always start in Agent mode
 - **Always Plan** - New sessions always start in Plan mode
 
-**Credits**: Thanks to [@bchan7](https://reddit.com/u/bchan7) and [@batout](https://reddit.com/u/batout) for sharing the [plan mode discovery](https://www.reddit.com/r/ClaudeCode/comments/1p0hypc/changing_to_plan_mode_in_claude_code_on_the_web/).
+**Credits**: Thanks to [@bchan7](https://reddit.com/u/bchan7) and @batout for sharing the [plan mode discovery](https://www.reddit.com/r/ClaudeCode/comments/1p0hypc/changing_to_plan_mode_in_claude_code_on_the_web/).
 
 ### Show Actual Model
 
