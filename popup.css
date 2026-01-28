@@ -30,13 +30,14 @@ body {
 
 .title-block {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   gap: 5px;
 }
 
 .title-right {
   display: flex;
   flex-direction: column;
+  line-height: 1.1;
 }
 
 .header h1 {
