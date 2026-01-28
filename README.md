@@ -42,10 +42,10 @@ DO NOT write any code yet. I just need the plan for me to review.
 use @agent-plan : [your prompt here]
 ```
 
-Your mode preference is saved and persists across sessions.
-
 **Default Mode Setting:**
 Configure which mode new sessions start with via the extension popup:
+
+![Default Mode Setting](screenshots/default-mode-setting.png)
 
 - **Last used** - Start with whichever mode you used last (default)
 - **Always Agent** - New sessions always start in Agent mode
@@ -120,10 +120,6 @@ Click the extension icon in your Chrome toolbar to access all settings.
 - Individual feature toggles for fine-grained control
 - Default mode selection for new sessions
 - Project settings configuration (colors and main branch)
-
-## Screenshots
-
-> **Note**: Screenshots are located in the `screenshots/` folder. If you're contributing, please add screenshots for any new features.
 
 ## Installation
 
