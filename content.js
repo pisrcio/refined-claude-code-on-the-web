@@ -1712,7 +1712,7 @@
         console.log(LOG_PREFIX, '>>> Found stored blocked reason, restoring blocked state');
         // Mark as blocked without showing modal
         blockedButton.classList.add('bcc-blocked-active');
-        blockedButton.style.color = '#fbbf24';
+        blockedButton.style.color = '#ff9500';
         blockedButton.title = 'Marked as blocked - click to unblock';
         addBlockedIndicator(sessionEl);
       }
@@ -2003,7 +2003,7 @@
 
     if (isBlocked) {
       console.log(LOG_PREFIX, '>>> Setting blocked state (amber color)');
-      button.style.color = '#fbbf24';
+      button.style.color = '#ff9500';
       button.title = 'Marked as blocked - click to unblock';
       // Add always-visible blocked indicator next to title
       addBlockedIndicator(sessionEl);
@@ -2056,7 +2056,7 @@
   function showBlockedFeedback(message, isBlocked = true) {
     console.log(LOG_PREFIX, '>>> showBlockedFeedback called with message:', message, 'isBlocked:', isBlocked);
 
-    const bgColor = isBlocked ? '#fbbf24' : '#059669'; // bright amber for blocked, green for unblocked
+    const bgColor = isBlocked ? '#ff9500' : '#059669'; // bright amber for blocked, green for unblocked
     const feedback = document.createElement('div');
     feedback.textContent = message;
     feedback.style.cssText = `
@@ -2130,7 +2130,7 @@
 
     // Check if currently hovering (indicator should be hidden if so)
     const isCurrentlyHovering = groupEl && groupEl.matches(':hover');
-    indicator.style.cssText = `color: #fbbf24; display: ${isCurrentlyHovering ? 'none' : 'inline-flex'}; position: relative;`;
+    indicator.style.cssText = `color: #ff9500; display: ${isCurrentlyHovering ? 'none' : 'inline-flex'}; position: relative;`;
 
     if (groupEl) {
       groupEl.addEventListener('mouseenter', () => {
