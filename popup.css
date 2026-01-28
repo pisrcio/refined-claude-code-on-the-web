@@ -30,13 +30,13 @@ body {
 
 .title-block {
   display: flex;
-  flex-direction: column;
-}
-
-.title-row {
-  display: flex;
   align-items: baseline;
   gap: 5px;
+}
+
+.title-right {
+  display: flex;
+  flex-direction: column;
 }
 
 .header h1 {
