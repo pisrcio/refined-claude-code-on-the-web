@@ -1,13 +1,32 @@
 {
   "manifest_version": 3,
-  "name": "Better Claude Code on the Web",
-  "version": "1.0.0",
+  "name": "Refined Claude Code on the Web",
+  "version": "0.9.0",
   "description": "Enhance the Claude web experience with improved code editing capabilities",
-  "permissions": [],
-  "host_permissions": [],
+  "permissions": ["storage", "tabs"],
+  "host_permissions": [
+    "https://claude.ai/*"
+  ],
   "action": {
-    "default_title": "Better Claude Code on the Web"
+    "default_title": "Refined Claude Code on the Web",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
-  "icons": {},
-  "content_scripts": []
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://claude.ai/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
 }

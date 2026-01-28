@@ -1,0 +1,187 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Refined Claude Code Settings</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <div class="title-block">
+          <h1>Refined</h1>
+          <div class="title-right">
+            <span class="title-secondary">Claude Code</span>
+            <span class="subtitle">on the web</span>
+          </div>
+        </div>
+        <div class="header-right">
+          <span id="savedNotification" class="saved-notification">Saved</span>
+          <div class="master-toggle">
+            <label class="toggle-switch">
+              <input type="checkbox" id="allFeaturesToggle" checked />
+              <span class="slider"></span>
+            </label>
+            <span class="toggle-label">All Features</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="info-panel">
+        <span class="version">v0.9.0</span>
+        <p class="disclaimer">
+          Not affiliated with Anthropic.<br />Claude and Claude Code are
+          trademarks of Anthropic, PBC.
+        </p>
+      </div>
+
+      <div class="features-list">
+        <div class="feature-item" data-feature="modeButton">
+          <div class="feature-info">
+            <div class="feature-name">Mode Button</div>
+            <div class="feature-description">
+              Adds Agent/Plan mode switcher to quickly toggle between Agent and
+              Plan modes
+            </div>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              class="feature-toggle"
+              data-feature="modeButton"
+              checked
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="feature-item feature-sub-item" id="defaultModeSection">
+          <div class="feature-info">
+            <div class="feature-name">Default Mode</div>
+            <div class="feature-description">
+              Choose which mode to start with for new sessions
+            </div>
+          </div>
+          <select id="defaultModeSelect" class="mode-select">
+            <option value="last">Last used</option>
+            <option value="agent">Always Agent</option>
+            <option value="plan">Always Plan</option>
+          </select>
+        </div>
+
+        <div class="feature-item" data-feature="showModel">
+          <div class="feature-info">
+            <div class="feature-name">Show Actual Model</div>
+            <div class="feature-description">
+              Displays the full model name (Opus, Sonnet, Haiku) instead of dots
+            </div>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              class="feature-toggle"
+              data-feature="showModel"
+              checked
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="feature-item" data-feature="refinedLabel">
+          <div class="feature-info">
+            <div class="feature-name">Refined Label</div>
+            <div class="feature-description">
+              Shows "Refined" badge next to Claude Code link in the sidebar
+            </div>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              class="feature-toggle"
+              data-feature="refinedLabel"
+              checked
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="feature-item" data-feature="pullBranch">
+          <div class="feature-info">
+            <div class="feature-name">Pull Branch Button</div>
+            <div class="feature-description">
+              Adds a button to copy git commands for pulling the current branch
+            </div>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              class="feature-toggle"
+              data-feature="pullBranch"
+              checked
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="feature-item" data-feature="mergeBranch">
+          <div class="feature-info">
+            <div class="feature-name">Merge Branch Button</div>
+            <div class="feature-description">
+              Adds a button to copy git commands for merging the main branch
+            </div>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              class="feature-toggle"
+              data-feature="mergeBranch"
+              checked
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="feature-item" data-feature="projectColors">
+          <div class="feature-info">
+            <div class="feature-name">Project Colors</div>
+            <div class="feature-description">
+              Color-code projects in the sidebar for easy identification
+            </div>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              class="feature-toggle"
+              data-feature="projectColors"
+              checked
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Project Settings Configuration -->
+      <div class="project-colors-section">
+        <div class="section-header">
+          <h2>Project Settings</h2>
+          <button
+            id="addProjectColor"
+            class="add-btn"
+            title="Add project settings"
+          >
+            +
+          </button>
+        </div>
+        <div id="projectColorsList" class="project-colors-list">
+          <!-- Project settings entries will be added here -->
+        </div>
+        <div id="noProjectColors" class="no-items-message">
+          No project settings configured. Click + to add one.
+        </div>
+      </div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
