@@ -6,10 +6,6 @@
 
   const LOG_PREFIX = '[BCC]';
 
-  console.log(LOG_PREFIX, 'Script loaded');
-  console.log(LOG_PREFIX, 'URL:', window.location.href);
-  console.log(LOG_PREFIX, 'Document readyState:', document.readyState);
-
   // ============================================
   // Settings Management
   // ============================================
@@ -36,20 +32,16 @@
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
           chrome.storage.sync.get(DEFAULT_SETTINGS, (result) => {
             if (chrome.runtime.lastError) {
-              console.log(LOG_PREFIX, 'Storage error, using defaults:', chrome.runtime.lastError);
               resolve(currentSettings);
             } else {
               currentSettings = result;
-              console.log(LOG_PREFIX, 'Settings loaded:', currentSettings);
               resolve(currentSettings);
             }
           });
         } else {
-          console.log(LOG_PREFIX, 'Chrome storage not available, using defaults');
           resolve(currentSettings);
         }
       } catch (e) {
-        console.log(LOG_PREFIX, 'Error loading settings, using defaults:', e);
         resolve(currentSettings);
       }
     });
@@ -61,7 +53,6 @@
       if (typeof chrome !== 'undefined' && chrome.storage) {
         chrome.storage.sync.set(settings, () => {
           currentSettings = { ...currentSettings, ...settings };
-          console.log(LOG_PREFIX, 'Settings saved:', settings);
           resolve();
         });
       } else {
@@ -80,12 +71,9 @@
   if (typeof chrome !== 'undefined' && chrome.storage) {
     chrome.storage.onChanged.addListener((changes, namespace) => {
       if (namespace === 'sync') {
-        console.log(LOG_PREFIX, '>>> SETTINGS CHANGED from popup:', changes);
         for (const [key, { newValue }] of Object.entries(changes)) {
-          console.log(LOG_PREFIX, '>>> Updating setting:', key, '=', newValue);
           currentSettings[key] = newValue;
         }
-        console.log(LOG_PREFIX, '>>> New currentSettings:', JSON.stringify(currentSettings));
         applySettings();
       }
     });
@@ -93,8 +81,6 @@
 
   // Apply current settings to the page
   function applySettings() {
-    console.log(LOG_PREFIX, 'Applying settings:', currentSettings);
-
     // Update Refined label appearance
     updateRefinedLabelState();
 
@@ -205,18 +191,14 @@
   }
 
   function createModeButton() {
-    console.log(LOG_PREFIX, 'createModeButton() called');
-
     // Always get fresh initial mode based on current settings
     currentMode = getInitialMode();
-    console.log(LOG_PREFIX, 'Mode set to:', currentMode, '(setting:', currentSettings.defaultMode, ')');
 
     // Create container
     const container = document.createElement('div');
     container.className = 'bcc-mode-container';
     // Apply inline styles to override page CSS
     container.style.cssText = 'position: relative !important; display: inline-flex !important; flex-direction: row !important; align-items: center !important; margin-right: 8px !important; z-index: 1000 !important;';
-    console.log(LOG_PREFIX, 'Created container:', container);
 
     // Create button
     modeButton = document.createElement('button');
@@ -230,13 +212,9 @@
         <path d="m6 9 6 6 6-6"></path>
       </svg>
     `;
-    console.log(LOG_PREFIX, 'Created modeButton:', modeButton);
-    console.log(LOG_PREFIX, 'Attaching click event listener to modeButton...');
     modeButton.addEventListener('click', (e) => {
-      console.log(LOG_PREFIX, '*** CLICK EVENT FIRED ON MODE BUTTON ***');
       toggleDropdown(e);
     });
-    console.log(LOG_PREFIX, 'Click event listener attached successfully');
 
     // Create dropdown - append to body to avoid overflow clipping
     dropdown = document.createElement('div');
@@ -302,7 +280,6 @@
         }
       `;
       document.head.appendChild(styleEl);
-      console.log(LOG_PREFIX, 'Injected dropdown stylesheet');
     }
 
     dropdown.classList.add('bcc-dropdown-hidden');
@@ -316,7 +293,6 @@
         <span>Plan</span>
       </div>
     `;
-    console.log(LOG_PREFIX, 'Created dropdown:', dropdown);
 
     // Add hover effect for dropdown options
     dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
@@ -327,7 +303,6 @@
         option.style.backgroundColor = '#ffffff';
       });
       option.addEventListener('click', (e) => {
-        console.log(LOG_PREFIX, 'Option clicked:', option.dataset.mode);
         e.preventDefault();
         e.stopPropagation();
         selectMode(option.dataset.mode);
@@ -338,29 +313,10 @@
     // Append dropdown to body to avoid overflow issues
     document.body.appendChild(dropdown);
 
-    console.log(LOG_PREFIX, 'Final container:', container);
-
-    // Log computed styles after a tick
-    setTimeout(() => {
-      const containerStyle = window.getComputedStyle(container);
-      const buttonStyle = window.getComputedStyle(modeButton);
-      console.log(LOG_PREFIX, 'Container computed style - display:', containerStyle.display, 'flexDirection:', containerStyle.flexDirection);
-      console.log(LOG_PREFIX, 'Button computed style - display:', buttonStyle.display, 'flexDirection:', buttonStyle.flexDirection);
-    }, 100);
-
     return container;
   }
 
   function toggleDropdown(e) {
-    console.log(LOG_PREFIX, '=== toggleDropdown() START ===');
-    console.log(LOG_PREFIX, 'Event:', e);
-    console.log(LOG_PREFIX, 'Event type:', e.type);
-    console.log(LOG_PREFIX, 'Event target:', e.target);
-    console.log(LOG_PREFIX, 'modeButton reference:', modeButton);
-    console.log(LOG_PREFIX, 'dropdown reference:', dropdown);
-    console.log(LOG_PREFIX, 'dropdown in DOM?:', document.body.contains(dropdown));
-    console.log(LOG_PREFIX, 'modeButton in DOM?:', document.body.contains(modeButton));
-
     e.stopPropagation();
     e.preventDefault();
 
@@ -371,25 +327,14 @@
 
     // Check visibility using class instead of inline style
     const isVisible = dropdown.classList.contains('bcc-dropdown-visible');
-    console.log(LOG_PREFIX, 'Has bcc-dropdown-visible class:', isVisible);
-    console.log(LOG_PREFIX, 'Has bcc-dropdown-hidden class:', dropdown.classList.contains('bcc-dropdown-hidden'));
 
     if (isVisible) {
-      console.log(LOG_PREFIX, 'Dropdown is visible, closing...');
       closeDropdown();
     } else {
-      console.log(LOG_PREFIX, 'Dropdown is hidden, opening...');
-
-      // Position dropdown above the button
-      const buttonRect = modeButton.getBoundingClientRect();
-      console.log(LOG_PREFIX, 'Button rect:', JSON.stringify(buttonRect));
-      console.log(LOG_PREFIX, 'Button rect values - top:', buttonRect.top, 'left:', buttonRect.left, 'width:', buttonRect.width, 'height:', buttonRect.height);
-
-      // Set position using inline styles (these won't conflict with visibility classes)
       // Position dropdown below the button
+      const buttonRect = modeButton.getBoundingClientRect();
       const finalTop = buttonRect.bottom + 4;
       const finalLeft = buttonRect.left;
-      console.log(LOG_PREFIX, 'Final position - top:', finalTop, 'left:', finalLeft);
 
       dropdown.style.top = finalTop + 'px';
       dropdown.style.left = finalLeft + 'px';
@@ -398,52 +343,26 @@
       dropdown.classList.remove('bcc-dropdown-hidden');
       dropdown.classList.add('bcc-dropdown-visible');
 
-      console.log(LOG_PREFIX, 'Classes after toggle:', dropdown.className);
-
-      // Check computed styles
-      const computedStyle = window.getComputedStyle(dropdown);
-      console.log(LOG_PREFIX, 'Computed styles:');
-      console.log(LOG_PREFIX, '  - display:', computedStyle.display);
-      console.log(LOG_PREFIX, '  - visibility:', computedStyle.visibility);
-      console.log(LOG_PREFIX, '  - opacity:', computedStyle.opacity);
-      console.log(LOG_PREFIX, '  - top:', computedStyle.top);
-      console.log(LOG_PREFIX, '  - left:', computedStyle.left);
-      console.log(LOG_PREFIX, '  - position:', computedStyle.position);
-      console.log(LOG_PREFIX, '  - zIndex:', computedStyle.zIndex);
-
-      console.log(LOG_PREFIX, '=== Dropdown should now be visible ===');
-
       // Close on outside click
       setTimeout(() => {
         document.addEventListener('click', closeDropdown, { once: true });
       }, 0);
     }
-    console.log(LOG_PREFIX, '=== toggleDropdown() END ===');
   }
 
   function closeDropdown(e) {
-    console.log(LOG_PREFIX, '=== closeDropdown() called ===');
-    console.log(LOG_PREFIX, 'Called from event:', e);
-    if (e) {
-      console.log(LOG_PREFIX, 'Event target:', e.target);
-      console.log(LOG_PREFIX, 'Event type:', e.type);
-    }
     if (!dropdown) {
-      console.log(LOG_PREFIX, 'No dropdown to close');
       return;
     }
     // Use class toggling for visibility (CSS handles the styles with !important)
     dropdown.classList.remove('bcc-dropdown-visible');
     dropdown.classList.add('bcc-dropdown-hidden');
-    console.log(LOG_PREFIX, 'Dropdown hidden, classes:', dropdown.className);
   }
 
   function selectMode(mode) {
-    console.log(LOG_PREFIX, 'selectMode() called with:', mode);
     currentMode = mode;
     localStorage.setItem(MODE_STORAGE_KEY, mode);
     modeButton.querySelector('.bcc-mode-label').textContent = mode;
-    console.log(LOG_PREFIX, 'Updated label to:', mode);
 
     // Update checkmarks
     dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
@@ -452,13 +371,11 @@
     });
 
     closeDropdown();
-    console.log(LOG_PREFIX, 'Mode changed to:', mode);
   }
 
   // Reset mode to default when navigating to a new session
   function resetModeToDefault() {
     const newMode = getInitialMode();
-    console.log(LOG_PREFIX, '>>> Resetting mode to default:', newMode, '(setting:', currentSettings.defaultMode, ')');
     currentMode = newMode;
 
     // Update button if it exists
@@ -483,7 +400,6 @@
 
   // Prepend plan mode text to the input field (called just before submit)
   function prependPlanModeText() {
-    console.log(LOG_PREFIX, 'prependPlanModeText() called');
     const textField = document.querySelector('div[contenteditable="true"]') ||
                       document.querySelector('textarea') ||
                       document.querySelector('[data-placeholder]');
@@ -495,7 +411,6 @@
       if (currentValue.trim() && !currentValue.startsWith(PLAN_INSTRUCTION)) {
         textField.value = PLAN_FULL_PREFIX + currentValue;
         textField.dispatchEvent(new Event('input', { bubbles: true }));
-        console.log(LOG_PREFIX, 'Prepended plan text, new value:', textField.value);
         return true;
       }
     } else {
@@ -503,7 +418,6 @@
       if (currentText.trim() && !currentText.startsWith(PLAN_INSTRUCTION)) {
         textField.innerText = PLAN_FULL_PREFIX + currentText;
         textField.dispatchEvent(new Event('input', { bubbles: true }));
-        console.log(LOG_PREFIX, 'Prepended plan text, new text:', textField.innerText);
         return true;
       }
     }
@@ -515,15 +429,12 @@
   function setupPlanModeSubmitHandler() {
     if (submitHandlerSetup) return;
 
-    console.log(LOG_PREFIX, 'Setting up plan mode submit handler');
-
     // Intercept Enter key press on text field
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey && currentMode === 'Plan') {
         const textField = document.querySelector('div[contenteditable="true"]') ||
                           document.querySelector('textarea');
         if (textField && (e.target === textField || textField.contains(e.target))) {
-          console.log(LOG_PREFIX, 'Enter pressed in Plan mode, prepending text');
           prependPlanModeText();
         }
       }
@@ -552,19 +463,15 @@
         const isLastFormButton = Array.from(formButtons).pop() === button;
 
         if (isSendButton || isLastFormButton) {
-          console.log(LOG_PREFIX, 'Send button clicked in Plan mode, prepending text');
           prependPlanModeText();
         }
       }
     }, true); // Use capture phase
 
     submitHandlerSetup = true;
-    console.log(LOG_PREFIX, 'Plan mode submit handler setup complete');
   }
 
   function findAndInjectModeButton() {
-    console.log(LOG_PREFIX, 'findAndInjectModeButton() called');
-
     const possibleContainers = [
       'form button[aria-label*="ttach"]',
       'form button[aria-label*="mage"]',
@@ -578,7 +485,6 @@
     let targetButton = null;
     for (const selector of possibleContainers) {
       targetButton = document.querySelector(selector);
-      console.log(LOG_PREFIX, 'Trying selector:', selector, '- Found:', targetButton);
       if (targetButton) break;
     }
 
@@ -586,45 +492,33 @@
 
     if (targetButton) {
       insertionPoint = targetButton.closest('div');
-      console.log(LOG_PREFIX, 'Found insertionPoint via targetButton:', insertionPoint);
     } else {
       const form = document.querySelector('form');
-      console.log(LOG_PREFIX, 'Found form:', form);
       if (form) {
         const buttonContainers = form.querySelectorAll('button');
-        console.log(LOG_PREFIX, 'Found buttons in form:', buttonContainers.length);
         if (buttonContainers.length > 0) {
           insertionPoint = buttonContainers[0].parentElement;
-          console.log(LOG_PREFIX, 'Using first button parent as insertionPoint:', insertionPoint);
         }
       }
     }
 
     if (document.querySelector('.bcc-mode-container')) {
-      console.log(LOG_PREFIX, 'Already injected, skipping');
       return;
     }
 
     let injected = false;
     if (insertionPoint) {
-      console.log(LOG_PREFIX, 'Injecting into insertionPoint');
       const modeContainer = createModeButton();
       insertionPoint.insertBefore(modeContainer, insertionPoint.firstChild);
-      console.log(LOG_PREFIX, 'Injection complete');
       injected = true;
     } else {
       const form = document.querySelector('form') || document.querySelector('[contenteditable="true"]')?.closest('div');
-      console.log(LOG_PREFIX, 'Fallback - form:', form);
       if (form && !document.querySelector('.bcc-mode-container')) {
-        console.log(LOG_PREFIX, 'Using floating fallback');
         const modeContainer = createModeButton();
         modeContainer.classList.add('bcc-floating');
         form.style.position = 'relative';
         form.insertBefore(modeContainer, form.firstChild);
-        console.log(LOG_PREFIX, 'Floating injection complete');
         injected = true;
-      } else {
-        console.log(LOG_PREFIX, 'No injection point found!');
       }
     }
 
@@ -652,9 +546,6 @@
     const modelIdLower = modelId.toLowerCase();
     for (const [key, name] of Object.entries(MODEL_NAMES)) {
       if (modelIdLower.includes(key)) {
-        if (!quiet) {
-          console.log(LOG_PREFIX, `Parsed model ID "${modelId}" -> "${name}"`);
-        }
         return name;
       }
     }
@@ -720,7 +611,6 @@
     const currentText = button.textContent.trim();
     if (currentText === modelName) return;
 
-    console.log(LOG_PREFIX, 'Updating button to show:', modelName);
     button.innerHTML = `<span style="font-size: 12px; font-weight: 500;">${modelName}</span>`;
     button.style.minWidth = 'auto';
     button.style.paddingLeft = '8px';
@@ -769,7 +659,6 @@
       originalSetItem(key, value);
 
       if (key === 'ccr-sticky-model-selector' || key === 'default-model') {
-        console.log(LOG_PREFIX, `localStorage ${key} changed to:`, value);
         const newModel = parseModelId(value);
         if (newModel && newModel !== lastKnownModel) {
           lastKnownModel = newModel;
@@ -808,8 +697,6 @@
   // ============================================
 
   function addRefinedLabel() {
-    console.log(LOG_PREFIX, 'addRefinedLabel() called');
-
     // Check if refinedLabel feature is enabled (but we always show the label itself)
     if (!isFeatureEnabled('refinedLabel') && !currentSettings.allEnabled === false) {
       // Only hide label if refinedLabel specifically disabled but allEnabled is true
@@ -823,24 +710,15 @@
     const claudeCodeLink = document.querySelector('a[href="/code"]');
 
     if (!claudeCodeLink) {
-      console.log(LOG_PREFIX, 'No a[href="/code"] found yet');
       return false;
     }
 
-    console.log(LOG_PREFIX, 'Found Claude Code link:', {
-      tagName: claudeCodeLink.tagName,
-      className: claudeCodeLink.className,
-      href: claudeCodeLink.href
-    });
-
     const parent = claudeCodeLink.parentElement;
     if (parent?.querySelector('.refined-label')) {
-      console.log(LOG_PREFIX, 'Refined label already exists in parent, updating state');
       updateRefinedLabelState();
       return true;
     }
     if (claudeCodeLink.nextElementSibling?.classList?.contains('refined-label')) {
-      console.log(LOG_PREFIX, 'Refined label already exists as sibling, updating state');
       updateRefinedLabelState();
       return true;
     }
@@ -895,7 +773,6 @@
       e.stopPropagation();
 
       const newAllEnabled = !currentSettings.allEnabled;
-      console.log(LOG_PREFIX, 'Toggling all features:', newAllEnabled);
 
       await saveSettings({ allEnabled: newAllEnabled });
 
@@ -916,9 +793,7 @@
       refinedLabel.style.opacity = '1';
     });
 
-    console.log(LOG_PREFIX, 'Inserting Refined label');
     claudeCodeLink.parentNode.insertBefore(refinedLabel, claudeCodeLink.nextSibling);
-    console.log(LOG_PREFIX, 'Refined label inserted successfully');
 
     return true;
   }
@@ -966,8 +841,6 @@
 
   // Add "Pull Branch in CLI" button next to Create PR button
   function watchForCopyBranchButton() {
-    console.log(LOG_PREFIX, '👀 Setting up Pull Branch in CLI button watcher...');
-
     // Store the current branch name
     let currentBranchName = null;
 
@@ -989,7 +862,6 @@
           // Verify it looks like a real branch (has at least one hyphen and reasonable length)
           const branch = branchMatch[1];
           if (branch.includes('-') && branch.length > 10 && branch.length < 80) {
-            console.log(LOG_PREFIX, `Found branch in element: "${branch}"`);
             return branch;
           }
         }
@@ -1032,18 +904,14 @@
       }
 
       if (!prButton) {
-        console.log(LOG_PREFIX, 'PR button not found yet');
         return;
       }
 
       // Extract branch name
       currentBranchName = extractBranchName();
       if (!currentBranchName) {
-        console.log(LOG_PREFIX, 'Branch name not found');
         return;
       }
-
-      console.log(LOG_PREFIX, `📋 Found PR button and branch: ${currentBranchName}`);
 
       // Create the Pull Branch in CLI button with exact same structure as Open in CLI
       const pullBranchBtn = document.createElement('button');
@@ -1070,14 +938,12 @@
         // Re-extract branch name in case it changed
         const branchName = extractBranchName() || currentBranchName;
         const gitCommand = `git fetch && git co ${branchName} && git pull`;
-        console.log(LOG_PREFIX, `📋 Copying git command: ${gitCommand}`);
 
         try {
           await navigator.clipboard.writeText(gitCommand);
-          console.log(LOG_PREFIX, '✅ Git command copied to clipboard!');
           showCopyFeedback('Command copied to clipboard');
         } catch (err) {
-          console.error(LOG_PREFIX, '❌ Failed to copy:', err);
+          console.error(LOG_PREFIX, 'Failed to copy:', err);
           // Fallback: try execCommand
           try {
             const textArea = document.createElement('textarea');
@@ -1088,10 +954,9 @@
             textArea.select();
             document.execCommand('copy');
             document.body.removeChild(textArea);
-            console.log(LOG_PREFIX, '✅ Git command copied via fallback!');
             showCopyFeedback('Command copied to clipboard');
           } catch (fallbackErr) {
-            console.error(LOG_PREFIX, '❌ Fallback copy failed:', fallbackErr);
+            console.error(LOG_PREFIX, 'Fallback copy failed:', fallbackErr);
           }
         }
       });
@@ -1102,7 +967,6 @@
       const flexContainer = prButton.closest('.flex.items-center.gap-2');
 
       if (!flexContainer) {
-        console.log(LOG_PREFIX, 'Flex container not found');
         return;
       }
 
@@ -1120,7 +984,6 @@
 
       // Insert before Open in CLI
       flexContainer.insertBefore(wrapper, insertBeforeEl);
-      console.log(LOG_PREFIX, '✅ Pull Branch in CLI button added');
     }
 
     // Show visual feedback when copy succeeds
@@ -1179,7 +1042,6 @@
     setTimeout(addPullBranchButton, 1000);
     setTimeout(addPullBranchButton, 2000);
 
-    console.log(LOG_PREFIX, 'Pull Branch in CLI button watcher active');
     return observer;
   }
 
@@ -1189,8 +1051,6 @@
 
   // Add "Merge [main]" button next to View PR button
   function watchForMergeBranchButton() {
-    console.log(LOG_PREFIX, '👀 Setting up Merge Branch button watcher...');
-
     // Function to get main branch from settings
     // Simply checks if any configured project name appears in the page text
     function getMainBranchFromSettings() {
@@ -1200,13 +1060,11 @@
       // Check each configured project name
       for (const [projectName, branch] of Object.entries(projectMainBranch)) {
         if (pageText.includes(projectName)) {
-          console.log(LOG_PREFIX, `Found project "${projectName}" in page, using branch: ${branch}`);
           return branch;
         }
       }
 
       // Default to 'main' if no match found
-      console.log(LOG_PREFIX, 'No configured project found in page, using default "main"');
       return 'main';
     }
 
@@ -1231,14 +1089,11 @@
       }
 
       if (!prButton) {
-        console.log(LOG_PREFIX, 'PR button not found yet for merge button');
         return;
       }
 
       // Get main branch from settings (defaults to 'main')
       const mainBranch = getMainBranchFromSettings();
-
-      console.log(LOG_PREFIX, `📋 Found target button and main branch: ${mainBranch}`);
 
       // Create the Merge Branch button with similar styling
       const mergeBranchBtn = document.createElement('button');
@@ -1263,7 +1118,6 @@
         // Get main branch from settings
         const branch = getMainBranchFromSettings();
         const mergeMessage = `Merge the "${branch}" branch in and fix merge conflicts.`;
-        console.log(LOG_PREFIX, `📋 Inserting merge message: ${mergeMessage}`);
 
         // Find the main chat text field
         // Look for the textarea with id="turn-textarea" or placeholder="Reply..."
@@ -1290,10 +1144,9 @@
             sel.addRange(range);
             textField.dispatchEvent(new Event('input', { bubbles: true }));
           }
-          console.log(LOG_PREFIX, '✅ Merge message inserted into text field');
           showMergeCopyFeedback('Merge message inserted');
         } else {
-          console.error(LOG_PREFIX, '❌ Text field not found');
+          console.error(LOG_PREFIX, 'Text field not found');
         }
       });
 
@@ -1301,7 +1154,6 @@
       const flexContainer = prButton.closest('.flex.items-center.gap-2');
 
       if (!flexContainer) {
-        console.log(LOG_PREFIX, 'Flex container not found for merge button');
         return;
       }
 
@@ -1326,7 +1178,6 @@
                                flexContainer.lastElementChild;
         flexContainer.insertBefore(wrapper, insertBeforeEl);
       }
-      console.log(LOG_PREFIX, '✅ Merge Branch button added');
     }
 
     // Show visual feedback when copy succeeds
@@ -1385,7 +1236,6 @@
     setTimeout(addMergeBranchButton, 1000);
     setTimeout(addMergeBranchButton, 2000);
 
-    console.log(LOG_PREFIX, 'Merge Branch button watcher active');
     return observer;
   }
 
@@ -1417,7 +1267,6 @@
     // Sessions are in elements with data-index attribute
     // They're inside the scrollable session list container
     const sessions = document.querySelectorAll('[data-index]');
-    console.log(LOG_PREFIX, `Found ${sessions.length} sessions`);
     return sessions;
   }
 
@@ -1520,7 +1369,6 @@
       if (path) {
         const d = path.getAttribute('d') || '';
         if (d.startsWith(DELETE_ICON_PATH_START)) {
-          console.log(LOG_PREFIX, 'Found delete button for session');
           return button;
         }
       }
@@ -1554,7 +1402,6 @@
       for (const path of paths) {
         const d = path.getAttribute('d') || '';
         if (d.includes(ARCHIVE_ICON_PATH_FRAGMENT)) {
-          console.log(LOG_PREFIX, 'Found archive button for session');
           return button;
         }
       }
@@ -1697,48 +1544,30 @@
    * @returns {HTMLButtonElement|null} The added button or null if already exists
    */
   function addBlockedButtonToSession(sessionEl) {
-    console.log(LOG_PREFIX, '>>> addBlockedButtonToSession called', sessionEl);
     if (!sessionEl) {
-      console.log(LOG_PREFIX, '>>> sessionEl is null/undefined');
       return null;
     }
 
     // Check if already added
     const existingBtn = findBlockedButton(sessionEl);
     if (existingBtn) {
-      console.log(LOG_PREFIX, '>>> Blocked button already exists for this session');
       return null;
     }
 
     // Find the archive button to insert after (blocked button goes to the right)
-    console.log(LOG_PREFIX, '>>> Looking for archive button...');
     const archiveButton = findArchiveButton(sessionEl);
-    console.log(LOG_PREFIX, '>>> Archive button found:', archiveButton);
     if (!archiveButton) {
-      console.log(LOG_PREFIX, '>>> Archive button not found, cannot add blocked button');
-      // Log all buttons in the session for debugging
-      const allButtons = sessionEl.querySelectorAll('button');
-      console.log(LOG_PREFIX, '>>> All buttons in session:', allButtons.length);
-      allButtons.forEach((btn, i) => {
-        const svg = btn.querySelector('svg');
-        console.log(LOG_PREFIX, `>>>   Button ${i}:`, btn.className, 'SVG viewBox:', svg?.getAttribute('viewBox'));
-      });
       return null;
     }
 
     // Find the container - the archive button is wrapped in a div
-    console.log(LOG_PREFIX, '>>> Looking for archive wrapper div...');
     const archiveWrapper = archiveButton.parentElement;
-    console.log(LOG_PREFIX, '>>> Archive wrapper found:', archiveWrapper);
     if (!archiveWrapper) {
-      console.log(LOG_PREFIX, '>>> Archive button wrapper not found');
       return null;
     }
 
     // Create the blocked button
-    console.log(LOG_PREFIX, '>>> Creating blocked button...');
     const blockedButton = createBlockedButton();
-    console.log(LOG_PREFIX, '>>> Blocked button created:', blockedButton);
 
     // Create a wrapper div similar to the archive button wrapper
     const blockedWrapper = document.createElement('div');
@@ -1746,17 +1575,12 @@
     blockedWrapper.appendChild(blockedButton);
 
     // Insert after the archive button wrapper (to the right)
-    console.log(LOG_PREFIX, '>>> Inserting blocked button after archive wrapper...');
-    console.log(LOG_PREFIX, '>>> archiveWrapper.parentNode:', archiveWrapper.parentNode);
     archiveWrapper.parentNode.insertBefore(blockedWrapper, archiveWrapper.nextSibling);
-
-    console.log(LOG_PREFIX, '>>> SUCCESS: Added blocked button to session');
 
     // Check if this session was previously blocked (restore state from storage)
     const sessionData = getSessionData(sessionEl);
     getBlockedReason(sessionData).then((reason) => {
       if (reason) {
-        console.log(LOG_PREFIX, '>>> Found stored blocked reason, restoring blocked state');
         // Mark as blocked without showing modal
         blockedButton.classList.add('bcc-blocked-active');
         blockedButton.style.color = '#ef4444';
@@ -1767,9 +1591,6 @@
 
     // Add click handler
     blockedButton.addEventListener('click', (e) => {
-      console.log(LOG_PREFIX, '>>> CLICK EVENT FIRED on blocked button!');
-      console.log(LOG_PREFIX, '>>> Event:', e);
-      console.log(LOG_PREFIX, '>>> Target:', e.target);
       e.preventDefault();
       e.stopPropagation();
       handleBlockedClick(sessionEl, blockedButton);
@@ -1854,11 +1675,6 @@
       }
     });
 
-    // Also add mousedown for debugging
-    blockedButton.addEventListener('mousedown', (e) => {
-      console.log(LOG_PREFIX, '>>> MOUSEDOWN EVENT on blocked button');
-    });
-
     return blockedButton;
   }
 
@@ -1882,13 +1698,10 @@
     if (typeof chrome !== 'undefined' && chrome.storage) {
       const data = {};
       data[storageKey] = message;
-      chrome.storage.sync.set(data, () => {
-        console.log(LOG_PREFIX, '>>> Saved blocked reason to chrome storage:', storageKey);
-      });
+      chrome.storage.sync.set(data);
     } else {
       // Fallback to localStorage
       localStorage.setItem(storageKey, message);
-      console.log(LOG_PREFIX, '>>> Saved blocked reason to localStorage:', storageKey);
     }
   }
 
@@ -1904,7 +1717,6 @@
       if (typeof chrome !== 'undefined' && chrome.storage) {
         chrome.storage.sync.get([storageKey], (result) => {
           if (chrome.runtime.lastError) {
-            console.log(LOG_PREFIX, '>>> Error reading from chrome storage:', chrome.runtime.lastError);
             // Fallback to localStorage
             const localValue = localStorage.getItem(storageKey);
             resolve(localValue);
@@ -1927,7 +1739,6 @@
    * @param {Function} onSave - Callback when message is saved
    */
   function showBlockedReasonEditor(blockedButton, sessionData, onSave) {
-    console.log(LOG_PREFIX, '>>> showBlockedReasonEditor called');
 
     // Remove any existing editor
     const existingEditor = blockedButton.querySelector('.bcc-reason-editor');
@@ -2035,32 +1846,21 @@
    * @param {HTMLButtonElement} button - The blocked button
    */
   function handleBlockedClick(sessionEl, button) {
-    console.log(LOG_PREFIX, '>>> handleBlockedClick called');
-    console.log(LOG_PREFIX, '>>> sessionEl:', sessionEl);
-    console.log(LOG_PREFIX, '>>> button:', button);
-
     const sessionData = getSessionData(sessionEl);
-    console.log(LOG_PREFIX, '>>> sessionData:', sessionData);
-    console.log(LOG_PREFIX, '>>> Blocked button clicked for session:', sessionData?.title);
 
     // Toggle blocked state visually
-    console.log(LOG_PREFIX, '>>> Toggling bcc-blocked-active class...');
     const isBlocked = button.classList.toggle('bcc-blocked-active');
-    console.log(LOG_PREFIX, '>>> isBlocked after toggle:', isBlocked);
 
     if (isBlocked) {
-      console.log(LOG_PREFIX, '>>> Setting blocked state (amber color)');
       button.style.color = '#ef4444';
       button.title = 'Marked as blocked - click to unblock';
       // Add always-visible blocked indicator next to title
       addBlockedIndicator(sessionEl);
-      console.log(LOG_PREFIX, '>>> Showing modal for reason input...');
       // Show inline editor for entering reason
       showBlockedReasonEditor(button, sessionData, (message) => {
         showBlockedFeedback(`Session "${sessionData?.title}" marked as blocked`, true);
       });
     } else {
-      console.log(LOG_PREFIX, '>>> Clearing blocked state');
       button.style.color = '';
       button.title = 'Mark as blocked';
       // Remove the blocked indicator
@@ -2069,30 +1869,24 @@
       const existingTooltip = button.querySelector('.bcc-blocked-tooltip');
       if (existingTooltip) {
         existingTooltip.remove();
-        console.log(LOG_PREFIX, '>>> Removed tooltip from button');
       }
       // Clear the stored reason
       const storageKey = getSessionStorageId(sessionData);
       if (typeof chrome !== 'undefined' && chrome.storage) {
-        chrome.storage.sync.remove([storageKey], () => {
-          console.log(LOG_PREFIX, '>>> Removed blocked reason from storage');
-        });
+        chrome.storage.sync.remove([storageKey]);
       } else {
         localStorage.removeItem(storageKey);
       }
-      console.log(LOG_PREFIX, '>>> Calling showBlockedFeedback...');
       showBlockedFeedback(`Session "${sessionData?.title}" unblocked`, false);
     }
 
     // Emit custom event for external listeners
-    console.log(LOG_PREFIX, '>>> Dispatching bcc:session-blocked event');
     window.dispatchEvent(new CustomEvent('bcc:session-blocked', {
       detail: {
         sessionData,
         isBlocked
       }
     }));
-    console.log(LOG_PREFIX, '>>> handleBlockedClick complete');
   }
 
   /**
@@ -2101,8 +1895,6 @@
    * @param {boolean} isBlocked - True for blocked (amber), false for unblocked (green)
    */
   function showBlockedFeedback(message, isBlocked = true) {
-    console.log(LOG_PREFIX, '>>> showBlockedFeedback called with message:', message, 'isBlocked:', isBlocked);
-
     const bgColor = isBlocked ? '#ef4444' : '#059669'; // bright amber for blocked, green for unblocked
     const feedback = document.createElement('div');
     feedback.textContent = message;
@@ -2122,7 +1914,6 @@
 
     // Add animation keyframes if not already present
     if (!document.querySelector('#refined-claude-animations')) {
-      console.log(LOG_PREFIX, '>>> Adding animation keyframes to document');
       const style = document.createElement('style');
       style.id = 'refined-claude-animations';
       style.textContent = `
@@ -2136,12 +1927,9 @@
       document.head.appendChild(style);
     }
 
-    console.log(LOG_PREFIX, '>>> Appending feedback element to body');
     document.body.appendChild(feedback);
-    console.log(LOG_PREFIX, '>>> Feedback element added, will remove in 2s');
     setTimeout(() => {
       feedback.remove();
-      console.log(LOG_PREFIX, '>>> Feedback element removed');
     }, 2000);
   }
 
@@ -2160,7 +1948,6 @@
     // Find the relative container inside buttons area (parent of hover container)
     const relativeContainer = sessionEl.querySelector('.flex-shrink-0 .relative');
     if (!relativeContainer) {
-      console.log(LOG_PREFIX, '>>> Relative container not found for blocked indicator');
       return;
     }
 
@@ -2190,7 +1977,6 @@
 
     // Append to relative container (sibling of hover buttons container)
     relativeContainer.appendChild(indicator);
-    console.log(LOG_PREFIX, '>>> Added blocked indicator to relative container (hides on hover)');
   }
 
   /**
@@ -2203,7 +1989,6 @@
     const indicator = sessionEl.querySelector('.bcc-blocked-indicator');
     if (indicator) {
       indicator.remove();
-      console.log(LOG_PREFIX, '>>> Removed blocked indicator from session');
     }
   }
 
@@ -2211,39 +1996,23 @@
    * Add blocked buttons to all visible sessions
    */
   function addBlockedButtonsToAllSessions() {
-    console.log(LOG_PREFIX, '>>> addBlockedButtonsToAllSessions called');
     const sessions = getAllSessions();
-    console.log(LOG_PREFIX, `>>> Found ${sessions.length} sessions to process`);
-    let addedCount = 0;
 
-    sessions.forEach((sessionEl, index) => {
-      console.log(LOG_PREFIX, `>>> Processing session ${index}...`);
-      const button = addBlockedButtonToSession(sessionEl);
-      if (button) {
-        addedCount++;
-        console.log(LOG_PREFIX, `>>> Button added for session ${index}`);
-      } else {
-        console.log(LOG_PREFIX, `>>> No button added for session ${index} (already exists or failed)`);
-      }
+    sessions.forEach((sessionEl) => {
+      addBlockedButtonToSession(sessionEl);
     });
-
-    console.log(LOG_PREFIX, `>>> addBlockedButtonsToAllSessions complete. Added: ${addedCount}`);
   }
 
   /**
    * Set up observer to add blocked buttons when new sessions appear
    */
   function setupBlockedButtonObserver() {
-    console.log(LOG_PREFIX, '>>> setupBlockedButtonObserver called');
-
     // Find the sessions container - try multiple selectors
     let sessionsContainer = document.querySelector('.flex.flex-col.gap-0\\.5.px-1');
-    console.log(LOG_PREFIX, '>>> Sessions container (escaped selector):', sessionsContainer);
 
     // Try alternative selectors if the first one fails
     if (!sessionsContainer) {
       sessionsContainer = document.querySelector('[data-index="0"]')?.closest('.flex.flex-col');
-      console.log(LOG_PREFIX, '>>> Sessions container (via data-index):', sessionsContainer);
     }
 
     if (!sessionsContainer) {
@@ -2251,30 +2020,22 @@
       const firstSession = document.querySelector('[data-index]');
       if (firstSession) {
         sessionsContainer = firstSession.parentElement;
-        console.log(LOG_PREFIX, '>>> Sessions container (via parent):', sessionsContainer);
       }
     }
 
     if (!sessionsContainer) {
-      console.log(LOG_PREFIX, '>>> Sessions container not found, will retry in 1s');
       setTimeout(setupBlockedButtonObserver, 1000);
       return;
     }
 
-    console.log(LOG_PREFIX, '>>> Sessions container found:', sessionsContainer);
-
     // Add buttons to existing sessions
-    console.log(LOG_PREFIX, '>>> Adding buttons to existing sessions...');
     addBlockedButtonsToAllSessions();
 
     // Watch for new sessions
-    console.log(LOG_PREFIX, '>>> Setting up MutationObserver...');
     const observer = new MutationObserver((mutations) => {
-      console.log(LOG_PREFIX, '>>> MutationObserver triggered, mutations:', mutations.length);
       // Debounce to avoid excessive processing
       clearTimeout(observer._timeout);
       observer._timeout = setTimeout(() => {
-        console.log(LOG_PREFIX, '>>> Debounced: calling addBlockedButtonsToAllSessions');
         addBlockedButtonsToAllSessions();
       }, 100);
     });
@@ -2284,14 +2045,11 @@
       subtree: true
     });
 
-    console.log(LOG_PREFIX, '>>> Blocked button observer active and watching:', sessionsContainer);
     return observer;
   }
 
   // Initialize blocked button feature after a delay to ensure page is loaded
-  console.log(LOG_PREFIX, '>>> Scheduling setupBlockedButtonObserver in 2s...');
   setTimeout(() => {
-    console.log(LOG_PREFIX, '>>> 2s delay complete, calling setupBlockedButtonObserver');
     setupBlockedButtonObserver();
   }, 2000);
 
@@ -2313,8 +2071,6 @@
     addBlockedButton: addBlockedButtonToSession,
     addBlockedButtonsToAll: addBlockedButtonsToAllSessions
   };
-
-  console.log(LOG_PREFIX, 'Session detection utilities loaded. Access via window.RefinedClaudeCode.sessions');
 
   // ============================================
   // Project Colors Feature
@@ -2393,19 +2149,15 @@
   }
 
   async function init() {
-    console.log(LOG_PREFIX, 'init() called, readyState:', document.readyState);
-
     try {
       // Load settings first
       await loadSettings();
-      console.log(LOG_PREFIX, 'Settings loaded in init:', currentSettings);
     } catch (e) {
-      console.log(LOG_PREFIX, 'Failed to load settings, using defaults:', e);
+      // Use defaults
     }
 
     // Initialize mode based on settings
     currentMode = getInitialMode();
-    console.log(LOG_PREFIX, 'Initial mode set to:', currentMode, '(setting:', currentSettings.defaultMode, ')');
 
     // Set up model display watchers (only if enabled)
     if (isFeatureEnabled('showModel')) {
@@ -2414,7 +2166,6 @@
 
       // Store initial model
       lastKnownModel = getSelectedModel();
-      console.log(LOG_PREFIX, 'Initial model:', lastKnownModel);
     }
 
     // Function to inject UI elements
@@ -2436,13 +2187,10 @@
 
     // Wait for page to load
     if (document.readyState === 'loading') {
-      console.log(LOG_PREFIX, 'Document still loading, adding DOMContentLoaded listener');
       document.addEventListener('DOMContentLoaded', () => {
-        console.log(LOG_PREFIX, 'DOMContentLoaded fired');
         injectUI();
       });
     } else {
-      console.log(LOG_PREFIX, 'Document already loaded, scheduling injection');
       injectUI();
     }
 
@@ -2456,53 +2204,14 @@
       watchForMergeBranchButton();
     }
 
-    // DEBUG: Track submit events for new session creation
-    document.addEventListener('click', (e) => {
-      const button = e.target.closest('button');
-      if (button) {
-        const ariaLabel = button.getAttribute('aria-label') || '';
-        const isInForm = button.closest('form');
-        if (isInForm) {
-          console.log(LOG_PREFIX, '>>> SUBMIT CLICK detected! Button:', button, 'aria-label:', ariaLabel);
-          console.log(LOG_PREFIX, '>>> Current settings at submit:', JSON.stringify(currentSettings));
-          console.log(LOG_PREFIX, '>>> Current mode at submit:', currentMode);
-        }
-      }
-    }, true);
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        const textField = document.querySelector('div[contenteditable="true"]') || document.querySelector('textarea');
-        if (textField && (e.target === textField || textField.contains(e.target))) {
-          console.log(LOG_PREFIX, '>>> ENTER pressed in text field!');
-          console.log(LOG_PREFIX, '>>> Current settings at enter:', JSON.stringify(currentSettings));
-          console.log(LOG_PREFIX, '>>> Current mode at enter:', currentMode);
-        }
-      }
-    }, true);
-
     // Watch for DOM changes (SPA navigation)
     const observer = new MutationObserver((mutations) => {
       // Re-inject mode button if missing and enabled
       if (isFeatureEnabled('modeButton') && !document.querySelector('.bcc-mode-container')) {
-        console.log(LOG_PREFIX, '>>> MutationObserver: mode container missing, re-injecting');
-        console.log(LOG_PREFIX, '>>> Settings at re-inject:', JSON.stringify(currentSettings));
-        console.log(LOG_PREFIX, '>>> currentMode before re-inject:', currentMode);
         findAndInjectModeButton();
-        console.log(LOG_PREFIX, '>>> currentMode after re-inject:', currentMode);
       }
       // Re-add refined label if missing (always, since it's the toggle control)
       debouncedAddRefinedLabel();
-
-      // Re-add pull branch button if missing and enabled
-      if (isFeatureEnabled('pullBranch') && !document.querySelector('.refined-pull-branch-btn')) {
-        // The watcher handles this, but we can trigger a check
-      }
-
-      // Re-add merge branch button if missing and enabled
-      if (isFeatureEnabled('mergeBranch') && !document.querySelector('.refined-merge-branch-btn')) {
-        // The watcher handles this, but we can trigger a check
-      }
 
       // Re-apply project colors on DOM changes
       debouncedApplyProjectColors();
@@ -2519,7 +2228,6 @@
       if (window.location.href !== lastUrl) {
         const oldUrl = lastUrl;
         lastUrl = window.location.href;
-        console.log(LOG_PREFIX, '>>> URL changed:', oldUrl, '->', lastUrl);
 
         // Check if navigating to a new/different session
         const oldSessionMatch = oldUrl.match(/\/code\/session_([^/]+)/);
@@ -2531,15 +2239,12 @@
           const newSessionId = newSessionMatch ? newSessionMatch[1] : null;
 
           if (oldSessionId !== newSessionId) {
-            console.log(LOG_PREFIX, '>>> New session detected, resetting mode to default');
             resetModeToDefault();
           }
         }
       }
     });
     urlObserver.observe(document.body, { childList: true, subtree: true });
-
-    console.log(LOG_PREFIX, 'Initialization complete');
   }
 
   init().catch(e => {
