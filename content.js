@@ -536,6 +536,9 @@
       // Check if clicked element is or is inside a send button
       const button = e.target.closest('button');
       if (button) {
+        // Skip our own extension buttons (e.g., mode button)
+        if (button.classList.contains('bcc-mode-button')) return;
+
         // Look for send button by aria-label or by being inside a form
         const ariaLabel = button.getAttribute('aria-label') || '';
         const isInForm = button.closest('form');
