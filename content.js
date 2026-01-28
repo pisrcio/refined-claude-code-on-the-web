@@ -80,10 +80,12 @@
   if (typeof chrome !== 'undefined' && chrome.storage) {
     chrome.storage.onChanged.addListener((changes, namespace) => {
       if (namespace === 'sync') {
-        console.log(LOG_PREFIX, 'Settings changed:', changes);
+        console.log(LOG_PREFIX, '>>> SETTINGS CHANGED from popup:', changes);
         for (const [key, { newValue }] of Object.entries(changes)) {
+          console.log(LOG_PREFIX, '>>> Updating setting:', key, '=', newValue);
           currentSettings[key] = newValue;
         }
+        console.log(LOG_PREFIX, '>>> New currentSettings:', JSON.stringify(currentSettings));
         applySettings();
       }
     });
@@ -2429,12 +2431,40 @@
       watchForMergeBranchButton();
     }
 
+    // DEBUG: Track submit events for new session creation
+    document.addEventListener('click', (e) => {
+      const button = e.target.closest('button');
+      if (button) {
+        const ariaLabel = button.getAttribute('aria-label') || '';
+        const isInForm = button.closest('form');
+        if (isInForm) {
+          console.log(LOG_PREFIX, '>>> SUBMIT CLICK detected! Button:', button, 'aria-label:', ariaLabel);
+          console.log(LOG_PREFIX, '>>> Current settings at submit:', JSON.stringify(currentSettings));
+          console.log(LOG_PREFIX, '>>> Current mode at submit:', currentMode);
+        }
+      }
+    }, true);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        const textField = document.querySelector('div[contenteditable="true"]') || document.querySelector('textarea');
+        if (textField && (e.target === textField || textField.contains(e.target))) {
+          console.log(LOG_PREFIX, '>>> ENTER pressed in text field!');
+          console.log(LOG_PREFIX, '>>> Current settings at enter:', JSON.stringify(currentSettings));
+          console.log(LOG_PREFIX, '>>> Current mode at enter:', currentMode);
+        }
+      }
+    }, true);
+
     // Watch for DOM changes (SPA navigation)
     const observer = new MutationObserver((mutations) => {
       // Re-inject mode button if missing and enabled
       if (isFeatureEnabled('modeButton') && !document.querySelector('.bcc-mode-container')) {
-        console.log(LOG_PREFIX, 'MutationObserver: mode container missing, re-injecting');
+        console.log(LOG_PREFIX, '>>> MutationObserver: mode container missing, re-injecting');
+        console.log(LOG_PREFIX, '>>> Settings at re-inject:', JSON.stringify(currentSettings));
+        console.log(LOG_PREFIX, '>>> currentMode before re-inject:', currentMode);
         findAndInjectModeButton();
+        console.log(LOG_PREFIX, '>>> currentMode after re-inject:', currentMode);
       }
       // Re-add refined label if missing (always, since it's the toggle control)
       debouncedAddRefinedLabel();
