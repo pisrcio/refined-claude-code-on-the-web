@@ -17,6 +17,7 @@
   const DEFAULT_SETTINGS = {
     allEnabled: true,
     modeButton: true,
+    defaultMode: 'last', // 'agent', 'plan', or 'last'
     showModel: true,
     refinedLabel: true,
     pullBranch: true,
@@ -79,10 +80,12 @@
   if (typeof chrome !== 'undefined' && chrome.storage) {
     chrome.storage.onChanged.addListener((changes, namespace) => {
       if (namespace === 'sync') {
-        console.log(LOG_PREFIX, 'Settings changed:', changes);
+        console.log(LOG_PREFIX, '>>> SETTINGS CHANGED from popup:', changes);
         for (const [key, { newValue }] of Object.entries(changes)) {
+          console.log(LOG_PREFIX, '>>> Updating setting:', key, '=', newValue);
           currentSettings[key] = newValue;
         }
+        console.log(LOG_PREFIX, '>>> New currentSettings:', JSON.stringify(currentSettings));
         applySettings();
       }
     });
@@ -184,10 +187,29 @@
   let modeButton = null;
   let dropdown = null;
   const MODE_STORAGE_KEY = 'bcc-mode-preference';
-  let currentMode = localStorage.getItem(MODE_STORAGE_KEY) || 'Agent';
+  let currentMode = 'Agent'; // Will be set properly in init() based on settings
+
+  // Determine initial mode based on settings
+  function getInitialMode() {
+    const defaultModeSetting = currentSettings.defaultMode || 'last';
+
+    switch (defaultModeSetting) {
+      case 'agent':
+        return 'Agent';
+      case 'plan':
+        return 'Plan';
+      case 'last':
+      default:
+        return localStorage.getItem(MODE_STORAGE_KEY) || 'Agent';
+    }
+  }
 
   function createModeButton() {
     console.log(LOG_PREFIX, 'createModeButton() called');
+
+    // Always get fresh initial mode based on current settings
+    currentMode = getInitialMode();
+    console.log(LOG_PREFIX, 'Mode set to:', currentMode, '(setting:', currentSettings.defaultMode, ')');
 
     // Create container
     const container = document.createElement('div');
@@ -431,6 +453,28 @@
 
     closeDropdown();
     console.log(LOG_PREFIX, 'Mode changed to:', mode);
+  }
+
+  // Reset mode to default when navigating to a new session
+  function resetModeToDefault() {
+    const newMode = getInitialMode();
+    console.log(LOG_PREFIX, '>>> Resetting mode to default:', newMode, '(setting:', currentSettings.defaultMode, ')');
+    currentMode = newMode;
+
+    // Update button if it exists
+    if (modeButton) {
+      const label = modeButton.querySelector('.bcc-mode-label');
+      if (label) {
+        label.textContent = newMode;
+      }
+      // Update checkmarks in dropdown
+      if (dropdown) {
+        dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
+          const check = option.querySelector('.bcc-check');
+          check.textContent = option.dataset.mode === newMode ? '✓' : '';
+        });
+      }
+    }
   }
 
   const PLAN_INSTRUCTION = 'DO NOT write any code yet. I just need the plan for me to review.';
@@ -2356,6 +2400,10 @@
       console.log(LOG_PREFIX, 'Failed to load settings, using defaults:', e);
     }
 
+    // Initialize mode based on settings
+    currentMode = getInitialMode();
+    console.log(LOG_PREFIX, 'Initial mode set to:', currentMode, '(setting:', currentSettings.defaultMode, ')');
+
     // Set up model display watchers (only if enabled)
     if (isFeatureEnabled('showModel')) {
       watchLocalStorage();
@@ -2405,12 +2453,40 @@
       watchForMergeBranchButton();
     }
 
+    // DEBUG: Track submit events for new session creation
+    document.addEventListener('click', (e) => {
+      const button = e.target.closest('button');
+      if (button) {
+        const ariaLabel = button.getAttribute('aria-label') || '';
+        const isInForm = button.closest('form');
+        if (isInForm) {
+          console.log(LOG_PREFIX, '>>> SUBMIT CLICK detected! Button:', button, 'aria-label:', ariaLabel);
+          console.log(LOG_PREFIX, '>>> Current settings at submit:', JSON.stringify(currentSettings));
+          console.log(LOG_PREFIX, '>>> Current mode at submit:', currentMode);
+        }
+      }
+    }, true);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        const textField = document.querySelector('div[contenteditable="true"]') || document.querySelector('textarea');
+        if (textField && (e.target === textField || textField.contains(e.target))) {
+          console.log(LOG_PREFIX, '>>> ENTER pressed in text field!');
+          console.log(LOG_PREFIX, '>>> Current settings at enter:', JSON.stringify(currentSettings));
+          console.log(LOG_PREFIX, '>>> Current mode at enter:', currentMode);
+        }
+      }
+    }, true);
+
     // Watch for DOM changes (SPA navigation)
     const observer = new MutationObserver((mutations) => {
       // Re-inject mode button if missing and enabled
       if (isFeatureEnabled('modeButton') && !document.querySelector('.bcc-mode-container')) {
-        console.log(LOG_PREFIX, 'MutationObserver: mode container missing, re-injecting');
+        console.log(LOG_PREFIX, '>>> MutationObserver: mode container missing, re-injecting');
+        console.log(LOG_PREFIX, '>>> Settings at re-inject:', JSON.stringify(currentSettings));
+        console.log(LOG_PREFIX, '>>> currentMode before re-inject:', currentMode);
         findAndInjectModeButton();
+        console.log(LOG_PREFIX, '>>> currentMode after re-inject:', currentMode);
       }
       // Re-add refined label if missing (always, since it's the toggle control)
       debouncedAddRefinedLabel();
@@ -2433,6 +2509,33 @@
       childList: true,
       subtree: true
     });
+
+    // Watch for URL changes (SPA navigation to new sessions)
+    let lastUrl = window.location.href;
+    const urlObserver = new MutationObserver(() => {
+      if (window.location.href !== lastUrl) {
+        const oldUrl = lastUrl;
+        lastUrl = window.location.href;
+        console.log(LOG_PREFIX, '>>> URL changed:', oldUrl, '->', lastUrl);
+
+        // Check if navigating to a new/different session
+        const oldSessionMatch = oldUrl.match(/\/code\/session_([^/]+)/);
+        const newSessionMatch = lastUrl.match(/\/code\/session_([^/]+)/);
+
+        // Reset mode if: going to a different session, or going to /code (new session)
+        if (lastUrl.includes('/code')) {
+          const oldSessionId = oldSessionMatch ? oldSessionMatch[1] : null;
+          const newSessionId = newSessionMatch ? newSessionMatch[1] : null;
+
+          if (oldSessionId !== newSessionId) {
+            console.log(LOG_PREFIX, '>>> New session detected, resetting mode to default');
+            resetModeToDefault();
+          }
+        }
+      }
+    });
+    urlObserver.observe(document.body, { childList: true, subtree: true });
+
     console.log(LOG_PREFIX, 'Initialization complete');
   }
 
