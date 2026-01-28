@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Refined Claude Code on the Web**
-Version 0.9.0
+Version 0.9.1
 Last Updated: January 28, 2026
 
 ## Overview
@@ -39,11 +39,11 @@ All data is stored **locally** on your device using Chrome's `storage.sync` API.
 
 This extension requests the following permissions:
 
-| Permission | Why It's Needed |
-|------------|-----------------|
-| `storage` | Save your preferences and settings locally |
-| `tabs` | Detect when you navigate to Claude.ai to inject the enhancements |
-| `host_permissions` for `claude.ai` | Only run on Claude.ai pages |
+| Permission                         | Why It's Needed                                                  |
+| ---------------------------------- | ---------------------------------------------------------------- |
+| `storage`                          | Save your preferences and settings locally                       |
+| `tabs`                             | Detect when you navigate to Claude.ai to inject the enhancements |
+| `host_permissions` for `claude.ai` | Only run on Claude.ai pages                                      |
 
 ## Third-Party Services
 
