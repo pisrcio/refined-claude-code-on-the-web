@@ -12,6 +12,10 @@
 
 > **Recommended Workflow**: This extension is built around [this workflow](https://www.youtube.com/watch?v=3bej6c3O8d0), which inspired most of the "refined" features here.
 
+## Disclaimer
+
+This project is not affiliated with, endorsed by, or associated with Anthropic. "Claude" is a trademark of Anthropic. This is an independent, community-built tool.
+
 ## The Refined Workflow
 
 1. **Plan** - Use Plan mode to design your approach
