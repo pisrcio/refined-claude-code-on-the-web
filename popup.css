@@ -31,6 +31,7 @@ body {
 .title-block {
   display: flex;
   flex-direction: column;
+  line-height: 1.2;
 }
 
 .header h1 {
@@ -39,10 +40,15 @@ body {
   color: #059669;
 }
 
+.title-secondary {
+  font-size: 13px;
+  font-weight: 600;
+  color: #059669;
+}
+
 .subtitle {
   font-size: 11px;
   color: #9ca3af;
-  margin-top: -2px;
 }
 
 .master-toggle {
