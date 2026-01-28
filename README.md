@@ -109,7 +109,7 @@ Click the extension icon in your Chrome toolbar to access all settings.
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/pisrcio/better-claude-code-on-the-web.git
+   git clone https://github.com/pisrcio/refined-claude-code-on-the-web.git
    ```
 
 2. Open Chrome and navigate to `chrome://extensions/`

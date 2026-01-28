@@ -71,7 +71,7 @@ If we make changes to this privacy policy, we will update the "Last Updated" dat
 
 If you have questions about this privacy policy, please open an issue on our GitHub repository:
 
-https://github.com/pisrcio/better-claude-code-on-the-web
+https://github.com/pisrcio/refined-claude-code-on-the-web
 
 ## Open Source
 
