@@ -17,6 +17,7 @@
   const DEFAULT_SETTINGS = {
     allEnabled: true,
     modeButton: true,
+    defaultMode: 'last', // 'agent', 'plan', or 'last'
     showModel: true,
     refinedLabel: true,
     pullBranch: true,
@@ -184,7 +185,22 @@
   let modeButton = null;
   let dropdown = null;
   const MODE_STORAGE_KEY = 'bcc-mode-preference';
-  let currentMode = localStorage.getItem(MODE_STORAGE_KEY) || 'Agent';
+  let currentMode = 'Agent'; // Will be set properly in init() based on settings
+
+  // Determine initial mode based on settings
+  function getInitialMode() {
+    const defaultModeSetting = currentSettings.defaultMode || 'last';
+
+    switch (defaultModeSetting) {
+      case 'agent':
+        return 'Agent';
+      case 'plan':
+        return 'Plan';
+      case 'last':
+      default:
+        return localStorage.getItem(MODE_STORAGE_KEY) || 'Agent';
+    }
+  }
 
   function createModeButton() {
     console.log(LOG_PREFIX, 'createModeButton() called');
@@ -2355,6 +2371,10 @@
     } catch (e) {
       console.log(LOG_PREFIX, 'Failed to load settings, using defaults:', e);
     }
+
+    // Initialize mode based on settings
+    currentMode = getInitialMode();
+    console.log(LOG_PREFIX, 'Initial mode set to:', currentMode, '(setting:', currentSettings.defaultMode, ')');
 
     // Set up model display watchers (only if enabled)
     if (isFeatureEnabled('showModel')) {
