@@ -35,6 +35,12 @@ use @agent-plan : [your prompt here]
 ```
 Your mode preference is saved and persists across sessions.
 
+**Default Mode Setting:**
+Configure which mode new sessions start with via the extension popup:
+- **Last used** - Start with whichever mode you used last (default)
+- **Always Agent** - New sessions always start in Agent mode
+- **Always Plan** - New sessions always start in Plan mode
+
 **Credits**: Thanks to [@bchan7](https://reddit.com/u/bchan7) and [@batout](https://reddit.com/u/batout) for sharing the [plan mode discovery](https://www.reddit.com/r/ClaudeCode/comments/1p0hypc/changing_to_plan_mode_in_claude_code_on_the_web/).
 
 ### Show Actual Model
@@ -52,15 +58,46 @@ Adds a button next to PRs to copy the merge command for quick branch merging.
 
 ![Merge Branch](screenshots/merge-branch.png)
 
-### Project Colors
-Customize sidebar project entries with distinct colors for easier visual identification.
+### Project Settings
+Customize how individual projects appear and behave in the sidebar.
 
-![Project Colors](screenshots/project-colors.png)
+![Project Settings](screenshots/project-colors.png)
+
+**Features:**
+- **Color Coding** - Assign distinct colors to projects for visual identification in the sidebar
+- **Main Branch** - Configure which branch is the "main" branch per project (used by the Merge button)
+
+Access project settings via the extension popup.
+
+### Blocked Sessions
+Mark sessions as "blocked" to track sessions that are stuck, need attention, or should be avoided.
+
+![Blocked Sessions](screenshots/blocked-sessions.png)
+
+**How it works:**
+- Hover over any session in the sidebar to reveal action buttons
+- Click the warning icon to mark a session as blocked
+- Optionally add a reason message (appears in tooltip on hover)
+- A persistent indicator shows blocked sessions even when not hovering
+- Click the blocked button again to unblock
+
+Blocked status persists across browser sessions via Chrome storage.
 
 ### Refined Label
 Shows a "Refined" badge in the header indicating the extension is active. Click to toggle all features on/off.
 
 ![Refined Label](screenshots/refined-label.png)
+
+### Settings Popup
+Click the extension icon in your Chrome toolbar to access all settings.
+
+![Settings Popup](screenshots/settings-popup.png)
+
+**Available controls:**
+- Master toggle to enable/disable all features at once
+- Individual feature toggles for fine-grained control
+- Default mode selection for new sessions
+- Project settings configuration (colors and main branch)
 
 ## Screenshots
 
@@ -94,7 +131,16 @@ Shows a "Refined" badge in the header indicating the extension is active. Click 
 
 ```
 ├── manifest.json    # Chrome extension manifest (Manifest V3)
+├── content.js       # Main content script - all UI injection and features
+├── content.css      # Styles for injected UI elements
+├── popup.html       # Settings popup UI
+├── popup.css        # Settings popup styles
+├── popup.js         # Settings popup logic
+├── icons/           # Extension icons (16px, 48px, 128px, SVG)
+├── screenshots/     # Feature screenshots
+├── TEST_PLAN.md     # Manual testing guide
 ├── CLAUDE.md        # Guidance for Claude Code AI assistant
+├── LICENSE          # MIT License
 └── README.md        # This file
 ```
 
