@@ -455,6 +455,28 @@
     console.log(LOG_PREFIX, 'Mode changed to:', mode);
   }
 
+  // Reset mode to default when navigating to a new session
+  function resetModeToDefault() {
+    const newMode = getInitialMode();
+    console.log(LOG_PREFIX, '>>> Resetting mode to default:', newMode, '(setting:', currentSettings.defaultMode, ')');
+    currentMode = newMode;
+
+    // Update button if it exists
+    if (modeButton) {
+      const label = modeButton.querySelector('.bcc-mode-label');
+      if (label) {
+        label.textContent = newMode;
+      }
+      // Update checkmarks in dropdown
+      if (dropdown) {
+        dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
+          const check = option.querySelector('.bcc-check');
+          check.textContent = option.dataset.mode === newMode ? '✓' : '';
+        });
+      }
+    }
+  }
+
   const PLAN_INSTRUCTION = 'DO NOT write any code yet. I just need the plan for me to review.';
   const PLAN_PREFIX = 'use @agent-plan : ';
   const PLAN_FULL_PREFIX = PLAN_INSTRUCTION + '\n\n' + PLAN_PREFIX;
@@ -2487,6 +2509,33 @@
       childList: true,
       subtree: true
     });
+
+    // Watch for URL changes (SPA navigation to new sessions)
+    let lastUrl = window.location.href;
+    const urlObserver = new MutationObserver(() => {
+      if (window.location.href !== lastUrl) {
+        const oldUrl = lastUrl;
+        lastUrl = window.location.href;
+        console.log(LOG_PREFIX, '>>> URL changed:', oldUrl, '->', lastUrl);
+
+        // Check if navigating to a new/different session
+        const oldSessionMatch = oldUrl.match(/\/code\/session_([^/]+)/);
+        const newSessionMatch = lastUrl.match(/\/code\/session_([^/]+)/);
+
+        // Reset mode if: going to a different session, or going to /code (new session)
+        if (lastUrl.includes('/code')) {
+          const oldSessionId = oldSessionMatch ? oldSessionMatch[1] : null;
+          const newSessionId = newSessionMatch ? newSessionMatch[1] : null;
+
+          if (oldSessionId !== newSessionId) {
+            console.log(LOG_PREFIX, '>>> New session detected, resetting mode to default');
+            resetModeToDefault();
+          }
+        }
+      }
+    });
+    urlObserver.observe(document.body, { childList: true, subtree: true });
+
     console.log(LOG_PREFIX, 'Initialization complete');
   }
 
