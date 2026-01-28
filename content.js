@@ -205,6 +205,10 @@
   function createModeButton() {
     console.log(LOG_PREFIX, 'createModeButton() called');
 
+    // Always get fresh initial mode based on current settings
+    currentMode = getInitialMode();
+    console.log(LOG_PREFIX, 'Mode set to:', currentMode, '(setting:', currentSettings.defaultMode, ')');
+
     // Create container
     const container = document.createElement('div');
     container.className = 'bcc-mode-container';
