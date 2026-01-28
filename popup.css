@@ -165,23 +165,23 @@ input:disabled + .slider {
   line-height: 1.4;
 }
 
-/* Footer */
-.footer {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid #e5e5e5;
+/* Info Panel */
+.info-panel {
   text-align: center;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e5e5e5;
 }
 
 .version {
   font-size: 11px;
-  color: #999;
+  color: #1a1a1a;
 }
 
 .disclaimer {
   font-size: 9px;
-  color: #b0b0b0;
-  margin-top: 8px;
+  color: #1a1a1a;
+  margin-top: 4px;
   line-height: 1.3;
 }
 
