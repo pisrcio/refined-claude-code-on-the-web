@@ -43,8 +43,6 @@ This extension requests the following permissions:
 |------------|-----------------|
 | `storage` | Save your preferences and settings locally |
 | `tabs` | Detect when you navigate to Claude.ai to inject the enhancements |
-| `activeTab` | Access the current tab to modify the Claude.ai interface |
-| `clipboardWrite` | Copy git commands to clipboard (Pull/Merge Branch features) |
 | `host_permissions` for `claude.ai` | Only run on Claude.ai pages |
 
 ## Third-Party Services
