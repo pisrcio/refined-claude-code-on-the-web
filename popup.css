@@ -12,7 +12,7 @@ body {
   line-height: 1.5;
   color: #1a1a1a;
   background: #ffffff;
-  min-width: 320px;
+  min-width: 400px;
 }
 
 .container {
@@ -57,10 +57,31 @@ body {
   color: #9ca3af;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .master-toggle {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.saved-notification {
+  font-size: 11px;
+  font-weight: 500;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 4px 8px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.saved-notification.visible {
+  opacity: 1;
 }
 
 .toggle-label {
@@ -163,6 +184,41 @@ input:disabled + .slider {
   font-size: 12px;
   color: #666;
   line-height: 1.4;
+}
+
+/* Mode Select Dropdown */
+.mode-select {
+  padding: 6px 10px;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  font-size: 12px;
+  background: #ffffff;
+  color: #1a1a1a;
+  cursor: pointer;
+  min-width: 110px;
+  flex-shrink: 0;
+}
+
+.mode-select:focus {
+  outline: none;
+  border-color: #059669;
+}
+
+.mode-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Sub-item styling (nested under parent feature) */
+.feature-sub-item {
+  margin-left: 16px;
+  background: #f3f4f6;
+  border-left: 3px solid #059669;
+}
+
+.feature-sub-item.disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 /* Info Panel */

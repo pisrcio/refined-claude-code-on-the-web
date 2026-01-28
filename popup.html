@@ -16,12 +16,15 @@
           <span class="subtitle">on the web</span>
         </div>
       </div>
-      <div class="master-toggle">
-        <label class="toggle-switch">
-          <input type="checkbox" id="allFeaturesToggle" checked>
-          <span class="slider"></span>
-        </label>
-        <span class="toggle-label">All Features</span>
+      <div class="header-right">
+        <span id="savedNotification" class="saved-notification">Saved</span>
+        <div class="master-toggle">
+          <label class="toggle-switch">
+            <input type="checkbox" id="allFeaturesToggle" checked>
+            <span class="slider"></span>
+          </label>
+          <span class="toggle-label">All Features</span>
+        </div>
       </div>
     </header>
 
@@ -40,6 +43,18 @@
           <input type="checkbox" class="feature-toggle" data-feature="modeButton" checked>
           <span class="slider"></span>
         </label>
+      </div>
+
+      <div class="feature-item feature-sub-item" id="defaultModeSection">
+        <div class="feature-info">
+          <div class="feature-name">Default Mode</div>
+          <div class="feature-description">Choose which mode to start with for new sessions</div>
+        </div>
+        <select id="defaultModeSelect" class="mode-select">
+          <option value="last">Last used</option>
+          <option value="agent">Always Agent</option>
+          <option value="plan">Always Plan</option>
+        </select>
       </div>
 
       <div class="feature-item" data-feature="showModel">

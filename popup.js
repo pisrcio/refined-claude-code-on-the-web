@@ -3,6 +3,7 @@
 const DEFAULT_SETTINGS = {
   allEnabled: true,
   modeButton: true,
+  defaultMode: 'last', // 'agent', 'plan', or 'last'
   showModel: true,
   refinedLabel: true,
   pullBranch: true,
@@ -46,9 +47,30 @@ async function loadSettings() {
 async function saveSettings(settings) {
   return new Promise((resolve) => {
     chrome.storage.sync.set(settings, () => {
+      showSavedNotification();
       resolve();
     });
   });
+}
+
+// Show "Saved" notification briefly
+let notificationTimeout = null;
+function showSavedNotification() {
+  const notification = document.getElementById('savedNotification');
+  if (!notification) return;
+
+  // Clear any existing timeout
+  if (notificationTimeout) {
+    clearTimeout(notificationTimeout);
+  }
+
+  // Show notification
+  notification.classList.add('visible');
+
+  // Hide after 1.5 seconds
+  notificationTimeout = setTimeout(() => {
+    notification.classList.remove('visible');
+  }, 1500);
 }
 
 // Reload all Claude tabs
@@ -91,6 +113,21 @@ function updateUI(settings) {
       projectColorsSection.classList.add('disabled');
     } else {
       projectColorsSection.classList.remove('disabled');
+    }
+  }
+
+  // Update default mode select
+  const defaultModeSelect = document.getElementById('defaultModeSelect');
+  const defaultModeSection = document.getElementById('defaultModeSection');
+  if (defaultModeSelect) {
+    defaultModeSelect.value = settings.defaultMode || 'last';
+    defaultModeSelect.disabled = !settings.allEnabled || !settings.modeButton;
+  }
+  if (defaultModeSection) {
+    if (!settings.allEnabled || !settings.modeButton) {
+      defaultModeSection.classList.add('disabled');
+    } else {
+      defaultModeSection.classList.remove('disabled');
     }
   }
 
@@ -332,6 +369,17 @@ async function init() {
       reloadClaudeTabs();
     });
   });
+
+  // Default mode select handler
+  const defaultModeSelect = document.getElementById('defaultModeSelect');
+  if (defaultModeSelect) {
+    defaultModeSelect.addEventListener('change', async (e) => {
+      const newSettings = await loadSettings();
+      newSettings.defaultMode = e.target.value;
+      await saveSettings(newSettings);
+      // No need to reload tabs - this only affects new page loads
+    });
+  }
 
   // Add project color button handler
   const addProjectBtn = document.getElementById('addProjectColor');
