@@ -1,6 +1,12 @@
-# Refined Claude Code on the Web
+<p align="center">
+  <img src="icons/icon128.png" alt="Refined Claude Code on the Web" width="128" height="128">
+</p>
 
-A Chrome extension to enhance the Claude web experience with improved code editing capabilities.
+<h1 align="center">Refined Claude Code on the Web</h1>
+
+<p align="center">
+  A Chrome extension to enhance the Claude web experience with improved code editing capabilities.
+</p>
 
 > **Naming Inspiration**: The name "Refined Claude Code on the Web" is inspired by the excellent [Refined GitHub](https://github.com/refined-github/refined-github) Chrome extension, which enhances the GitHub experience with thoughtful UI improvements.
 
@@ -109,7 +115,7 @@ Click the extension icon in your Chrome toolbar to access all settings.
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/pisrcio/better-claude-code-on-the-web.git
+   git clone https://github.com/pisrcio/refined-claude-code-on-the-web.git
    ```
 
 2. Open Chrome and navigate to `chrome://extensions/`
