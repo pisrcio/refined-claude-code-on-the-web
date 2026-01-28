@@ -178,6 +178,13 @@ input:disabled + .slider {
   color: #999;
 }
 
+.disclaimer {
+  font-size: 9px;
+  color: #b0b0b0;
+  margin-top: 8px;
+  line-height: 1.3;
+}
+
 /* All features disabled state */
 .features-list.all-disabled .feature-item {
   opacity: 0.4;
