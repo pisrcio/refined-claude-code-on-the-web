@@ -3,10 +3,7 @@
   "name": "Refined Claude Code on the Web",
   "version": "0.9.0",
   "description": "Enhance the Claude web experience with improved code editing capabilities",
-  "permissions": ["storage", "tabs"],
-  "host_permissions": [
-    "https://claude.ai/*"
-  ],
+  "permissions": ["storage"],
   "action": {
     "default_title": "Refined Claude Code on the Web",
     "default_popup": "popup.html",
