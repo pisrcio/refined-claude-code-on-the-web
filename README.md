@@ -28,21 +28,25 @@
 ## Features
 
 ### Mode Button (Agent/Plan Toggle)
+
 Switch between Agent and Plan modes directly from the input area. Plan mode uses the `@agent-plan` prefix to enable planning-only responses.
 
 ![Mode Button](screenshots/mode-button.png)
 
 **How it works:**
 When you submit a prompt in **Plan mode**, the extension automatically prepends this text to your message:
+
 ```
 DO NOT write any code yet. I just need the plan for me to review.
 
 use @agent-plan : [your prompt here]
 ```
+
 Your mode preference is saved and persists across sessions.
 
 **Default Mode Setting:**
 Configure which mode new sessions start with via the extension popup:
+
 - **Last used** - Start with whichever mode you used last (default)
 - **Always Agent** - New sessions always start in Agent mode
 - **Always Plan** - New sessions always start in Plan mode
@@ -50,37 +54,46 @@ Configure which mode new sessions start with via the extension popup:
 **Credits**: Thanks to [@bchan7](https://reddit.com/u/bchan7) and [@batout](https://reddit.com/u/batout) for sharing the [plan mode discovery](https://www.reddit.com/r/ClaudeCode/comments/1p0hypc/changing_to_plan_mode_in_claude_code_on_the_web/).
 
 ### Show Actual Model
+
 Displays the actual model being used (e.g., "Opus 4", "Sonnet 4") instead of the generic "..." button.
 
 ![Show Model](screenshots/show-model.png)
 
 ### Pull Branch Button
+
 Adds a convenient button to copy the `git pull` command for the current branch directly to your clipboard.
 
 ![Pull Branch](screenshots/pull-branch.png)
 
 ### Merge Branch Button
-Adds a button next to PRs to copy the merge command for quick branch merging.
+
+Adds a button next to PRs to copy the merge command for resolving conflicts from the main branch. This makes it easy to keep your feature branch up-to-date before merging a PR.
 
 ![Merge Branch](screenshots/merge-branch.png)
 
+**Tip:** Configure the main branch name per project in [Project Settings](#project-settings) (defaults to `main`).
+
 ### Project Settings
+
 Customize how individual projects appear and behave in the sidebar.
 
-![Project Settings](screenshots/project-colors.png)
+![Project Settings](screenshots/project-settings.png)
 
 **Features:**
+
 - **Color Coding** - Assign distinct colors to projects for visual identification in the sidebar
 - **Main Branch** - Configure which branch is the "main" branch per project (used by the Merge button)
 
 Access project settings via the extension popup.
 
 ### Blocked Sessions
+
 Mark sessions as "blocked" to track sessions that are stuck, need attention, or should be avoided.
 
 ![Blocked Sessions](screenshots/blocked-sessions.png)
 
 **How it works:**
+
 - Hover over any session in the sidebar to reveal action buttons
 - Click the warning icon to mark a session as blocked
 - Optionally add a reason message (appears in tooltip on hover)
@@ -90,16 +103,19 @@ Mark sessions as "blocked" to track sessions that are stuck, need attention, or 
 Blocked status persists across browser sessions via Chrome storage.
 
 ### Refined Label
+
 Shows a "Refined" badge in the header indicating the extension is active. Click to toggle all features on/off.
 
 ![Refined Label](screenshots/refined-label.png)
 
 ### Settings Popup
+
 Click the extension icon in your Chrome toolbar to access all settings.
 
 ![Settings Popup](screenshots/settings-popup.png)
 
 **Available controls:**
+
 - Master toggle to enable/disable all features at once
 - Individual feature toggles for fine-grained control
 - Default mode selection for new sessions
@@ -114,6 +130,7 @@ Click the extension icon in your Chrome toolbar to access all settings.
 ### From Source (Development)
 
 1. Clone this repository:
+
    ```bash
    git clone https://github.com/pisrcio/refined-claude-code-on-the-web.git
    ```
