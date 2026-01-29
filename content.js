@@ -1580,7 +1580,7 @@
     // Check if this session was previously blocked (restore state from storage)
     const sessionData = getSessionData(sessionEl);
     getBlockedReason(sessionData).then((reason) => {
-      if (reason) {
+      if (reason !== null) {
         // Mark as blocked without showing modal
         blockedButton.classList.add('bcc-blocked-active');
         blockedButton.style.color = '#ef4444';
@@ -1600,7 +1600,8 @@
     let tooltipElement = null;
     blockedButton.addEventListener('mouseenter', () => {
       getBlockedReason(sessionData).then((message) => {
-        if (message) {
+        // Only show tooltip if there's an actual message (not just the marker)
+        if (message && message !== BLOCKED_NO_REASON_MARKER) {
           // Create tooltip if it doesn't exist
           if (!tooltipElement) {
             tooltipElement = document.createElement('div');
@@ -1688,6 +1689,9 @@
     return `bcc-blocked-reason-${sessionData?.title?.replace(/[^a-zA-Z0-9-_]/g, '_')}`;
   }
 
+  // Marker used when session is blocked but no reason is provided
+  const BLOCKED_NO_REASON_MARKER = '__BLOCKED__';
+
   /**
    * Save blocked reason message to storage
    * @param {Object} sessionData - The session data object
@@ -1695,13 +1699,15 @@
    */
   function saveBlockedReason(sessionData, message) {
     const storageKey = getSessionStorageId(sessionData);
+    // Use marker when message is empty so we can still detect blocked state
+    const valueToStore = message || BLOCKED_NO_REASON_MARKER;
     if (typeof chrome !== 'undefined' && chrome.storage) {
       const data = {};
-      data[storageKey] = message;
+      data[storageKey] = valueToStore;
       chrome.storage.sync.set(data);
     } else {
       // Fallback to localStorage
-      localStorage.setItem(storageKey, message);
+      localStorage.setItem(storageKey, valueToStore);
     }
   }
 
@@ -1766,7 +1772,8 @@
       const inputEl = document.createElement('input');
       inputEl.type = 'text';
       inputEl.placeholder = '(optional) block reason';
-      inputEl.value = existingMessage || '';
+      // Don't show the marker in the input field
+      inputEl.value = (existingMessage && existingMessage !== BLOCKED_NO_REASON_MARKER) ? existingMessage : '';
       inputEl.style.cssText = `
         width: 100%;
         padding: 8px 10px;
