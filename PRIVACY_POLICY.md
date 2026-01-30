@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Refined Claude Code on the Web**
-Version 0.9.2
+Version 0.9.3
 Last Updated: January 28, 2026
 
 ## Overview
