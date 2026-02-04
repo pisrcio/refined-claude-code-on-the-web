@@ -1418,13 +1418,20 @@
   function findButtonsContainer(sessionEl) {
     if (!sessionEl) return null;
 
-    // Method 1: Try the known structure - group-hover container
+    // Method 1: Try the known structure - group-hover container (new structure uses this)
     const hoverContainer = sessionEl.querySelector('.group-hover\\:opacity-100');
     if (hoverContainer) {
       return hoverContainer;
     }
 
-    // Method 2: Try to find via the relative container in flex-shrink-0
+    // Method 2: Find the container with absolute positioning that shows on hover
+    // New structure: div.absolute.-right-1...opacity-0.group-hover:opacity-100
+    const absoluteHoverContainer = sessionEl.querySelector('.flex-shrink-0 .absolute');
+    if (absoluteHoverContainer) {
+      return absoluteHoverContainer;
+    }
+
+    // Method 3: Try to find via the relative container in flex-shrink-0
     const relativeContainer = sessionEl.querySelector('.flex-shrink-0 .relative');
     if (relativeContainer) {
       // Look for the first div child that might be the buttons container
@@ -1436,21 +1443,10 @@
       return relativeContainer;
     }
 
-    // Method 3: Find any button in the session and get its parent container
+    // Method 4: Find any button in the session and get its parent container
     const anyButton = sessionEl.querySelector('button');
     if (anyButton) {
-      // Walk up to find a suitable container
-      let container = anyButton.parentElement;
-      while (container && container !== sessionEl) {
-        // Check if this looks like a buttons container (has multiple buttons or is in flex-shrink-0)
-        const parentIsFlex = container.parentElement?.classList?.contains('flex-shrink-0') ||
-                            container.parentElement?.classList?.contains('relative');
-        if (parentIsFlex) {
-          return container;
-        }
-        container = container.parentElement;
-      }
-      // Fallback: return the button's immediate parent
+      // The button's immediate parent is likely the buttons container
       return anyButton.parentElement;
     }
 
@@ -1465,25 +1461,37 @@
   function findIndicatorContainer(sessionEl) {
     if (!sessionEl) return null;
 
-    // Method 1: The documented structure - .flex-shrink-0 .relative
+    // Method 1: New structure - div.relative.flex.items-center inside flex-shrink-0
+    // The indicator should be a sibling of the hover container, not inside it
+    const relativeFlexContainer = sessionEl.querySelector('.flex-shrink-0 > .relative.flex');
+    if (relativeFlexContainer) {
+      return relativeFlexContainer;
+    }
+
+    // Method 2: The documented structure - .flex-shrink-0 .relative
     const relativeContainer = sessionEl.querySelector('.flex-shrink-0 .relative');
     if (relativeContainer) {
       return relativeContainer;
     }
 
-    // Method 2: Find flex-shrink-0 in the clickable row area
-    const clickableRow = sessionEl.querySelector('.cursor-pointer');
-    if (clickableRow) {
-      const flexShrink = clickableRow.querySelector('.flex-shrink-0');
-      if (flexShrink) {
-        return flexShrink;
+    // Method 3: Find the parent of the buttons container (should be always visible)
+    const buttonsContainer = findButtonsContainer(sessionEl);
+    if (buttonsContainer?.parentElement) {
+      // Make sure we're getting a container that's not hidden on hover
+      const parent = buttonsContainer.parentElement;
+      if (!parent.classList.contains('opacity-0')) {
+        return parent;
+      }
+      // Go one level up
+      if (parent.parentElement) {
+        return parent.parentElement;
       }
     }
 
-    // Method 3: Find any element that contains buttons and get its parent
-    const buttonsContainer = findButtonsContainer(sessionEl);
-    if (buttonsContainer?.parentElement) {
-      return buttonsContainer.parentElement;
+    // Method 4: Find flex-shrink-0 directly
+    const flexShrink = sessionEl.querySelector('.flex-shrink-0');
+    if (flexShrink) {
+      return flexShrink;
     }
 
     return null;
