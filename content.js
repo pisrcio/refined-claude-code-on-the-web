@@ -1642,27 +1642,23 @@
     }
 
     // Try to find where to insert the blocked button
-    let insertionPoint = null;
-    let insertAfter = true; // Insert after the reference point
+    let buttonsContainer = null;
+    let archiveButton = null;
 
-    // Method 1: Find the archive button and insert after it
-    const archiveButton = findArchiveButton(sessionEl);
+    // Method 1: Find the archive button - we'll insert next to it
+    archiveButton = findArchiveButton(sessionEl);
     if (archiveButton) {
-      insertionPoint = archiveButton.parentElement;
+      buttonsContainer = archiveButton.parentElement;
     }
 
-    // Method 2: Find the buttons container and append to it
-    if (!insertionPoint) {
-      const buttonsContainer = findButtonsContainer(sessionEl);
-      if (buttonsContainer) {
-        insertionPoint = buttonsContainer;
-        insertAfter = false; // Append as last child
-      }
+    // Method 2: Find the buttons container directly
+    if (!buttonsContainer) {
+      buttonsContainer = findButtonsContainer(sessionEl);
     }
 
     // If we couldn't find anywhere to insert, still try to add the indicator
     // for previously blocked sessions
-    if (!insertionPoint) {
+    if (!buttonsContainer) {
       // Try to restore blocked indicator even without the button
       const sessionData = getSessionData(sessionEl);
       getBlockedReason(sessionData).then((reason) => {
@@ -1673,21 +1669,16 @@
       return null;
     }
 
-    // Create the blocked button
+    // Create the blocked button (no wrapper needed - insert directly like archive button)
     const blockedButton = createBlockedButton();
 
-    // Create a wrapper div similar to the archive button wrapper
-    const blockedWrapper = document.createElement('div');
-    blockedWrapper.className = 'bcc-blocked-wrapper';
-    blockedWrapper.appendChild(blockedButton);
-
-    // Insert the button
-    if (insertAfter && insertionPoint.parentNode) {
-      // Insert after the reference element (like archive button wrapper)
-      insertionPoint.parentNode.insertBefore(blockedWrapper, insertionPoint.nextSibling);
+    // Insert the button next to archive button (or append to container)
+    if (archiveButton) {
+      // Insert after the archive button (as a sibling inside the same container)
+      archiveButton.parentNode.insertBefore(blockedButton, archiveButton.nextSibling);
     } else {
       // Append to the container
-      insertionPoint.appendChild(blockedWrapper);
+      buttonsContainer.appendChild(blockedButton);
     }
 
     // Check if this session was previously blocked (restore state from storage)
