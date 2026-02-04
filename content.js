@@ -25,14 +25,54 @@
   let currentSettings = { ...DEFAULT_SETTINGS };
 
   // Get main branch from settings based on project name matching
-  // Used by merge branch button - checks if any configured project name appears in the page text
+  // Used by merge branch button - looks for project name in main content area (not sidebar)
   function getMainBranchFromSettings() {
     const projectMainBranch = currentSettings.projectMainBranch || {};
-    const pageText = document.body.innerText || '';
+
+    // Get text from main content area only, excluding sidebar to avoid false matches
+    // The sidebar contains other project sessions that could cause incorrect matching
+    let contentText = '';
+
+    // Try to find the main content area - look for common container patterns
+    const mainContent = document.querySelector('main') ||
+                        document.querySelector('[role="main"]');
+
+    if (mainContent) {
+      contentText = mainContent.innerText || '';
+    } else {
+      // Fallback: look for text near the PR button area specifically
+      const buttons = document.querySelectorAll('button');
+      for (const btn of buttons) {
+        const text = btn.textContent.trim();
+        if (text.includes('Create PR') || text.includes('View PR') ||
+            text.includes('Create pull request') || text.includes('View pull request')) {
+          // Found PR button - get text from its ancestor containers
+          // This area typically contains the repo/project name
+          const container = btn.closest('.flex.items-center.gap-2');
+          if (container) {
+            // Go up several levels to get the header/info area
+            let parent = container.parentElement;
+            for (let i = 0; i < 5 && parent; i++) {
+              parent = parent.parentElement;
+            }
+            if (parent) {
+              contentText = parent.innerText || '';
+            }
+          }
+          break;
+        }
+      }
+    }
+
+    // If we still have no content, use body text as last resort (may have false positives)
+    if (!contentText) {
+      contentText = document.body.innerText || '';
+      console.log('[BCC] getMainBranchFromSettings: WARNING - using full page text, may have false matches');
+    }
 
     // Check each configured project name
     for (const [projectName, branch] of Object.entries(projectMainBranch)) {
-      if (pageText.includes(projectName)) {
+      if (contentText.includes(projectName)) {
         console.log('[BCC] getMainBranchFromSettings: matched project', projectName, '-> branch:', branch);
         return branch;
       }
