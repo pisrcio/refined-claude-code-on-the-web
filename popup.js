@@ -4,7 +4,6 @@ const DEFAULT_SETTINGS = {
   allEnabled: true,
   modeButton: true,
   defaultMode: 'last', // 'agent', 'plan', or 'last'
-  showModel: true,
   refinedLabel: true,
   pullBranch: true,
   mergeBranch: true,

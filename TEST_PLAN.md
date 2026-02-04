@@ -123,28 +123,9 @@ This document provides a manual test plan for verifying the Chrome extension fun
 
 ---
 
-## Test Suite 4: Show Actual Model
+## Test Suite 4: Pull Branch Button
 
-### Test 4.1: Model Name Displays
-**Steps:**
-1. Look at the model selector button (usually shows "..." or model name)
-2. Verify the actual model name is visible
-
-**Expected Result:** Shows full name like "Opus 4.5", "Sonnet 4.5", or "Haiku 4.5"
-
-### Test 4.2: Model Change Detection
-**Steps:**
-1. Click the model selector
-2. Change to a different model
-3. Close the selector
-
-**Expected Result:** The displayed model name updates to reflect the new selection
-
----
-
-## Test Suite 5: Pull Branch Button
-
-### Test 5.1: Button Appears on PR Page
+### Test 4.1: Button Appears on PR Page
 **Steps:**
 1. Create a session that mentions a GitHub PR
 2. Or navigate to a session where Claude created a PR
@@ -152,7 +133,7 @@ This document provides a manual test plan for verifying the Chrome extension fun
 
 **Expected Result:** Button appears near PR-related content
 
-### Test 5.2: Copy Branch Command
+### Test 4.2: Copy Branch Command
 **Steps:**
 1. Click "Pull Branch in CLI" button
 
@@ -163,15 +144,15 @@ This document provides a manual test plan for verifying the Chrome extension fun
 
 ---
 
-## Test Suite 6: Merge Branch Button
+## Test Suite 5: Merge Branch Button
 
-### Test 6.1: Button Appears
+### Test 5.1: Button Appears
 **Steps:**
 1. On a page with branch content, look for "Merge [main]" button
 
 **Expected Result:** Button appears with configured main branch name
 
-### Test 6.2: Insert Merge Prompt
+### Test 5.2: Insert Merge Prompt
 **Steps:**
 1. Click the "Merge [main]" button
 2. Check the chat input field
@@ -180,9 +161,9 @@ This document provides a manual test plan for verifying the Chrome extension fun
 
 ---
 
-## Test Suite 7: Project Colors
+## Test Suite 6: Project Colors
 
-### Test 7.1: Configure Project Color
+### Test 6.1: Configure Project Color
 **Steps:**
 1. Click extension icon to open popup
 2. Scroll to "Project Settings"
@@ -192,14 +173,14 @@ This document provides a manual test plan for verifying the Chrome extension fun
 
 **Expected Result:** Project added to the list below
 
-### Test 7.2: Color Applied in Sidebar
+### Test 6.2: Color Applied in Sidebar
 **Steps:**
 1. Look at the sidebar project list
 2. Find the project you configured
 
 **Expected Result:** Project name has a colored background matching your selection
 
-### Test 7.3: Remove Project Color
+### Test 6.3: Remove Project Color
 **Steps:**
 1. Open popup
 2. Click the X next to the configured project
@@ -208,36 +189,36 @@ This document provides a manual test plan for verifying the Chrome extension fun
 
 ---
 
-## Test Suite 8: Session Management API
+## Test Suite 7: Session Management API
 
-### Test 8.1: Get All Sessions
+### Test 7.1: Get All Sessions
 **Steps:**
 1. Open DevTools Console
 2. Run: `window.RefinedClaudeCode.sessions.getAll()`
 
 **Expected Result:** Returns array of session DOM elements
 
-### Test 8.2: Get Sessions with Data
+### Test 7.2: Get Sessions with Data
 **Steps:**
 1. Run: `window.RefinedClaudeCode.sessions.getAllWithData()`
 
 **Expected Result:** Returns array of objects with `element`, `title`, and `index` properties
 
-### Test 8.3: Find Session by Title
+### Test 7.3: Find Session by Title
 **Steps:**
 1. Note a session title from sidebar
 2. Run: `window.RefinedClaudeCode.sessions.findByTitle("Your Title Here")`
 
 **Expected Result:** Returns the matching session element or null
 
-### Test 8.4: Get Active Session
+### Test 7.4: Get Active Session
 **Steps:**
 1. Click on a session in the sidebar to select it
 2. Run: `window.RefinedClaudeCode.sessions.getActive()`
 
 **Expected Result:** Returns the currently selected session element
 
-### Test 8.5: Trigger Hover
+### Test 7.5: Trigger Hover
 **Steps:**
 1. Get a session element: `let s = window.RefinedClaudeCode.sessions.getAll()[0]`
 2. Run: `window.RefinedClaudeCode.sessions.triggerHover(s)`
@@ -246,16 +227,16 @@ This document provides a manual test plan for verifying the Chrome extension fun
 
 ---
 
-## Test Suite 9: Blocked Button Feature
+## Test Suite 8: Blocked Button Feature
 
-### Test 9.1: Blocked Button Appears
+### Test 8.1: Blocked Button Appears
 **Steps:**
 1. Hover over any session in the sidebar
 2. Look for a warning triangle icon button
 
 **Expected Result:** Warning icon button appears alongside delete/archive buttons
 
-### Test 9.2: Mark Session as Blocked
+### Test 8.2: Mark Session as Blocked
 **Steps:**
 1. Click the blocked (warning) button on a session
 2. Enter a reason when prompted (or leave empty)
@@ -264,14 +245,14 @@ This document provides a manual test plan for verifying the Chrome extension fun
 - Button turns amber/yellow
 - Hover shows tooltip with block reason
 
-### Test 9.3: Edit Block Reason
+### Test 8.3: Edit Block Reason
 **Steps:**
 1. Hover over a blocked session's warning icon
 2. Click on the tooltip text
 
 **Expected Result:** Inline editor appears to modify the block reason
 
-### Test 9.4: Clear Blocked Status
+### Test 8.4: Clear Blocked Status
 **Steps:**
 1. Click the blocked button on an already-blocked session
 2. Clear the reason text
@@ -280,24 +261,24 @@ This document provides a manual test plan for verifying the Chrome extension fun
 
 ---
 
-## Test Suite 10: Settings Persistence
+## Test Suite 9: Settings Persistence
 
-### Test 10.1: Feature Toggle Persistence
+### Test 9.1: Feature Toggle Persistence
 **Steps:**
-1. Open popup and disable a feature (e.g., "Show Actual Model")
+1. Open popup and disable a feature (e.g., "Mode Button")
 2. Refresh the page
 3. Open popup again
 
 **Expected Result:** Feature remains disabled after refresh
 
-### Test 10.2: Cross-Device Sync (if signed into Chrome)
+### Test 9.2: Cross-Device Sync (if signed into Chrome)
 **Steps:**
 1. Configure settings on one device
 2. Check settings on another device with same Chrome profile
 
 **Expected Result:** Settings sync via Chrome's storage.sync API
 
-### Test 10.3: Master Toggle Persistence
+### Test 9.3: Master Toggle Persistence
 **Steps:**
 1. Disable all features via the "Refined" badge
 2. Close browser completely
@@ -307,23 +288,23 @@ This document provides a manual test plan for verifying the Chrome extension fun
 
 ---
 
-## Test Suite 11: Edge Cases
+## Test Suite 10: Edge Cases
 
-### Test 11.1: Empty Session List
+### Test 10.1: Empty Session List
 **Steps:**
 1. Navigate to claude.ai/code with no sessions (new account or delete all)
 2. Verify no console errors
 
 **Expected Result:** Extension loads without errors, waiting for sessions
 
-### Test 11.2: Rapid Navigation
+### Test 10.2: Rapid Navigation
 **Steps:**
 1. Quickly click between multiple sessions
 2. Quickly navigate between pages
 
 **Expected Result:** UI elements update correctly without duplicates or missing elements
 
-### Test 11.3: Extension Reload
+### Test 10.3: Extension Reload
 **Steps:**
 1. Go to chrome://extensions/
 2. Click "Reload" on the extension
@@ -331,7 +312,7 @@ This document provides a manual test plan for verifying the Chrome extension fun
 
 **Expected Result:** All features re-inject properly
 
-### Test 11.4: Page Refresh
+### Test 10.4: Page Refresh
 **Steps:**
 1. Press F5 or Ctrl+R on claude.ai/code page
 
@@ -339,9 +320,9 @@ This document provides a manual test plan for verifying the Chrome extension fun
 
 ---
 
-## Test Suite 12: Error Handling
+## Test Suite 11: Error Handling
 
-### Test 12.1: Missing DOM Elements
+### Test 11.1: Missing DOM Elements
 **Steps:**
 1. Open DevTools Console
 2. Filter for `[BCC]` messages
@@ -349,7 +330,7 @@ This document provides a manual test plan for verifying the Chrome extension fun
 
 **Expected Result:** No error messages, only informational logs
 
-### Test 12.2: Storage Failures
+### Test 11.2: Storage Failures
 **Steps:**
 1. Open DevTools → Application → Storage
 2. Clear site data
@@ -398,30 +379,28 @@ This document provides a manual test plan for verifying the Chrome extension fun
 | 3.3 | Switch to Plan Mode | | |
 | 3.4 | Plan Mode Message Prefix | | |
 | 3.5 | Switch to Agent Mode | | |
-| 4.1 | Model Name Displays | | |
-| 4.2 | Model Change Detection | | |
-| 5.1 | Button Appears on PR Page | | |
-| 5.2 | Copy Branch Command | | |
-| 6.1 | Button Appears | | |
-| 6.2 | Insert Merge Prompt | | |
-| 7.1 | Configure Project Color | | |
-| 7.2 | Color Applied in Sidebar | | |
-| 7.3 | Remove Project Color | | |
-| 8.1 | Get All Sessions | | |
-| 8.2 | Get Sessions with Data | | |
-| 8.3 | Find Session by Title | | |
-| 8.4 | Get Active Session | | |
-| 8.5 | Trigger Hover | | |
-| 9.1 | Blocked Button Appears | | |
-| 9.2 | Mark Session as Blocked | | |
-| 9.3 | Edit Block Reason | | |
-| 9.4 | Clear Blocked Status | | |
-| 10.1 | Feature Toggle Persistence | | |
-| 10.2 | Cross-Device Sync | | |
-| 10.3 | Master Toggle Persistence | | |
-| 11.1 | Empty Session List | | |
-| 11.2 | Rapid Navigation | | |
-| 11.3 | Extension Reload | | |
-| 11.4 | Page Refresh | | |
-| 12.1 | Missing DOM Elements | | |
-| 12.2 | Storage Failures | | |
+| 4.1 | Button Appears on PR Page | | |
+| 4.2 | Copy Branch Command | | |
+| 5.1 | Button Appears | | |
+| 5.2 | Insert Merge Prompt | | |
+| 6.1 | Configure Project Color | | |
+| 6.2 | Color Applied in Sidebar | | |
+| 6.3 | Remove Project Color | | |
+| 7.1 | Get All Sessions | | |
+| 7.2 | Get Sessions with Data | | |
+| 7.3 | Find Session by Title | | |
+| 7.4 | Get Active Session | | |
+| 7.5 | Trigger Hover | | |
+| 8.1 | Blocked Button Appears | | |
+| 8.2 | Mark Session as Blocked | | |
+| 8.3 | Edit Block Reason | | |
+| 8.4 | Clear Blocked Status | | |
+| 9.1 | Feature Toggle Persistence | | |
+| 9.2 | Cross-Device Sync | | |
+| 9.3 | Master Toggle Persistence | | |
+| 10.1 | Empty Session List | | |
+| 10.2 | Rapid Navigation | | |
+| 10.3 | Extension Reload | | |
+| 10.4 | Page Refresh | | |
+| 11.1 | Missing DOM Elements | | |
+| 11.2 | Storage Failures | | |

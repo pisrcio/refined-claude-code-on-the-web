@@ -1,5 +1,5 @@
 // Refined Claude Code on the Web - Content Script
-// Features: Mode Button, Show Actual Model, Refined Label, Pull Branch in CLI
+// Features: Mode Button, Refined Label, Pull Branch in CLI
 
 (function() {
   'use strict';
@@ -14,7 +14,6 @@
     allEnabled: true,
     modeButton: true,
     defaultMode: 'last', // 'agent', 'plan', or 'last'
-    showModel: true,
     refinedLabel: true,
     pullBranch: true,
     mergeBranch: true,
@@ -100,20 +99,6 @@
     const mergeBranchBtn = document.querySelector('.refined-merge-branch-btn');
     if (mergeBranchBtn) {
       mergeBranchBtn.style.display = isFeatureEnabled('mergeBranch') ? 'flex' : 'none';
-    }
-
-    // Handle model display - revert or update
-    if (isFeatureEnabled('showModel')) {
-      updateModelSelector();
-    } else {
-      // Revert model button to default
-      const button = document.querySelector('button[aria-label="More options"]');
-      if (button && button.querySelector('span[style*="font-weight: 500"]')) {
-        button.innerHTML = '...';
-        button.style.minWidth = '';
-        button.style.paddingLeft = '';
-        button.style.paddingRight = '';
-      }
     }
 
     // Apply project colors
@@ -526,170 +511,6 @@
     if (injected) {
       setupPlanModeSubmitHandler();
     }
-  }
-
-  // ============================================
-  // Show Actual Model Feature
-  // ============================================
-
-  const MODEL_NAMES = {
-    'opus': 'Opus 4.5',
-    'sonnet': 'Sonnet 4.5',
-    'haiku': 'Haiku 4.5'
-  };
-
-  let lastKnownModel = null;
-  let modelButtonObserver = null;
-
-  function parseModelId(modelId, quiet = false) {
-    if (!modelId) return null;
-    const modelIdLower = modelId.toLowerCase();
-    for (const [key, name] of Object.entries(MODEL_NAMES)) {
-      if (modelIdLower.includes(key)) {
-        return name;
-      }
-    }
-    return null;
-  }
-
-  function findModelSelectorButton() {
-    const moreOptionsButton = document.querySelector('button[aria-label="More options"]');
-    if (moreOptionsButton) {
-      return moreOptionsButton;
-    }
-
-    const buttons = document.querySelectorAll('button');
-    for (const button of buttons) {
-      const text = button.textContent.trim();
-      const ariaLabel = button.getAttribute('aria-label');
-
-      if (ariaLabel && (ariaLabel.toLowerCase().includes('model') || ariaLabel.toLowerCase().includes('options'))) {
-        return button;
-      }
-
-      if (text === '...' || text === '\u2026' || text === '\u22EF') {
-        return button;
-      }
-    }
-
-    return null;
-  }
-
-  function getSelectedModel() {
-    try {
-      const stickyModel = localStorage.getItem('ccr-sticky-model-selector');
-      if (stickyModel) {
-        const parsed = parseModelId(stickyModel, true);
-        if (parsed) return parsed;
-      }
-    } catch (e) {}
-
-    try {
-      const defaultModel = localStorage.getItem('default-model');
-      if (defaultModel) {
-        const parsed = parseModelId(defaultModel, true);
-        if (parsed) return parsed;
-      }
-    } catch (e) {}
-
-    const checkedItem = document.querySelector('[role="menuitemradio"][aria-checked="true"]');
-    if (checkedItem) {
-      const modelText = checkedItem.textContent;
-      for (const [key, name] of Object.entries(MODEL_NAMES)) {
-        if (modelText.toLowerCase().includes(key)) {
-          return name;
-        }
-      }
-    }
-
-    return null;
-  }
-
-  function updateModelDisplay(button, modelName) {
-    if (!button || !modelName) return;
-
-    const currentText = button.textContent.trim();
-    if (currentText === modelName) return;
-
-    button.innerHTML = `<span style="font-size: 12px; font-weight: 500;">${modelName}</span>`;
-    button.style.minWidth = 'auto';
-    button.style.paddingLeft = '8px';
-    button.style.paddingRight = '8px';
-
-    watchModelButtonForChanges(button, modelName);
-  }
-
-  function watchModelButtonForChanges(button, modelName) {
-    if (modelButtonObserver) {
-      modelButtonObserver.disconnect();
-    }
-
-    modelButtonObserver = new MutationObserver((mutations) => {
-      const currentText = button.textContent.trim();
-      if (currentText !== modelName && currentText !== lastKnownModel) {
-        const currentModel = parseModelId(localStorage.getItem('default-model'), true);
-        if (currentModel) {
-          button.innerHTML = `<span style="font-size: 12px; font-weight: 500;">${currentModel}</span>`;
-          button.style.minWidth = 'auto';
-          button.style.paddingLeft = '8px';
-          button.style.paddingRight = '8px';
-        }
-      }
-    });
-
-    modelButtonObserver.observe(button, {
-      childList: true,
-      subtree: true,
-      characterData: true
-    });
-  }
-
-  function updateModelSelector() {
-    const button = findModelSelectorButton();
-    const model = getSelectedModel();
-
-    if (button && model) {
-      updateModelDisplay(button, model);
-    }
-  }
-
-  function watchLocalStorage() {
-    const originalSetItem = localStorage.setItem.bind(localStorage);
-    localStorage.setItem = function(key, value) {
-      originalSetItem(key, value);
-
-      if (key === 'ccr-sticky-model-selector' || key === 'default-model') {
-        const newModel = parseModelId(value);
-        if (newModel && newModel !== lastKnownModel) {
-          lastKnownModel = newModel;
-          setTimeout(updateModelSelector, 100);
-          setTimeout(updateModelSelector, 300);
-        }
-      }
-    };
-  }
-
-  function pollForModelChanges() {
-    setInterval(() => {
-      try {
-        const stickyModel = localStorage.getItem('ccr-sticky-model-selector');
-        const defaultModel = localStorage.getItem('default-model');
-        const currentModelId = stickyModel || defaultModel;
-        const parsedModel = parseModelId(currentModelId, true);
-
-        if (parsedModel) {
-          if (parsedModel !== lastKnownModel) {
-            lastKnownModel = parsedModel;
-            updateModelSelector();
-          } else {
-            const button = document.querySelector('button[aria-label="More options"]');
-            if (button && button.textContent.trim() !== parsedModel) {
-              updateModelDisplay(button, parsedModel);
-            }
-          }
-        }
-      } catch (e) {}
-    }, 250);
   }
 
   // ============================================
@@ -2165,15 +1986,6 @@
     // Initialize mode based on settings
     currentMode = getInitialMode();
 
-    // Set up model display watchers (only if enabled)
-    if (isFeatureEnabled('showModel')) {
-      watchLocalStorage();
-      pollForModelChanges();
-
-      // Store initial model
-      lastKnownModel = getSelectedModel();
-    }
-
     // Function to inject UI elements
     function injectUI() {
       try {
@@ -2181,9 +1993,6 @@
           setTimeout(findAndInjectModeButton, 1000);
         }
         addRefinedLabel(); // Always add the label (it's the toggle)
-        if (isFeatureEnabled('showModel')) {
-          updateModelSelector();
-        }
         // Apply project colors
         applyProjectColors();
       } catch (e) {

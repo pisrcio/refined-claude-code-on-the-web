@@ -57,12 +57,6 @@ Configure which mode new sessions start with via the extension popup:
 
 **Credits**: Thanks to [@bchan7](https://reddit.com/u/bchan7) and @batout for sharing the [plan mode discovery](https://www.reddit.com/r/ClaudeCode/comments/1p0hypc/changing_to_plan_mode_in_claude_code_on_the_web/).
 
-### Show Actual Model
-
-Displays the actual model being used (e.g., "Opus 4", "Sonnet 4") instead of the generic "..." button.
-
-![Show Model](screenshots/show-model.png)
-
 ### Pull Branch Button
 
 Adds a convenient button to copy the `git pull` command for the current branch directly to your clipboard.
