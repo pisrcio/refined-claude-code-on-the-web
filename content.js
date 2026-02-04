@@ -24,6 +24,23 @@
 
   let currentSettings = { ...DEFAULT_SETTINGS };
 
+  // Get main branch from settings based on project name matching
+  // Used by merge branch button - checks if any configured project name appears in the page text
+  function getMainBranchFromSettings() {
+    const projectMainBranch = currentSettings.projectMainBranch || {};
+    const pageText = document.body.innerText || '';
+
+    // Check each configured project name
+    for (const [projectName, branch] of Object.entries(projectMainBranch)) {
+      if (pageText.includes(projectName)) {
+        return branch;
+      }
+    }
+
+    // Default to 'main' if no match found
+    return 'main';
+  }
+
   // Load settings from storage
   function loadSettings() {
     return new Promise((resolve) => {
@@ -95,10 +112,16 @@
       pullBranchBtn.style.display = isFeatureEnabled('pullBranch') ? 'flex' : 'none';
     }
 
-    // Toggle merge branch button
+    // Toggle merge branch button and update displayed branch name
     const mergeBranchBtn = document.querySelector('.refined-merge-branch-btn');
     if (mergeBranchBtn) {
       mergeBranchBtn.style.display = isFeatureEnabled('mergeBranch') ? 'flex' : 'none';
+      // Update the displayed branch name in case it changed
+      const branchSpan = mergeBranchBtn.querySelector('span');
+      if (branchSpan) {
+        const mainBranch = getMainBranchFromSettings();
+        branchSpan.innerHTML = `Merge <em style="font-style: italic;">${mainBranch}</em>`;
+      }
     }
 
     // Apply project colors
@@ -872,23 +895,6 @@
 
   // Add "Merge [main]" button next to View PR button
   function watchForMergeBranchButton() {
-    // Function to get main branch from settings
-    // Simply checks if any configured project name appears in the page text
-    function getMainBranchFromSettings() {
-      const projectMainBranch = currentSettings.projectMainBranch || {};
-      const pageText = document.body.innerText || '';
-
-      // Check each configured project name
-      for (const [projectName, branch] of Object.entries(projectMainBranch)) {
-        if (pageText.includes(projectName)) {
-          return branch;
-        }
-      }
-
-      // Default to 'main' if no match found
-      return 'main';
-    }
-
     // Function to add the Merge Branch button
     function addMergeBranchButton() {
       // Check if button already exists
