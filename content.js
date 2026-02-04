@@ -1672,6 +1672,12 @@
     // Create the blocked button (no wrapper needed - insert directly like archive button)
     const blockedButton = createBlockedButton();
 
+    // Ensure the container has horizontal flex layout for side-by-side buttons
+    buttonsContainer.style.display = 'flex';
+    buttonsContainer.style.flexDirection = 'row';
+    buttonsContainer.style.alignItems = 'center';
+    buttonsContainer.style.gap = '4px';
+
     // Insert the button next to archive button (or append to container)
     if (archiveButton) {
       // Insert after the archive button (as a sibling inside the same container)
