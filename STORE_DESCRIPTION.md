@@ -9,7 +9,6 @@ Refined Claude Code on the Web enhances the Claude.ai code interface with produc
 
 **FEATURES:**
 • Mode Button - Switch between Agent and Plan modes with one click
-• Show Actual Model - See the real model name (Opus/Sonnet/Haiku) instead of "..."
 • Pull Branch Button - Copy git commands to pull Claude's branches locally
 • Merge Branch Button - Quick merge commands for conflict resolution
 • Project Colors - Color-code projects in the sidebar for easy identification
