@@ -1232,6 +1232,93 @@
   }
 
   /**
+   * Find the buttons container in a session element using multiple fallback methods
+   * @param {Element} sessionEl - The session element
+   * @returns {Element|null} The buttons container or null
+   */
+  function findButtonsContainer(sessionEl) {
+    if (!sessionEl) return null;
+
+    // Method 1: Try the known structure - group-hover container (new structure uses this)
+    const hoverContainer = sessionEl.querySelector('.group-hover\\:opacity-100');
+    if (hoverContainer) {
+      return hoverContainer;
+    }
+
+    // Method 2: Find the container with absolute positioning that shows on hover
+    // New structure: div.absolute.-right-1...opacity-0.group-hover:opacity-100
+    const absoluteHoverContainer = sessionEl.querySelector('.flex-shrink-0 .absolute');
+    if (absoluteHoverContainer) {
+      return absoluteHoverContainer;
+    }
+
+    // Method 3: Try to find via the relative container in flex-shrink-0
+    const relativeContainer = sessionEl.querySelector('.flex-shrink-0 .relative');
+    if (relativeContainer) {
+      // Look for the first div child that might be the buttons container
+      const firstDiv = relativeContainer.querySelector('div');
+      if (firstDiv) {
+        return firstDiv;
+      }
+      // Or return the relative container itself
+      return relativeContainer;
+    }
+
+    // Method 4: Find any button in the session and get its parent container
+    const anyButton = sessionEl.querySelector('button');
+    if (anyButton) {
+      // The button's immediate parent is likely the buttons container
+      return anyButton.parentElement;
+    }
+
+    return null;
+  }
+
+  /**
+   * Find the container for the blocked indicator (should be visible even without hover)
+   * @param {Element} sessionEl - The session element
+   * @returns {Element|null} The container for the indicator or null
+   */
+  function findIndicatorContainer(sessionEl) {
+    if (!sessionEl) return null;
+
+    // Method 1: New structure - div.relative.flex.items-center inside flex-shrink-0
+    // The indicator should be a sibling of the hover container, not inside it
+    const relativeFlexContainer = sessionEl.querySelector('.flex-shrink-0 > .relative.flex');
+    if (relativeFlexContainer) {
+      return relativeFlexContainer;
+    }
+
+    // Method 2: The documented structure - .flex-shrink-0 .relative
+    const relativeContainer = sessionEl.querySelector('.flex-shrink-0 .relative');
+    if (relativeContainer) {
+      return relativeContainer;
+    }
+
+    // Method 3: Find the parent of the buttons container (should be always visible)
+    const buttonsContainer = findButtonsContainer(sessionEl);
+    if (buttonsContainer?.parentElement) {
+      // Make sure we're getting a container that's not hidden on hover
+      const parent = buttonsContainer.parentElement;
+      if (!parent.classList.contains('opacity-0')) {
+        return parent;
+      }
+      // Go one level up
+      if (parent.parentElement) {
+        return parent.parentElement;
+      }
+    }
+
+    // Method 4: Find flex-shrink-0 directly
+    const flexShrink = sessionEl.querySelector('.flex-shrink-0');
+    if (flexShrink) {
+      return flexShrink;
+    }
+
+    return null;
+  }
+
+  /**
    * Get action buttons for a session
    * @param {Element} sessionEl - The session element
    * @returns {Object} Object with deleteButton and archiveButton properties
@@ -1375,28 +1462,51 @@
       return null;
     }
 
-    // Find the archive button to insert after (blocked button goes to the right)
-    const archiveButton = findArchiveButton(sessionEl);
-    if (!archiveButton) {
+    // Try to find where to insert the blocked button
+    let buttonsContainer = null;
+    let archiveButton = null;
+
+    // Method 1: Find the archive button - we'll insert next to it
+    archiveButton = findArchiveButton(sessionEl);
+    if (archiveButton) {
+      buttonsContainer = archiveButton.parentElement;
+    }
+
+    // Method 2: Find the buttons container directly
+    if (!buttonsContainer) {
+      buttonsContainer = findButtonsContainer(sessionEl);
+    }
+
+    // If we couldn't find anywhere to insert, still try to add the indicator
+    // for previously blocked sessions
+    if (!buttonsContainer) {
+      // Try to restore blocked indicator even without the button
+      const sessionData = getSessionData(sessionEl);
+      getBlockedReason(sessionData).then((reason) => {
+        if (reason !== null) {
+          addBlockedIndicator(sessionEl);
+        }
+      });
       return null;
     }
 
-    // Find the container - the archive button is wrapped in a div
-    const archiveWrapper = archiveButton.parentElement;
-    if (!archiveWrapper) {
-      return null;
-    }
-
-    // Create the blocked button
+    // Create the blocked button (no wrapper needed - insert directly like archive button)
     const blockedButton = createBlockedButton();
 
-    // Create a wrapper div similar to the archive button wrapper
-    const blockedWrapper = document.createElement('div');
-    blockedWrapper.className = 'bcc-blocked-wrapper';
-    blockedWrapper.appendChild(blockedButton);
+    // Ensure the container has horizontal flex layout for side-by-side buttons
+    buttonsContainer.style.display = 'flex';
+    buttonsContainer.style.flexDirection = 'row';
+    buttonsContainer.style.alignItems = 'center';
+    buttonsContainer.style.gap = '4px';
 
-    // Insert after the archive button wrapper (to the right)
-    archiveWrapper.parentNode.insertBefore(blockedWrapper, archiveWrapper.nextSibling);
+    // Insert the button next to archive button (or append to container)
+    if (archiveButton) {
+      // Insert after the archive button (as a sibling inside the same container)
+      archiveButton.parentNode.insertBefore(blockedButton, archiveButton.nextSibling);
+    } else {
+      // Append to the container
+      buttonsContainer.appendChild(blockedButton);
+    }
 
     // Check if this session was previously blocked (restore state from storage)
     const sessionData = getSessionData(sessionEl);
@@ -1772,9 +1882,9 @@
       return;
     }
 
-    // Find the relative container inside buttons area (parent of hover container)
-    const relativeContainer = sessionEl.querySelector('.flex-shrink-0 .relative');
-    if (!relativeContainer) {
+    // Find the container for the indicator using the robust finder
+    const indicatorContainer = findIndicatorContainer(sessionEl);
+    if (!indicatorContainer) {
       return;
     }
 
@@ -1802,8 +1912,8 @@
       });
     }
 
-    // Append to relative container (sibling of hover buttons container)
-    relativeContainer.appendChild(indicator);
+    // Append to indicator container
+    indicatorContainer.appendChild(indicator);
   }
 
   /**
@@ -1827,6 +1937,38 @@
 
     sessions.forEach((sessionEl) => {
       addBlockedButtonToSession(sessionEl);
+    });
+  }
+
+  /**
+   * Restore blocked indicators for all sessions that were previously marked as blocked
+   * This runs independently of button placement to ensure indicators always appear
+   */
+  function restoreBlockedIndicators() {
+    const sessions = getAllSessions();
+
+    sessions.forEach((sessionEl) => {
+      // Skip if indicator already exists
+      if (sessionEl.querySelector('.bcc-blocked-indicator')) {
+        return;
+      }
+
+      const sessionData = getSessionData(sessionEl);
+      if (!sessionData) return;
+
+      getBlockedReason(sessionData).then((reason) => {
+        if (reason !== null) {
+          addBlockedIndicator(sessionEl);
+
+          // Also update the blocked button if it exists
+          const blockedBtn = findBlockedButton(sessionEl);
+          if (blockedBtn && !blockedBtn.classList.contains('bcc-blocked-active')) {
+            blockedBtn.classList.add('bcc-blocked-active');
+            blockedBtn.style.color = '#ef4444';
+            blockedBtn.title = 'Marked as blocked - click to unblock';
+          }
+        }
+      });
     });
   }
 
@@ -1855,8 +1997,10 @@
       return;
     }
 
-    // Add buttons to existing sessions
+    // Add buttons and restore indicators for existing sessions
     addBlockedButtonsToAllSessions();
+    // Run indicator restoration separately to ensure blocked sessions show indicator
+    setTimeout(restoreBlockedIndicators, 500);
 
     // Watch for new sessions
     const observer = new MutationObserver((mutations) => {
@@ -1864,6 +2008,8 @@
       clearTimeout(observer._timeout);
       observer._timeout = setTimeout(() => {
         addBlockedButtonsToAllSessions();
+        // Also restore indicators for any newly appearing sessions
+        restoreBlockedIndicators();
       }, 100);
     });
 
@@ -1892,11 +2038,14 @@
     findDeleteButton,
     findArchiveButton,
     findBlockedButton,
+    findButtonsContainer,
+    findIndicatorContainer,
     getButtons: getSessionButtons,
     triggerHover: triggerSessionHover,
     clearHover: clearSessionHover,
     addBlockedButton: addBlockedButtonToSession,
-    addBlockedButtonsToAll: addBlockedButtonsToAllSessions
+    addBlockedButtonsToAll: addBlockedButtonsToAllSessions,
+    restoreBlockedIndicators
   };
 
   // ============================================
