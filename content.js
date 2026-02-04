@@ -33,11 +33,13 @@
     // Check each configured project name
     for (const [projectName, branch] of Object.entries(projectMainBranch)) {
       if (pageText.includes(projectName)) {
+        console.log('[BCC] getMainBranchFromSettings: matched project', projectName, '-> branch:', branch);
         return branch;
       }
     }
 
     // Default to 'main' if no match found
+    console.log('[BCC] getMainBranchFromSettings: no match, defaulting to main. Projects:', Object.keys(projectMainBranch));
     return 'main';
   }
 
@@ -87,6 +89,7 @@
   if (typeof chrome !== 'undefined' && chrome.storage) {
     chrome.storage.onChanged.addListener((changes, namespace) => {
       if (namespace === 'sync') {
+        console.log('[BCC] Settings changed:', changes);
         for (const [key, { newValue }] of Object.entries(changes)) {
           currentSettings[key] = newValue;
         }
@@ -120,6 +123,7 @@
       const branchSpan = mergeBranchBtn.querySelector('span');
       if (branchSpan) {
         const mainBranch = getMainBranchFromSettings();
+        console.log('[BCC] applySettings: updating merge branch button to:', mainBranch, 'settings:', currentSettings.projectMainBranch);
         branchSpan.innerHTML = `Merge <em style="font-style: italic;">${mainBranch}</em>`;
       }
     }
