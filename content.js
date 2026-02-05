@@ -876,17 +876,21 @@
     function getCurrentProjectFromGitHubLink() {
       // Find GitHub link: <a href="https://github.com/owner/repo-name" ...>
       const githubLinks = document.querySelectorAll('a[href^="https://github.com/"]');
+      console.log(LOG_PREFIX, 'Found GitHub links:', githubLinks.length);
 
       for (const link of githubLinks) {
         const href = link.getAttribute('href');
+        console.log(LOG_PREFIX, 'Checking GitHub link:', href);
         // Parse the URL to get the repo name (last part of path)
         // e.g., https://github.com/pisrcio/refined-claude-code-on-the-web -> refined-claude-code-on-the-web
         const match = href.match(/github\.com\/[^/]+\/([^/]+)/);
         if (match && match[1]) {
+          console.log(LOG_PREFIX, 'Extracted project name:', match[1]);
           return match[1];
         }
       }
 
+      console.log(LOG_PREFIX, 'No project name found from GitHub links');
       return null;
     }
 
@@ -894,15 +898,19 @@
     // Uses the GitHub link to determine current project
     function getMainBranchFromSettings() {
       const projectMainBranch = currentSettings.projectMainBranch || {};
+      console.log(LOG_PREFIX, 'projectMainBranch settings:', projectMainBranch);
 
       // Get current project from GitHub link
       const currentProject = getCurrentProjectFromGitHubLink();
+      console.log(LOG_PREFIX, 'Current project:', currentProject);
 
       if (currentProject && projectMainBranch[currentProject]) {
+        console.log(LOG_PREFIX, 'Found main branch for project:', projectMainBranch[currentProject]);
         return projectMainBranch[currentProject];
       }
 
       // Default to 'main' if no match found
+      console.log(LOG_PREFIX, 'Using default branch: main');
       return 'main';
     }
 
