@@ -872,17 +872,34 @@
 
   // Add "Merge [main]" button next to View PR button
   function watchForMergeBranchButton() {
+    // Function to get current project name from GitHub link
+    function getCurrentProjectFromGitHubLink() {
+      // Find GitHub link: <a href="https://github.com/owner/repo-name" ...>
+      const githubLinks = document.querySelectorAll('a[href^="https://github.com/"]');
+
+      for (const link of githubLinks) {
+        const href = link.getAttribute('href');
+        // Parse the URL to get the repo name (last part of path)
+        // e.g., https://github.com/pisrcio/refined-claude-code-on-the-web -> refined-claude-code-on-the-web
+        const match = href.match(/github\.com\/[^/]+\/([^/]+)/);
+        if (match && match[1]) {
+          return match[1];
+        }
+      }
+
+      return null;
+    }
+
     // Function to get main branch from settings
-    // Simply checks if any configured project name appears in the page text
+    // Uses the GitHub link to determine current project
     function getMainBranchFromSettings() {
       const projectMainBranch = currentSettings.projectMainBranch || {};
-      const pageText = document.body.innerText || '';
 
-      // Check each configured project name
-      for (const [projectName, branch] of Object.entries(projectMainBranch)) {
-        if (pageText.includes(projectName)) {
-          return branch;
-        }
+      // Get current project from GitHub link
+      const currentProject = getCurrentProjectFromGitHubLink();
+
+      if (currentProject && projectMainBranch[currentProject]) {
+        return projectMainBranch[currentProject];
       }
 
       // Default to 'main' if no match found
