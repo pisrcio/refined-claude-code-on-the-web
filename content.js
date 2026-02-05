@@ -888,13 +888,10 @@
         // Extract GitHub URL from git remote output
         const match = text.match(/github\.com\/([^/]+)\/([^/\s]+)/);
         if (match && match[2]) {
-          console.log(LOG_PREFIX, 'Found GitHub URL in git remote span:', text.trim());
-          console.log(LOG_PREFIX, 'Extracted project name:', match[2]);
           return match[2];
         }
       }
 
-      console.log(LOG_PREFIX, 'No project name found from git remote spans');
       return null;
     }
 
@@ -902,19 +899,12 @@
     // Uses the GitHub link to determine current project
     function getMainBranchFromSettings() {
       const projectMainBranch = currentSettings.projectMainBranch || {};
-      console.log(LOG_PREFIX, 'projectMainBranch settings:', projectMainBranch);
-
-      // Get current project from GitHub link
       const currentProject = getCurrentProjectFromGitHubLink();
-      console.log(LOG_PREFIX, 'Current project:', currentProject);
 
       if (currentProject && projectMainBranch[currentProject]) {
-        console.log(LOG_PREFIX, 'Found main branch for project:', projectMainBranch[currentProject]);
         return projectMainBranch[currentProject];
       }
 
-      // Default to 'main' if no match found
-      console.log(LOG_PREFIX, 'Using default branch: main');
       return 'main';
     }
 
