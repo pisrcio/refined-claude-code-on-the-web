@@ -872,20 +872,39 @@
 
   // Add "Merge [main]" button next to View PR button
   function watchForMergeBranchButton() {
-    // Function to get main branch from settings
-    // Simply checks if any configured project name appears in the page text
-    function getMainBranchFromSettings() {
-      const projectMainBranch = currentSettings.projectMainBranch || {};
-      const pageText = document.body.innerText || '';
+    // Function to get current project name from GitHub link
+    function getCurrentProjectFromGitHubLink() {
+      // Find spans containing GitHub URLs from git push output
+      // e.g., <span>remote:      https://github.com/pisrcio/refined-claude-code-on-the-web/pull/new/...</span>
+      const allSpans = document.querySelectorAll('span');
 
-      // Check each configured project name
-      for (const [projectName, branch] of Object.entries(projectMainBranch)) {
-        if (pageText.includes(projectName)) {
-          return branch;
+      for (const span of allSpans) {
+        const text = span.textContent || '';
+
+        // Only look for git remote output (starts with "remote:")
+        if (!text.includes('remote:')) continue;
+        if (!text.includes('github.com/')) continue;
+
+        // Extract GitHub URL from git remote output
+        const match = text.match(/github\.com\/([^/]+)\/([^/\s]+)/);
+        if (match && match[2]) {
+          return match[2];
         }
       }
 
-      // Default to 'main' if no match found
+      return null;
+    }
+
+    // Function to get main branch from settings
+    // Uses the GitHub link to determine current project
+    function getMainBranchFromSettings() {
+      const projectMainBranch = currentSettings.projectMainBranch || {};
+      const currentProject = getCurrentProjectFromGitHubLink();
+
+      if (currentProject && projectMainBranch[currentProject]) {
+        return projectMainBranch[currentProject];
+      }
+
       return 'main';
     }
 
@@ -913,24 +932,32 @@
         return;
       }
 
-      // Get main branch from settings (defaults to 'main')
-      const mainBranch = getMainBranchFromSettings();
-
       // Create the Merge Branch button with similar styling
       const mergeBranchBtn = document.createElement('button');
       mergeBranchBtn.type = 'button';
       mergeBranchBtn.className = 'group flex items-center gap-[6px] px-[10px] py-2 bg-bg-000 border-0.5 border-border-300 rounded-[6px] shadow-sm hover:bg-bg-100 transition-colors refined-merge-branch-btn';
       mergeBranchBtn.title = `Insert merge request into text field`;
 
-      // Match exact HTML structure with merge icon - branch name in italics
-      mergeBranchBtn.innerHTML = `
-        <span class="text-xs font-medium text-text-100 group-disabled:text-text-500">Merge <em style="font-style: italic;">${mainBranch}</em></span>
-        <div class="group-disabled:text-text-500" style="width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; color: #8b5cf6;">
-          <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg" class="group-disabled:text-text-500" aria-hidden="true" style="flex-shrink: 0; color: #8b5cf6;">
-            <path d="M108,64A36,36,0,1,0,60,97.94v60.12a36,36,0,1,0,24,0V97.94A36.07,36.07,0,0,0,108,64ZM72,52A12,12,0,1,1,60,64,12,12,0,0,1,72,52Zm0,152a12,12,0,1,1,12-12A12,12,0,0,1,72,204Zm140-45.94V110.63a27.81,27.81,0,0,0-8.2-19.8L173,60h19a12,12,0,0,0,0-24H144a12,12,0,0,0-12,12V96a12,12,0,0,0,24,0V77l30.83,30.83a4,4,0,0,1,1.17,2.83v47.43a36,36,0,1,0,24,0ZM200,204a12,12,0,1,1,12-12A12,12,0,0,1,200,204Z"></path>
-          </svg>
-        </div>
-      `;
+      // Function to update button label with current branch
+      function updateButtonLabel() {
+        const mainBranch = getMainBranchFromSettings();
+        mergeBranchBtn.innerHTML = `
+          <span class="text-xs font-medium text-text-100 group-disabled:text-text-500">Merge <em style="font-style: italic;">${mainBranch}</em></span>
+          <div class="group-disabled:text-text-500" style="width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; color: #8b5cf6;">
+            <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg" class="group-disabled:text-text-500" aria-hidden="true" style="flex-shrink: 0; color: #8b5cf6;">
+              <path d="M108,64A36,36,0,1,0,60,97.94v60.12a36,36,0,1,0,24,0V97.94A36.07,36.07,0,0,0,108,64ZM72,52A12,12,0,1,1,60,64,12,12,0,0,1,72,52Zm0,152a12,12,0,1,1,12-12A12,12,0,0,1,72,204Zm140-45.94V110.63a27.81,27.81,0,0,0-8.2-19.8L173,60h19a12,12,0,0,0,0-24H144a12,12,0,0,0-12,12V96a12,12,0,0,0,24,0V77l30.83,30.83a4,4,0,0,1,1.17,2.83v47.43a36,36,0,1,0,24,0ZM200,204a12,12,0,1,1,12-12A12,12,0,0,1,200,204Z"></path>
+            </svg>
+          </div>
+        `;
+      }
+
+      // Set initial label
+      updateButtonLabel();
+
+      // Update label after delays to catch when GitHub link appears
+      setTimeout(updateButtonLabel, 500);
+      setTimeout(updateButtonLabel, 1000);
+      setTimeout(updateButtonLabel, 2000);
 
       mergeBranchBtn.addEventListener('click', (event) => {
         event.preventDefault();
