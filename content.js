@@ -1122,7 +1122,7 @@
     // Apply styles for floating button at bottom right
     scrollToTopBtn.style.cssText = `
       position: fixed !important;
-      bottom: 24px !important;
+      bottom: 170px !important;
       right: 24px !important;
       width: 44px !important;
       height: 44px !important;
