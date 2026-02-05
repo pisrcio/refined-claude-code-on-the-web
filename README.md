@@ -100,6 +100,18 @@ Mark sessions as "blocked" to track sessions that are stuck, need attention, or 
 
 Blocked status persists across browser sessions via Chrome storage.
 
+### Scroll to Top Button
+
+A floating button in the bottom-right corner that scrolls to your last user message in the conversation.
+
+![Scroll to Top Button](screenshots/scroll-to-top.png)
+
+**How it works:**
+
+- Appears as a subtle arrow button in the bottom-right corner
+- Click to instantly scroll to your most recent message
+- Useful for long conversations where you need to review your last prompt
+
 ### Refined Label
 
 Shows a "Refined" badge in the header indicating the extension is active. Click to toggle all features on/off.
