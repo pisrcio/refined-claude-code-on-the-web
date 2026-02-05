@@ -19,7 +19,8 @@
     mergeBranch: true,
     projectColors: true,
     projectColorMap: {}, // { "project-name": "#hexcolor" }
-    projectMainBranch: {} // { "project-name": "main" }
+    projectMainBranch: {}, // { "project-name": "main" }
+    scrollToTopButton: true
   };
 
   let currentSettings = { ...DEFAULT_SETTINGS };
@@ -103,6 +104,9 @@
 
     // Apply project colors
     applyProjectColors();
+
+    // Toggle scroll-to-top button
+    initScrollToTopButton();
   }
 
   // Update Refined label appearance based on settings
@@ -1085,6 +1089,116 @@
     setTimeout(addMergeBranchButton, 2000);
 
     return observer;
+  }
+
+  // ============================================
+  // Scroll to Top Button Feature
+  // ============================================
+
+  let scrollToTopBtn = null;
+
+  /**
+   * Create the floating scroll-to-top button
+   */
+  function createScrollToTopButton() {
+    // Don't create if already exists
+    if (scrollToTopBtn && document.body.contains(scrollToTopBtn)) {
+      return scrollToTopBtn;
+    }
+
+    scrollToTopBtn = document.createElement('button');
+    scrollToTopBtn.className = 'bcc-scroll-to-top-btn';
+    scrollToTopBtn.type = 'button';
+    scrollToTopBtn.title = 'Scroll to last user message';
+    scrollToTopBtn.setAttribute('aria-label', 'Scroll to last user message');
+
+    // Arrow up icon (Phosphor ArrowUp style)
+    scrollToTopBtn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256">
+        <path d="M205.66,117.66a8,8,0,0,1-11.32,0L136,59.31V216a8,8,0,0,1-16,0V59.31L61.66,117.66a8,8,0,0,1-11.32-11.32l72-72a8,8,0,0,1,11.32,0l72,72A8,8,0,0,1,205.66,117.66Z"></path>
+      </svg>
+    `;
+
+    // Apply styles for floating button at bottom right
+    scrollToTopBtn.style.cssText = `
+      position: fixed !important;
+      bottom: 24px !important;
+      right: 24px !important;
+      width: 44px !important;
+      height: 44px !important;
+      border-radius: 50% !important;
+      background-color: #3b82f6 !important;
+      color: white !important;
+      border: none !important;
+      cursor: pointer !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+      z-index: 99998 !important;
+      transition: all 0.2s ease !important;
+      opacity: 0.9 !important;
+    `;
+
+    // Add hover effect
+    scrollToTopBtn.addEventListener('mouseenter', () => {
+      scrollToTopBtn.style.opacity = '1';
+      scrollToTopBtn.style.transform = 'scale(1.1)';
+      scrollToTopBtn.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.2)';
+    });
+
+    scrollToTopBtn.addEventListener('mouseleave', () => {
+      scrollToTopBtn.style.opacity = '0.9';
+      scrollToTopBtn.style.transform = 'scale(1)';
+      scrollToTopBtn.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+    });
+
+    // Click handler - scroll to last user message
+    scrollToTopBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      scrollToLastUserMessage();
+    });
+
+    document.body.appendChild(scrollToTopBtn);
+    return scrollToTopBtn;
+  }
+
+  /**
+   * Scroll to the last user message (div with bg-bg-200 class)
+   */
+  function scrollToLastUserMessage() {
+    // Find all user message divs
+    const userMessages = document.querySelectorAll('div.bg-bg-200');
+
+    if (userMessages.length === 0) {
+      return;
+    }
+
+    // Get the last user message
+    const lastUserMessage = userMessages[userMessages.length - 1];
+
+    // Scroll to it smoothly
+    lastUserMessage.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
+
+  /**
+   * Initialize scroll-to-top button feature
+   */
+  function initScrollToTopButton() {
+    if (!isFeatureEnabled('scrollToTopButton')) {
+      // Remove button if it exists but feature is disabled
+      if (scrollToTopBtn && document.body.contains(scrollToTopBtn)) {
+        scrollToTopBtn.remove();
+        scrollToTopBtn = null;
+      }
+      return;
+    }
+
+    createScrollToTopButton();
   }
 
   // ============================================
@@ -2171,6 +2285,8 @@
         addRefinedLabel(); // Always add the label (it's the toggle)
         // Apply project colors
         applyProjectColors();
+        // Initialize scroll-to-top button
+        initScrollToTopButton();
       } catch (e) {
         console.error(LOG_PREFIX, 'Error injecting UI:', e);
       }
