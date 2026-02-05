@@ -874,28 +874,24 @@
   function watchForMergeBranchButton() {
     // Function to get current project name from GitHub link
     function getCurrentProjectFromGitHubLink() {
-      // Find GitHub link: <a href="https://github.com/owner/repo-name" ...>
-      const allLinks = document.querySelectorAll('a');
-      console.log(LOG_PREFIX, 'Total links on page:', allLinks.length);
+      // Find spans containing GitHub URLs (from git push output)
+      // e.g., <span>remote:      https://github.com/pisrcio/refined-claude-code-on-the-web/pull/new/...</span>
+      const allSpans = document.querySelectorAll('span');
 
-      for (const link of allLinks) {
-        const href = link.getAttribute('href');
-        if (!href) continue;
+      for (const span of allSpans) {
+        const text = span.textContent || '';
+        if (!text.includes('github.com/')) continue;
 
-        // Check if it's a GitHub repo link
-        if (href.includes('github.com/')) {
-          console.log(LOG_PREFIX, 'Found GitHub link:', href);
-          // Parse the URL to get the repo name (last part of path)
-          // e.g., https://github.com/pisrcio/refined-claude-code-on-the-web -> refined-claude-code-on-the-web
-          const match = href.match(/github\.com\/([^/]+)\/([^/]+)/);
-          if (match && match[2]) {
-            console.log(LOG_PREFIX, 'Extracted project name:', match[2]);
-            return match[2];
-          }
+        // Extract GitHub URL from text
+        const match = text.match(/github\.com\/([^/]+)\/([^/\s]+)/);
+        if (match && match[2]) {
+          console.log(LOG_PREFIX, 'Found GitHub URL in span:', text.trim());
+          console.log(LOG_PREFIX, 'Extracted project name:', match[2]);
+          return match[2];
         }
       }
 
-      console.log(LOG_PREFIX, 'No project name found from GitHub links');
+      console.log(LOG_PREFIX, 'No project name found from spans');
       return null;
     }
 
