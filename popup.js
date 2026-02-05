@@ -9,7 +9,8 @@ const DEFAULT_SETTINGS = {
   mergeBranch: true,
   projectColors: true,
   projectColorMap: {}, // { "project-name": "#hexcolor" }
-  projectMainBranch: {} // { "project-name": "main" }
+  projectMainBranch: {}, // { "project-name": "main" }
+  scrollToTopButton: true
 };
 
 // Predefined color palette for project colors
