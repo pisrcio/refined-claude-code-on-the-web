@@ -875,18 +875,23 @@
     // Function to get current project name from GitHub link
     function getCurrentProjectFromGitHubLink() {
       // Find GitHub link: <a href="https://github.com/owner/repo-name" ...>
-      const githubLinks = document.querySelectorAll('a[href^="https://github.com/"]');
-      console.log(LOG_PREFIX, 'Found GitHub links:', githubLinks.length);
+      const allLinks = document.querySelectorAll('a');
+      console.log(LOG_PREFIX, 'Total links on page:', allLinks.length);
 
-      for (const link of githubLinks) {
+      for (const link of allLinks) {
         const href = link.getAttribute('href');
-        console.log(LOG_PREFIX, 'Checking GitHub link:', href);
-        // Parse the URL to get the repo name (last part of path)
-        // e.g., https://github.com/pisrcio/refined-claude-code-on-the-web -> refined-claude-code-on-the-web
-        const match = href.match(/github\.com\/[^/]+\/([^/]+)/);
-        if (match && match[1]) {
-          console.log(LOG_PREFIX, 'Extracted project name:', match[1]);
-          return match[1];
+        if (!href) continue;
+
+        // Check if it's a GitHub repo link
+        if (href.includes('github.com/')) {
+          console.log(LOG_PREFIX, 'Found GitHub link:', href);
+          // Parse the URL to get the repo name (last part of path)
+          // e.g., https://github.com/pisrcio/refined-claude-code-on-the-web -> refined-claude-code-on-the-web
+          const match = href.match(/github\.com\/([^/]+)\/([^/]+)/);
+          if (match && match[2]) {
+            console.log(LOG_PREFIX, 'Extracted project name:', match[2]);
+            return match[2];
+          }
         }
       }
 
