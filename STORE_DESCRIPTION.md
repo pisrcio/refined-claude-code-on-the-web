@@ -13,6 +13,7 @@ Refined Claude Code on the Web enhances the Claude.ai code interface with produc
 • Merge Branch Button - Quick merge commands for conflict resolution
 • Project Colors - Color-code projects in the sidebar for easy identification
 • Blocked Sessions - Mark sessions that need attention
+• Scroll to Top Button - Quick navigation to your last message
 • Refined Label - Visual indicator that the extension is active
 
 **PRIVACY:**
