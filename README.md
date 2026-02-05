@@ -8,6 +8,12 @@
   A Chrome extension to enhance the Claude web experience with improved code editing capabilities.
 </p>
 
+<p align="center">
+  <a href="https://chromewebstore.google.com/detail/refined-claude-code-on-th/nhgmponehdhapapoccogfbccpaaepjgf">
+    <img src="https://img.shields.io/badge/Add_to_Chrome-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Add to Chrome">
+  </a>
+</p>
+
 > **Naming Inspiration**: The name "Refined Claude Code on the Web" is inspired by the excellent [Refined GitHub](https://github.com/refined-github/refined-github) Chrome extension, which enhances the GitHub experience with thoughtful UI improvements.
 
 > **Recommended Workflow**: This extension is built around [this workflow](https://www.youtube.com/watch?v=3bej6c3O8d0), which inspired most of the "refined" features here.
