@@ -874,24 +874,27 @@
   function watchForMergeBranchButton() {
     // Function to get current project name from GitHub link
     function getCurrentProjectFromGitHubLink() {
-      // Find spans containing GitHub URLs (from git push output)
+      // Find spans containing GitHub URLs from git push output
       // e.g., <span>remote:      https://github.com/pisrcio/refined-claude-code-on-the-web/pull/new/...</span>
       const allSpans = document.querySelectorAll('span');
 
       for (const span of allSpans) {
         const text = span.textContent || '';
+
+        // Only look for git remote output (starts with "remote:")
+        if (!text.includes('remote:')) continue;
         if (!text.includes('github.com/')) continue;
 
-        // Extract GitHub URL from text
+        // Extract GitHub URL from git remote output
         const match = text.match(/github\.com\/([^/]+)\/([^/\s]+)/);
         if (match && match[2]) {
-          console.log(LOG_PREFIX, 'Found GitHub URL in span:', text.trim());
+          console.log(LOG_PREFIX, 'Found GitHub URL in git remote span:', text.trim());
           console.log(LOG_PREFIX, 'Extracted project name:', match[2]);
           return match[2];
         }
       }
 
-      console.log(LOG_PREFIX, 'No project name found from spans');
+      console.log(LOG_PREFIX, 'No project name found from git remote spans');
       return null;
     }
 
