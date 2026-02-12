@@ -602,12 +602,11 @@
         const branch = getMainBranchFromSettings();
         const mergeMessage = `Merge the "${branch}" branch in and fix merge conflicts.`;
 
-        // Find the main chat text field
-        // Look for the textarea with id="turn-textarea" or placeholder="Reply..."
-        const textField = document.querySelector('textarea#turn-textarea') ||
-                          document.querySelector('textarea[placeholder="Reply..."]') ||
-                          document.querySelector('form textarea') ||
-                          document.querySelector('div[contenteditable="true"]');
+        // Find the turn-form's TipTap/ProseMirror editor
+        const textField = document.querySelector('#turn-form div[contenteditable="true"]') ||
+                          document.querySelector('section[aria-labelledby="turn-form"] div[contenteditable="true"]') ||
+                          document.querySelector('#turn-form textarea') ||
+                          document.querySelector('form textarea');
 
         if (textField) {
           if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
