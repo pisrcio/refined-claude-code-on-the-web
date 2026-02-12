@@ -1,5 +1,5 @@
 // Refined Claude Code on the Web - Content Script
-// Features: Mode Button, Refined Label, Pull Branch in CLI
+// Features: Refined Label, Pull Branch in CLI
 
 (function() {
   'use strict';
@@ -12,8 +12,6 @@
 
   const DEFAULT_SETTINGS = {
     allEnabled: true,
-    modeButton: true,
-    defaultMode: 'last', // 'agent', 'plan', or 'last'
     refinedLabel: true,
     pullBranch: true,
     mergeBranch: true,
@@ -84,12 +82,6 @@
     // Update Refined label appearance
     updateRefinedLabelState();
 
-    // Toggle mode button
-    const modeContainer = document.querySelector('.bcc-mode-container');
-    if (modeContainer) {
-      modeContainer.style.display = isFeatureEnabled('modeButton') ? 'inline-flex' : 'none';
-    }
-
     // Toggle pull branch button
     const pullBranchBtn = document.querySelector('.refined-pull-branch-btn');
     if (pullBranchBtn) {
@@ -155,367 +147,6 @@
     }
   }
 
-  // ============================================
-  // Mode Button Feature
-  // ============================================
-
-  let modeButton = null;
-  let dropdown = null;
-  const MODE_STORAGE_KEY = 'bcc-mode-preference';
-  let currentMode = 'Agent'; // Will be set properly in init() based on settings
-
-  // Determine initial mode based on settings
-  function getInitialMode() {
-    const defaultModeSetting = currentSettings.defaultMode || 'last';
-
-    switch (defaultModeSetting) {
-      case 'agent':
-        return 'Agent';
-      case 'plan':
-        return 'Plan';
-      case 'last':
-      default:
-        return localStorage.getItem(MODE_STORAGE_KEY) || 'Agent';
-    }
-  }
-
-  function createModeButton() {
-    // Always get fresh initial mode based on current settings
-    currentMode = getInitialMode();
-
-    // Create container
-    const container = document.createElement('div');
-    container.className = 'bcc-mode-container';
-    // Apply inline styles to override page CSS
-    container.style.cssText = 'position: relative !important; display: inline-flex !important; flex-direction: row !important; align-items: center !important; margin-right: 8px !important; z-index: 1000 !important;';
-
-    // Create button
-    modeButton = document.createElement('button');
-    modeButton.className = 'bcc-mode-button';
-    modeButton.type = 'button'; // Prevent form submission
-    // Apply inline styles to override page CSS
-    modeButton.style.cssText = 'display: inline-flex !important; flex-direction: row !important; align-items: center !important; gap: 6px !important; padding: 6px 10px !important; background: transparent !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; border-radius: 8px !important; cursor: pointer !important; font-size: 13px !important; white-space: nowrap !important;';
-    modeButton.innerHTML = `
-      <span class="bcc-mode-label" style="display: inline !important; font-weight: 500 !important;">${currentMode}</span>
-      <svg class="bcc-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block !important; opacity: 0.6 !important;">
-        <path d="m6 9 6 6 6-6"></path>
-      </svg>
-    `;
-    modeButton.addEventListener('click', (e) => {
-      toggleDropdown(e);
-    });
-
-    // Create dropdown - append to body to avoid overflow clipping
-    dropdown = document.createElement('div');
-    dropdown.id = 'bcc-dropdown-' + Date.now(); // Unique ID for CSS targeting
-    dropdown.className = 'bcc-mode-dropdown';
-
-    // Inject stylesheet with high specificity rules
-    if (!document.getElementById('bcc-dropdown-styles')) {
-      const styleEl = document.createElement('style');
-      styleEl.id = 'bcc-dropdown-styles';
-      styleEl.textContent = `
-        .bcc-mode-dropdown[id^="bcc-dropdown-"] {
-          position: fixed !important;
-          display: block !important;
-          min-width: 120px !important;
-          min-height: 40px !important;
-          padding: 4px 0 !important;
-          background: #ffffff !important;
-          border: 1px solid rgba(0, 0, 0, 0.1) !important;
-          border-radius: 8px !important;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-          z-index: 999999 !important;
-          overflow: visible !important;
-        }
-        .bcc-mode-dropdown[id^="bcc-dropdown-"].bcc-dropdown-hidden {
-          display: block !important;
-          opacity: 0 !important;
-          visibility: hidden !important;
-          pointer-events: none !important;
-        }
-        .bcc-mode-dropdown[id^="bcc-dropdown-"].bcc-dropdown-visible {
-          display: block !important;
-          opacity: 1 !important;
-          visibility: visible !important;
-          pointer-events: auto !important;
-        }
-        .bcc-mode-dropdown[id^="bcc-dropdown-"] .bcc-mode-option {
-          display: flex !important;
-          flex-direction: row !important;
-          align-items: center !important;
-          gap: 8px !important;
-          padding: 10px 12px !important;
-          margin: 0 !important;
-          cursor: pointer !important;
-          font-size: 13px !important;
-          background: #ffffff !important;
-          color: #000000 !important;
-          min-height: 36px !important;
-          box-sizing: border-box !important;
-        }
-        .bcc-mode-dropdown[id^="bcc-dropdown-"] .bcc-mode-option:hover {
-          background: #f3f4f6 !important;
-        }
-        .bcc-mode-dropdown[id^="bcc-dropdown-"] .bcc-check {
-          display: inline-block !important;
-          width: 16px !important;
-          color: #10a37f !important;
-          font-weight: bold !important;
-        }
-        .bcc-mode-dropdown[id^="bcc-dropdown-"] span {
-          display: inline !important;
-          color: #000000 !important;
-        }
-      `;
-      document.head.appendChild(styleEl);
-    }
-
-    dropdown.classList.add('bcc-dropdown-hidden');
-    dropdown.innerHTML = `
-      <div class="bcc-mode-option" data-mode="Agent">
-        <span class="bcc-check">${currentMode === 'Agent' ? '&#10003;' : ''}</span>
-        <span>Agent</span>
-      </div>
-      <div class="bcc-mode-option" data-mode="Plan">
-        <span class="bcc-check">${currentMode === 'Plan' ? '&#10003;' : ''}</span>
-        <span>Plan</span>
-      </div>
-    `;
-
-    // Add hover effect for dropdown options
-    dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
-      option.addEventListener('mouseenter', () => {
-        option.style.backgroundColor = '#f3f4f6';
-      });
-      option.addEventListener('mouseleave', () => {
-        option.style.backgroundColor = '#ffffff';
-      });
-      option.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        selectMode(option.dataset.mode);
-      });
-    });
-
-    container.appendChild(modeButton);
-    // Append dropdown to body to avoid overflow issues
-    document.body.appendChild(dropdown);
-
-    return container;
-  }
-
-  function toggleDropdown(e) {
-    e.stopPropagation();
-    e.preventDefault();
-
-    if (!dropdown) {
-      console.error(LOG_PREFIX, 'ERROR: dropdown is null or undefined!');
-      return;
-    }
-
-    // Check visibility using class instead of inline style
-    const isVisible = dropdown.classList.contains('bcc-dropdown-visible');
-
-    if (isVisible) {
-      closeDropdown();
-    } else {
-      // Position dropdown below the button
-      const buttonRect = modeButton.getBoundingClientRect();
-      const finalTop = buttonRect.bottom + 4;
-      const finalLeft = buttonRect.left;
-
-      dropdown.style.top = finalTop + 'px';
-      dropdown.style.left = finalLeft + 'px';
-
-      // Toggle classes for visibility (CSS handles opacity/visibility with !important)
-      dropdown.classList.remove('bcc-dropdown-hidden');
-      dropdown.classList.add('bcc-dropdown-visible');
-
-      // Close on outside click
-      setTimeout(() => {
-        document.addEventListener('click', closeDropdown, { once: true });
-      }, 0);
-    }
-  }
-
-  function closeDropdown(e) {
-    if (!dropdown) {
-      return;
-    }
-    // Use class toggling for visibility (CSS handles the styles with !important)
-    dropdown.classList.remove('bcc-dropdown-visible');
-    dropdown.classList.add('bcc-dropdown-hidden');
-  }
-
-  function selectMode(mode) {
-    currentMode = mode;
-    localStorage.setItem(MODE_STORAGE_KEY, mode);
-    modeButton.querySelector('.bcc-mode-label').textContent = mode;
-
-    // Update checkmarks
-    dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
-      const check = option.querySelector('.bcc-check');
-      check.textContent = option.dataset.mode === mode ? '✓' : '';
-    });
-
-    closeDropdown();
-  }
-
-  // Reset mode to default when navigating to a new session
-  function resetModeToDefault() {
-    const newMode = getInitialMode();
-    currentMode = newMode;
-
-    // Update button if it exists
-    if (modeButton) {
-      const label = modeButton.querySelector('.bcc-mode-label');
-      if (label) {
-        label.textContent = newMode;
-      }
-      // Update checkmarks in dropdown
-      if (dropdown) {
-        dropdown.querySelectorAll('.bcc-mode-option').forEach(option => {
-          const check = option.querySelector('.bcc-check');
-          check.textContent = option.dataset.mode === newMode ? '✓' : '';
-        });
-      }
-    }
-  }
-
-  const PLAN_INSTRUCTION = 'DO NOT write any code yet. I just need the plan for me to review.';
-  const PLAN_PREFIX = 'use @agent-plan : ';
-  const PLAN_FULL_PREFIX = PLAN_INSTRUCTION + '\n\n' + PLAN_PREFIX;
-
-  // Prepend plan mode text to the input field (called just before submit)
-  function prependPlanModeText() {
-    const textField = document.querySelector('div[contenteditable="true"]') ||
-                      document.querySelector('textarea') ||
-                      document.querySelector('[data-placeholder]');
-
-    if (!textField) return false;
-
-    if (textField.tagName === 'TEXTAREA' || textField.tagName === 'INPUT') {
-      const currentValue = textField.value;
-      if (currentValue.trim() && !currentValue.startsWith(PLAN_INSTRUCTION)) {
-        textField.value = PLAN_FULL_PREFIX + currentValue;
-        textField.dispatchEvent(new Event('input', { bubbles: true }));
-        return true;
-      }
-    } else {
-      const currentText = textField.innerText || textField.textContent || '';
-      if (currentText.trim() && !currentText.startsWith(PLAN_INSTRUCTION)) {
-        textField.innerText = PLAN_FULL_PREFIX + currentText;
-        textField.dispatchEvent(new Event('input', { bubbles: true }));
-        return true;
-      }
-    }
-    return false;
-  }
-
-  // Setup submit handler to intercept form submission in Plan mode
-  let submitHandlerSetup = false;
-  function setupPlanModeSubmitHandler() {
-    if (submitHandlerSetup) return;
-
-    // Intercept Enter key press on text field
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey && currentMode === 'Plan') {
-        const textField = document.querySelector('div[contenteditable="true"]') ||
-                          document.querySelector('textarea');
-        if (textField && (e.target === textField || textField.contains(e.target))) {
-          prependPlanModeText();
-        }
-      }
-    }, true); // Use capture phase to run before other handlers
-
-    // Intercept send button clicks
-    document.addEventListener('click', (e) => {
-      if (currentMode !== 'Plan') return;
-
-      // Check if clicked element is or is inside a send button
-      const button = e.target.closest('button');
-      if (button) {
-        // Skip our own extension buttons (e.g., mode button)
-        if (button.classList.contains('bcc-mode-button')) return;
-
-        // Look for send button by aria-label or by being inside a form
-        const ariaLabel = button.getAttribute('aria-label') || '';
-        const isInForm = button.closest('form');
-        const isSendButton = ariaLabel.toLowerCase().includes('send') ||
-                            ariaLabel.toLowerCase().includes('submit') ||
-                            (isInForm && button.type === 'submit') ||
-                            (isInForm && button.querySelector('svg') && !button.querySelector('[aria-label]'));
-
-        // Also check for the specific send button (usually has an arrow icon and is in form)
-        const formButtons = document.querySelectorAll('form button');
-        const isLastFormButton = Array.from(formButtons).pop() === button;
-
-        if (isSendButton || isLastFormButton) {
-          prependPlanModeText();
-        }
-      }
-    }, true); // Use capture phase
-
-    submitHandlerSetup = true;
-  }
-
-  function findAndInjectModeButton() {
-    const possibleContainers = [
-      'form button[aria-label*="ttach"]',
-      'form button[aria-label*="mage"]',
-      'form button[aria-label*="ile"]',
-      '[data-testid*="attach"]',
-      '[data-testid*="upload"]',
-      'form > div button',
-      '.flex button svg',
-    ];
-
-    let targetButton = null;
-    for (const selector of possibleContainers) {
-      targetButton = document.querySelector(selector);
-      if (targetButton) break;
-    }
-
-    let insertionPoint = null;
-
-    if (targetButton) {
-      insertionPoint = targetButton.closest('div');
-    } else {
-      const form = document.querySelector('form');
-      if (form) {
-        const buttonContainers = form.querySelectorAll('button');
-        if (buttonContainers.length > 0) {
-          insertionPoint = buttonContainers[0].parentElement;
-        }
-      }
-    }
-
-    if (document.querySelector('.bcc-mode-container')) {
-      return;
-    }
-
-    let injected = false;
-    if (insertionPoint) {
-      const modeContainer = createModeButton();
-      insertionPoint.insertBefore(modeContainer, insertionPoint.firstChild);
-      injected = true;
-    } else {
-      const form = document.querySelector('form') || document.querySelector('[contenteditable="true"]')?.closest('div');
-      if (form && !document.querySelector('.bcc-mode-container')) {
-        const modeContainer = createModeButton();
-        modeContainer.classList.add('bcc-floating');
-        form.style.position = 'relative';
-        form.insertBefore(modeContainer, form.firstChild);
-        injected = true;
-      }
-    }
-
-    // Setup submit handler to prepend plan mode text on form submission
-    if (injected) {
-      setupPlanModeSubmitHandler();
-    }
-  }
 
   // ============================================
   // Refined Label Feature
@@ -2273,15 +1904,9 @@
       // Use defaults
     }
 
-    // Initialize mode based on settings
-    currentMode = getInitialMode();
-
     // Function to inject UI elements
     function injectUI() {
       try {
-        if (isFeatureEnabled('modeButton')) {
-          setTimeout(findAndInjectModeButton, 1000);
-        }
         addRefinedLabel(); // Always add the label (it's the toggle)
         // Apply project colors
         applyProjectColors();
@@ -2313,10 +1938,6 @@
 
     // Watch for DOM changes (SPA navigation)
     const observer = new MutationObserver((mutations) => {
-      // Re-inject mode button if missing and enabled
-      if (isFeatureEnabled('modeButton') && !document.querySelector('.bcc-mode-container')) {
-        findAndInjectModeButton();
-      }
       // Re-add refined label if missing (always, since it's the toggle control)
       debouncedAddRefinedLabel();
 
@@ -2329,29 +1950,6 @@
       subtree: true
     });
 
-    // Watch for URL changes (SPA navigation to new sessions)
-    let lastUrl = window.location.href;
-    const urlObserver = new MutationObserver(() => {
-      if (window.location.href !== lastUrl) {
-        const oldUrl = lastUrl;
-        lastUrl = window.location.href;
-
-        // Check if navigating to a new/different session
-        const oldSessionMatch = oldUrl.match(/\/code\/session_([^/]+)/);
-        const newSessionMatch = lastUrl.match(/\/code\/session_([^/]+)/);
-
-        // Reset mode if: going to a different session, or going to /code (new session)
-        if (lastUrl.includes('/code')) {
-          const oldSessionId = oldSessionMatch ? oldSessionMatch[1] : null;
-          const newSessionId = newSessionMatch ? newSessionMatch[1] : null;
-
-          if (oldSessionId !== newSessionId) {
-            resetModeToDefault();
-          }
-        }
-      }
-    });
-    urlObserver.observe(document.body, { childList: true, subtree: true });
   }
 
   init().catch(e => {
