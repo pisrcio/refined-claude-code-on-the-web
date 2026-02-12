@@ -25,7 +25,7 @@ This project is not affiliated with, endorsed by, or associated with Anthropic. 
 ## The Refined Workflow
 
 1. **Plan** - Use Plan mode to design your approach
-2. **Execute** - Switch to Agent mode and let Claude implement the changes
+2. **Execute** - Let Claude implement the changes
 3. **Pull** - Click the "Pull Branch" button to get the code locally
 4. **Test** - Run your tests locally
 5. **Teleport** - If needed, click "Open in CLI" to continue in your local environment
@@ -36,32 +36,6 @@ This project is not affiliated with, endorsed by, or associated with Anthropic. 
 10. **Merge PR** - Complete the pull request
 
 ## Features
-
-### Mode Button (Agent/Plan Toggle)
-
-Switch between Agent and Plan modes directly from the input area. Plan mode uses the `@agent-plan` prefix to enable planning-only responses.
-
-![Mode Button](screenshots/mode-button.png)
-
-**How it works:**
-When you submit a prompt in **Plan mode**, the extension automatically prepends this text to your message:
-
-```
-DO NOT write any code yet. I just need the plan for me to review.
-
-use @agent-plan : [your prompt here]
-```
-
-**Default Mode Setting:**
-Configure which mode new sessions start with via the extension popup:
-
-![Default Mode Setting](screenshots/default-mode-setting.png)
-
-- **Last used** - Start with whichever mode you used last (default)
-- **Always Agent** - New sessions always start in Agent mode
-- **Always Plan** - New sessions always start in Plan mode
-
-**Credits**: Thanks to [@bchan7](https://reddit.com/u/bchan7) and @batout for sharing the [plan mode discovery](https://www.reddit.com/r/ClaudeCode/comments/1p0hypc/changing_to_plan_mode_in_claude_code_on_the_web/).
 
 ### Pull Branch Button
 
@@ -134,7 +108,6 @@ Click the extension icon in your Chrome toolbar to access all settings.
 
 - Master toggle to enable/disable all features at once
 - Individual feature toggles for fine-grained control
-- Default mode selection for new sessions
 - Project settings configuration (colors and main branch)
 
 ## Installation

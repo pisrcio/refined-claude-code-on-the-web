@@ -8,7 +8,6 @@ Enhance the Claude web experience with improved code editing capabilities
 Refined Claude Code on the Web enhances the Claude.ai code interface with productivity features:
 
 **FEATURES:**
-• Mode Button - Switch between Agent and Plan modes with one click
 • Pull Branch Button - Copy git commands to pull Claude's branches locally
 • Merge Branch Button - Quick merge commands for conflict resolution
 • Project Colors - Color-code projects in the sidebar for easy identification
@@ -39,4 +38,4 @@ English
 https://raw.githubusercontent.com/pisrcio/refined-claude-code-on-the-web/main/PRIVACY_POLICY.md
 
 ## Single Purpose Description
-Enhances the Claude.ai code interface with productivity features like mode switching, git command buttons, and visual organization tools.
+Enhances the Claude.ai code interface with productivity features like git command buttons, and visual organization tools.
