@@ -1,6 +1,6 @@
 # Release Notes
 
-## v0.12.0
+## v0.12.1
 
 ### Removed
 
