@@ -302,8 +302,21 @@
 
     // Function to extract branch name from the page
     function extractBranchName() {
-      // Look for elements that likely contain branch info (near GitHub icons, repo info, etc.)
-      // First, try to find elements with specific patterns
+      // Method 1: Look for the branch name button with "group/copy" class (new UI)
+      // Structure: button.group/copy > span.truncate (contains branch name)
+      const branchButtons = document.querySelectorAll('button[class*="group/copy"]');
+      for (const btn of branchButtons) {
+        const span = btn.querySelector('span.truncate');
+        if (span) {
+          const text = span.textContent.trim();
+          const branchMatch = text.match(/^(claude\/[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9])$/);
+          if (branchMatch && branchMatch[1].includes('-') && branchMatch[1].length > 10) {
+            return branchMatch[1];
+          }
+        }
+      }
+
+      // Method 2: Generic search through text elements
       const candidates = document.querySelectorAll('span, div, p, a');
 
       for (const el of candidates) {
