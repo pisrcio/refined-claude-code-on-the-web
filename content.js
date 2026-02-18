@@ -659,7 +659,7 @@
             sel.addRange(range);
             textField.dispatchEvent(new Event('input', { bubbles: true }));
           }
-          showMergeCopyFeedback('Merge message inserted');
+
         } else {
           console.error(LOG_PREFIX, 'Text field not found');
         }
@@ -693,45 +693,6 @@
                                flexContainer.lastElementChild;
         flexContainer.insertBefore(wrapper, insertBeforeEl);
       }
-    }
-
-    // Show visual feedback when copy succeeds
-    function showMergeCopyFeedback(message) {
-      const feedback = document.createElement('div');
-      feedback.textContent = message;
-      feedback.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #8b5cf6;
-        color: white;
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        z-index: 99999;
-        animation: fadeInOut 2s ease-in-out;
-        max-width: 400px;
-        word-break: break-all;
-      `;
-
-      // Add animation keyframes if not already present
-      if (!document.querySelector('#refined-claude-animations')) {
-        const style = document.createElement('style');
-        style.id = 'refined-claude-animations';
-        style.textContent = `
-          @keyframes fadeInOut {
-            0% { opacity: 0; transform: translateY(-10px); }
-            15% { opacity: 1; transform: translateY(0); }
-            85% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-10px); }
-          }
-        `;
-        document.head.appendChild(style);
-      }
-
-      document.body.appendChild(feedback);
-      setTimeout(() => feedback.remove(), 2000);
     }
 
     // Watch for DOM changes to detect when View PR button appears
