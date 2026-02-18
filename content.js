@@ -302,7 +302,7 @@
 
     // Function to extract branch name from the page
     function extractBranchName() {
-      // Method 1: Look for the branch name button with "group/copy" class (new UI)
+      // Look for the branch name button with "group/copy" class
       // Structure: button.group/copy > span.truncate (contains branch name)
       const branchButtons = document.querySelectorAll('button[class*="group/copy"]');
       for (const btn of branchButtons) {
@@ -312,39 +312,6 @@
           const branchMatch = text.match(/^(claude\/[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9])$/);
           if (branchMatch && branchMatch[1].includes('-') && branchMatch[1].length > 10) {
             return branchMatch[1];
-          }
-        }
-      }
-
-      // Method 2: Generic search through text elements
-      const candidates = document.querySelectorAll('span, div, p, a');
-
-      for (const el of candidates) {
-        // Skip elements with too much text (likely containers)
-        const text = el.textContent || '';
-        if (text.length > 100) continue;
-
-        // Look for branch name pattern: claude/something-with-dashes
-        // Must end at a word boundary (space, end of string, or non-alphanumeric)
-        const branchMatch = text.match(/\b(claude\/[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9])\b/);
-        if (branchMatch) {
-          // Verify it looks like a real branch (has at least one hyphen and reasonable length)
-          const branch = branchMatch[1];
-          if (branch.includes('-') && branch.length > 10 && branch.length < 80) {
-            return branch;
-          }
-        }
-      }
-
-      // Fallback: search page text more carefully
-      const pageText = document.body.textContent || '';
-      // Match branch pattern followed by whitespace or end
-      const matches = pageText.match(/claude\/[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9](?=\s|$|Context|Rename|Archive|Delete)/g);
-      if (matches && matches.length > 0) {
-        // Return the first valid-looking branch
-        for (const match of matches) {
-          if (match.includes('-') && match.length > 10) {
-            return match;
           }
         }
       }
