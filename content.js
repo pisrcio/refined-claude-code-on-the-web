@@ -719,8 +719,8 @@
     scrollToTopBtn = document.createElement('button');
     scrollToTopBtn.className = 'bcc-scroll-to-top-btn';
     scrollToTopBtn.type = 'button';
-    scrollToTopBtn.title = 'Scroll to last user message';
-    scrollToTopBtn.setAttribute('aria-label', 'Scroll to last user message');
+    scrollToTopBtn.title = 'Scroll to previous user message';
+    scrollToTopBtn.setAttribute('aria-label', 'Scroll to previous user message');
 
     // Arrow up icon (Phosphor ArrowUp style)
     scrollToTopBtn.innerHTML = `
@@ -763,7 +763,7 @@
       scrollToTopBtn.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
     });
 
-    // Click handler - scroll to last user message
+    // Click handler - scroll to previous user message
     scrollToTopBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -775,7 +775,9 @@
   }
 
   /**
-   * Scroll to the last user message (div with bg-bg-200 class)
+   * Scroll to the previous user message above the current viewport position.
+   * Each click moves one user message higher. If already at or above the first
+   * user message, scrolls to the very top of the page.
    */
   function scrollToLastUserMessage() {
     // Find all user message divs
@@ -785,14 +787,28 @@
       return;
     }
 
-    // Get the last user message
-    const lastUserMessage = userMessages[userMessages.length - 1];
+    // Find the topmost user message whose top edge is above the current viewport top
+    // (with a small threshold to avoid getting "stuck" on the current one)
+    const threshold = 10; // px
+    let targetMessage = null;
 
-    // Scroll to it smoothly
-    lastUserMessage.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
+    for (let i = userMessages.length - 1; i >= 0; i--) {
+      const rect = userMessages[i].getBoundingClientRect();
+      if (rect.top < -threshold) {
+        targetMessage = userMessages[i];
+        break;
+      }
+    }
+
+    if (targetMessage) {
+      targetMessage.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    } else {
+      // Already at or above the first user message — scroll to the very top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   /**
