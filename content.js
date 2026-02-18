@@ -487,6 +487,9 @@
 
   // Add "Merge [main]" button next to View PR button
   function watchForMergeBranchButton() {
+    // SVG path prefix for the left-pointing arrow between base branch and feature branch
+    const BRANCH_ARROW_PATH_START = 'M8.14648 4.64648';
+
     // Function to get current project name from GitHub link
     function getCurrentProjectFromGitHubLink() {
       // Find spans containing GitHub URLs from git push output
@@ -510,9 +513,58 @@
       return null;
     }
 
-    // Function to get main branch from settings
-    // Uses the GitHub link to determine current project
+    // Read the base branch name directly from the branch indicator UI.
+    // The Claude web UI renders: [base branch] ← [feature branch]
+    // The base branch is on the left side of a left-pointing arrow.
+    function getBaseBranchFromDOM() {
+      // Strategy 1: Find the left-pointing arrow SVG by its path, then
+      // navigate to the previous sibling which contains the base branch.
+      const allSvgs = document.querySelectorAll('svg');
+      for (const svg of allSvgs) {
+        const path = svg.querySelector('path');
+        const d = path?.getAttribute('d') || '';
+        if (d.startsWith(BRANCH_ARROW_PATH_START)) {
+          const arrowContainer = svg.closest('div');
+          if (!arrowContainer) continue;
+
+          const baseBranchWrapper = arrowContainer.previousElementSibling;
+          if (!baseBranchWrapper) continue;
+
+          const truncateSpan = baseBranchWrapper.querySelector('span.truncate');
+          if (truncateSpan) {
+            const branchName = truncateSpan.textContent.trim();
+            if (branchName) return branchName;
+          }
+        }
+      }
+
+      // Strategy 2: Find the container with --dropdown-max-height CSS variable,
+      // then get the first data-state span's truncated text.
+      const dropdownContainers = document.querySelectorAll('div[style*="--dropdown-max-height"]');
+      for (const div of dropdownContainers) {
+        const firstSpanDataState = div.querySelector('span[data-state]');
+        if (firstSpanDataState) {
+          const truncateSpan = firstSpanDataState.querySelector('span.truncate');
+          if (truncateSpan) {
+            const branchName = truncateSpan.textContent.trim();
+            if (branchName) return branchName;
+          }
+        }
+      }
+
+      return null;
+    }
+
+    // Resolve the base branch name using a tiered strategy:
+    //   1. Read directly from the branch indicator in the Claude web UI
+    //   2. Look up in user-configured projectMainBranch settings
+    //   3. Fall back to "main"
     function getMainBranchFromSettings() {
+      // Tier 1: Try to read base branch directly from the DOM
+      const domBranch = getBaseBranchFromDOM();
+      if (domBranch) return domBranch;
+
+      // Tier 2: Fall back to settings-based lookup
       const projectMainBranch = currentSettings.projectMainBranch || {};
       const currentProject = getCurrentProjectFromGitHubLink();
 
@@ -520,6 +572,7 @@
         return projectMainBranch[currentProject];
       }
 
+      // Tier 3: Final fallback
       return 'main';
     }
 
@@ -606,7 +659,7 @@
             sel.addRange(range);
             textField.dispatchEvent(new Event('input', { bubbles: true }));
           }
-          showMergeCopyFeedback('Merge message inserted');
+
         } else {
           console.error(LOG_PREFIX, 'Text field not found');
         }
@@ -640,45 +693,6 @@
                                flexContainer.lastElementChild;
         flexContainer.insertBefore(wrapper, insertBeforeEl);
       }
-    }
-
-    // Show visual feedback when copy succeeds
-    function showMergeCopyFeedback(message) {
-      const feedback = document.createElement('div');
-      feedback.textContent = message;
-      feedback.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #8b5cf6;
-        color: white;
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        z-index: 99999;
-        animation: fadeInOut 2s ease-in-out;
-        max-width: 400px;
-        word-break: break-all;
-      `;
-
-      // Add animation keyframes if not already present
-      if (!document.querySelector('#refined-claude-animations')) {
-        const style = document.createElement('style');
-        style.id = 'refined-claude-animations';
-        style.textContent = `
-          @keyframes fadeInOut {
-            0% { opacity: 0; transform: translateY(-10px); }
-            15% { opacity: 1; transform: translateY(0); }
-            85% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-10px); }
-          }
-        `;
-        document.head.appendChild(style);
-      }
-
-      document.body.appendChild(feedback);
-      setTimeout(() => feedback.remove(), 2000);
     }
 
     // Watch for DOM changes to detect when View PR button appears
