@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Refined Claude Code on the Web",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Enhance the Claude web experience with improved code editing capabilities",
   "permissions": ["storage"],
   "action": {
