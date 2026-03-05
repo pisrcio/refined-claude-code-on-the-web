@@ -92,6 +92,12 @@ A floating button in the bottom-right corner that scrolls to your last user mess
 - Click to instantly scroll to your most recent message
 - Useful for long conversations where you need to review your last prompt
 
+### Fullscreen Plan Panel
+
+Removes the max-width constraint on the plan review panel, allowing it to use the full available width on wider screens.
+
+![Fullscreen Plan Panel](screenshots/fullscreen-plan-panel.png)
+
 ### Refined Label
 
 Shows a "Refined" badge in the header indicating the extension is active. Click to toggle all features on/off.

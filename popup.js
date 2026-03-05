@@ -8,7 +8,8 @@ const DEFAULT_SETTINGS = {
   projectColors: true,
   projectColorMap: {}, // { "project-name": "#hexcolor" }
   projectMainBranch: {}, // { "project-name": "main" }
-  scrollToTopButton: true
+  scrollToTopButton: true,
+  fullscreenPlanPanel: true
 };
 
 // Predefined color palette for project colors
