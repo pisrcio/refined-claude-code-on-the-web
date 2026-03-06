@@ -18,7 +18,8 @@
     projectColors: true,
     projectColorMap: {}, // { "project-name": "#hexcolor" }
     projectMainBranch: {}, // { "project-name": "main" }
-    scrollToTopButton: true
+    scrollToTopButton: true,
+    fullscreenPlanPanel: true
   };
 
   let currentSettings = { ...DEFAULT_SETTINGS };
@@ -99,6 +100,9 @@
 
     // Toggle scroll-to-top button
     initScrollToTopButton();
+
+    // Apply fullscreen plan panel
+    applyFullscreenPlanPanel();
   }
 
   // Update Refined label appearance based on settings
@@ -1894,6 +1898,33 @@
   }
 
   // ============================================
+  // Fullscreen Plan Panel Feature
+  // ============================================
+
+  function applyFullscreenPlanPanel() {
+    const enabled = isFeatureEnabled('fullscreenPlanPanel');
+    // Target the plan panel container by its unique animation class
+    const panels = document.querySelectorAll('[class*="animate-[planRestore"]');
+    panels.forEach(panel => {
+      if (enabled) {
+        panel.classList.remove('max-w-3xl');
+      } else {
+        if (!panel.classList.contains('max-w-3xl')) {
+          panel.classList.add('max-w-3xl');
+        }
+      }
+    });
+  }
+
+  let planPanelDebounceTimer = null;
+  function debouncedApplyFullscreenPlanPanel() {
+    if (planPanelDebounceTimer) clearTimeout(planPanelDebounceTimer);
+    planPanelDebounceTimer = setTimeout(() => {
+      applyFullscreenPlanPanel();
+    }, 100);
+  }
+
+  // ============================================
   // Initialization
   // ============================================
 
@@ -1921,6 +1952,8 @@
         applyProjectColors();
         // Initialize scroll-to-top button
         initScrollToTopButton();
+        // Apply fullscreen plan panel
+        applyFullscreenPlanPanel();
       } catch (e) {
         console.error(LOG_PREFIX, 'Error injecting UI:', e);
       }
@@ -1952,6 +1985,9 @@
 
       // Re-apply project colors on DOM changes
       debouncedApplyProjectColors();
+
+      // Re-apply fullscreen plan panel on DOM changes
+      debouncedApplyFullscreenPlanPanel();
     });
 
     observer.observe(document.body, {
