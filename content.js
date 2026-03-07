@@ -2012,15 +2012,31 @@
 
       item.addEventListener('mouseenter', () => {
         const overflow = textSpan.scrollWidth - item.clientWidth;
+        const computedStyle = getComputedStyle(textSpan);
+        console.log('[ToC DEBUG] mouseenter', {
+          text: text.substring(0, 30),
+          scrollWidth: textSpan.scrollWidth,
+          clientWidth: item.clientWidth,
+          overflow,
+          currentTransform: computedStyle.transform,
+          currentTransition: computedStyle.transition,
+        });
         if (overflow > 0) {
           const speed = 30; // px per second
           const duration = overflow / speed;
           textSpan.style.transition = `transform ${duration}s linear`;
+          // Force reflow before setting transform so transition triggers
+          void textSpan.offsetWidth;
           textSpan.style.transform = `translateX(-${overflow}px)`;
+          console.log('[ToC DEBUG] set transform', { duration, overflow });
         }
       });
 
       item.addEventListener('mouseleave', () => {
+        console.log('[ToC DEBUG] mouseleave', {
+          text: text.substring(0, 30),
+          currentTransform: getComputedStyle(textSpan).transform,
+        });
         textSpan.style.transition = 'transform 0.2s ease-out';
         textSpan.style.transform = 'translateX(0)';
       });
