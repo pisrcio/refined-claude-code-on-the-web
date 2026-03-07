@@ -92,6 +92,20 @@ A floating button in the bottom-right corner that scrolls to your last user mess
 - Click to instantly scroll to your most recent message
 - Useful for long conversations where you need to review your last prompt
 
+### Fullscreen Conversation Mode
+
+Removes the `max-w-3xl` width constraint on the conversation area, allowing messages to use the full available width. Adds a Table of Contents (ToC) sidebar on the right side of the screen listing each user message in the conversation.
+
+![Fullscreen Conversation Mode](screenshots/fullscreen-conversation.png)
+
+**How it works:**
+
+- Removes the max-width constraint so conversation messages span the full width
+- A ToC sidebar appears on the right with an entry for each user message
+- Click any ToC entry to scroll directly to that message
+- Hover over the ToC to slowly auto-scroll through the list
+- The ToC scrolls back to the top when you move your mouse away
+
 ### Fullscreen Plan Panel
 
 Removes the max-width constraint on the plan review panel, allowing it to use the full available width on wider screens.

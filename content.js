@@ -19,7 +19,8 @@
     projectColorMap: {}, // { "project-name": "#hexcolor" }
     projectMainBranch: {}, // { "project-name": "main" }
     scrollToTopButton: true,
-    fullscreenPlanPanel: true
+    fullscreenPlanPanel: true,
+    fullscreenConversation: true
   };
 
   let currentSettings = { ...DEFAULT_SETTINGS };
@@ -1925,6 +1926,170 @@
   }
 
   // ============================================
+  // Fullscreen Conversation Mode Feature
+  // ============================================
+
+  let tocContainer = null;
+  let tocScrollInterval = null;
+  let tocScrollResetTimeout = null;
+
+  function applyFullscreenConversation() {
+    const enabled = isFeatureEnabled('fullscreenConversation');
+
+    // Target the conversation message containers with max-w-3xl
+    const containers = document.querySelectorAll('div.max-w-3xl.w-full');
+    containers.forEach(container => {
+      // Only target conversation area containers (have px-8 pt-4 or similar padding)
+      if (enabled) {
+        container.classList.remove('max-w-3xl');
+        if (!container.dataset.bccFullscreen) {
+          container.dataset.bccFullscreen = 'true';
+        }
+      } else {
+        if (container.dataset.bccFullscreen) {
+          container.classList.add('max-w-3xl');
+          delete container.dataset.bccFullscreen;
+        }
+      }
+    });
+
+    // Also handle containers that were already processed (re-check on DOM changes)
+    const processed = document.querySelectorAll('[data-bcc-fullscreen="true"]');
+    processed.forEach(container => {
+      if (!enabled) {
+        container.classList.add('max-w-3xl');
+        delete container.dataset.bccFullscreen;
+      } else {
+        container.classList.remove('max-w-3xl');
+      }
+    });
+
+    // Manage ToC sidebar
+    if (enabled) {
+      createOrUpdateToc();
+    } else {
+      removeToc();
+    }
+  }
+
+  function createOrUpdateToc() {
+    // Find user messages
+    const userMessages = document.querySelectorAll('div.bg-bg-200');
+    if (userMessages.length === 0) {
+      removeToc();
+      return;
+    }
+
+    // Create or get container
+    if (!tocContainer || !document.body.contains(tocContainer)) {
+      tocContainer = document.createElement('div');
+      tocContainer.className = 'bcc-toc-sidebar';
+      document.body.appendChild(tocContainer);
+    }
+
+    // Build ToC items
+    const fragment = document.createDocumentFragment();
+
+    userMessages.forEach((msg, index) => {
+      const item = document.createElement('div');
+      item.className = 'bcc-toc-item';
+
+      // Extract text content from the user message
+      let text = '';
+      // Look for the text content within the message
+      const textEls = msg.querySelectorAll('p, span, div');
+      for (const el of textEls) {
+        const t = el.textContent?.trim();
+        if (t && t.length > 5) {
+          text = t;
+          break;
+        }
+      }
+      if (!text) {
+        text = msg.textContent?.trim() || '';
+      }
+
+      // Truncate
+      const maxLen = 80;
+      if (text.length > maxLen) {
+        text = text.substring(0, maxLen) + '...';
+      }
+
+      item.textContent = text || `Message ${index + 1}`;
+      item.title = text || `Message ${index + 1}`;
+
+      // Click to scroll to that message
+      item.addEventListener('click', () => {
+        msg.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+
+      fragment.appendChild(item);
+    });
+
+    tocContainer.innerHTML = '';
+    tocContainer.appendChild(fragment);
+
+    // Set up hover auto-scroll behavior
+    setupTocAutoScroll();
+  }
+
+  function setupTocAutoScroll() {
+    if (!tocContainer) return;
+
+    // Remove old listeners by replacing the element (clean approach)
+    tocContainer.addEventListener('mouseenter', () => {
+      // Start slow auto-scroll downward
+      if (tocScrollResetTimeout) {
+        clearTimeout(tocScrollResetTimeout);
+        tocScrollResetTimeout = null;
+      }
+      if (tocScrollInterval) clearInterval(tocScrollInterval);
+      tocScrollInterval = setInterval(() => {
+        if (tocContainer) {
+          tocContainer.scrollTop += 1;
+        }
+      }, 30);
+    });
+
+    tocContainer.addEventListener('mouseleave', () => {
+      // Stop scrolling
+      if (tocScrollInterval) {
+        clearInterval(tocScrollInterval);
+        tocScrollInterval = null;
+      }
+      // Reset to top after a short delay
+      tocScrollResetTimeout = setTimeout(() => {
+        if (tocContainer) {
+          tocContainer.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 300);
+    });
+  }
+
+  function removeToc() {
+    if (tocScrollInterval) {
+      clearInterval(tocScrollInterval);
+      tocScrollInterval = null;
+    }
+    if (tocScrollResetTimeout) {
+      clearTimeout(tocScrollResetTimeout);
+      tocScrollResetTimeout = null;
+    }
+    if (tocContainer && document.body.contains(tocContainer)) {
+      tocContainer.remove();
+      tocContainer = null;
+    }
+  }
+
+  let fullscreenConversationDebounceTimer = null;
+  function debouncedApplyFullscreenConversation() {
+    if (fullscreenConversationDebounceTimer) clearTimeout(fullscreenConversationDebounceTimer);
+    fullscreenConversationDebounceTimer = setTimeout(() => {
+      applyFullscreenConversation();
+    }, 200);
+  }
+
+  // ============================================
   // Initialization
   // ============================================
 
@@ -1954,6 +2119,8 @@
         initScrollToTopButton();
         // Apply fullscreen plan panel
         applyFullscreenPlanPanel();
+        // Apply fullscreen conversation mode
+        applyFullscreenConversation();
       } catch (e) {
         console.error(LOG_PREFIX, 'Error injecting UI:', e);
       }
@@ -1988,6 +2155,9 @@
 
       // Re-apply fullscreen plan panel on DOM changes
       debouncedApplyFullscreenPlanPanel();
+
+      // Re-apply fullscreen conversation mode on DOM changes
+      debouncedApplyFullscreenConversation();
     });
 
     observer.observe(document.body, {
