@@ -1985,6 +1985,9 @@
   /**
    * Update the ToC sidebar with current user messages
    */
+  // Track previous ToC entries to avoid unnecessary rebuilds
+  let _tocPrevTexts = [];
+
   function updateTocSidebar() {
     if (!tocSidebarEl) return;
 
@@ -1993,14 +1996,28 @@
 
     const userMessages = getUserMessageElements();
     if (userMessages.length === 0) {
-      listEl.innerHTML = '';
+      if (_tocPrevTexts.length > 0) {
+        listEl.innerHTML = '';
+        _tocPrevTexts = [];
+      }
       return;
     }
+
+    // Extract texts and check if anything changed
+    const currentTexts = userMessages.map(msgEl => extractUserMessageText(msgEl));
+    if (
+      currentTexts.length === _tocPrevTexts.length &&
+      currentTexts.every((t, i) => t === _tocPrevTexts[i])
+    ) {
+      // Nothing changed — skip rebuild to preserve hover/animation state
+      return;
+    }
+    _tocPrevTexts = currentTexts;
 
     // Build new list
     listEl.innerHTML = '';
     userMessages.forEach((msgEl, idx) => {
-      const text = extractUserMessageText(msgEl);
+      const text = currentTexts[idx];
       const item = document.createElement('div');
       item.className = 'bcc-toc-item';
 
@@ -2012,15 +2029,6 @@
 
       item.addEventListener('mouseenter', () => {
         const overflow = textSpan.scrollWidth - item.clientWidth;
-        const computedStyle = getComputedStyle(textSpan);
-        console.log('[ToC DEBUG] mouseenter', {
-          text: text.substring(0, 30),
-          scrollWidth: textSpan.scrollWidth,
-          clientWidth: item.clientWidth,
-          overflow,
-          currentTransform: computedStyle.transform,
-          currentTransition: computedStyle.transition,
-        });
         if (overflow > 0) {
           const speed = 30; // px per second
           const duration = overflow / speed;
@@ -2028,15 +2036,10 @@
           // Force reflow before setting transform so transition triggers
           void textSpan.offsetWidth;
           textSpan.style.transform = `translateX(-${overflow}px)`;
-          console.log('[ToC DEBUG] set transform', { duration, overflow });
         }
       });
 
       item.addEventListener('mouseleave', () => {
-        console.log('[ToC DEBUG] mouseleave', {
-          text: text.substring(0, 30),
-          currentTransform: getComputedStyle(textSpan).transform,
-        });
         textSpan.style.transition = 'transform 0.2s ease-out';
         textSpan.style.transform = 'translateX(0)';
       });
