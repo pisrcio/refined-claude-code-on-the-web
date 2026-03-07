@@ -1939,7 +1939,20 @@
    * @returns {NodeListOf<Element>} User message elements
    */
   function getUserMessageElements() {
-    return document.querySelectorAll('div.bg-bg-200');
+    const all = document.querySelectorAll('div.bg-bg-200');
+    // Filter out non-conversation elements (e.g. the top bar containing "Refined" label)
+    return Array.from(all).filter(el => {
+      // Exclude elements that contain the refined label
+      if (el.querySelector('.refined-label')) return false;
+      // Exclude elements inside fixed/sticky top bars (position: fixed/sticky ancestors)
+      let parent = el.parentElement;
+      while (parent && parent !== document.body) {
+        const pos = getComputedStyle(parent).position;
+        if (pos === 'fixed' || pos === 'sticky') return false;
+        parent = parent.parentElement;
+      }
+      return true;
+    });
   }
 
   /**
