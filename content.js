@@ -1991,25 +1991,37 @@
       const item = document.createElement('div');
       item.className = 'bcc-toc-item';
 
-      // Inner text span that slides on hover to reveal full text
+      // Inner text span that slides on hover (same pattern as Claude's sidebar)
       const textSpan = document.createElement('span');
       textSpan.className = 'bcc-toc-item-text';
       textSpan.textContent = text;
+      textSpan.style.transition = 'transform 0.15s ease-out';
       item.appendChild(textSpan);
 
-      // On hover: calculate overflow and animate the text sliding left
+      let hoverAnimFrame = null;
       item.addEventListener('mouseenter', () => {
-        const overflow = textSpan.scrollWidth - item.clientWidth + 28; // 28 = padding
+        const overflow = textSpan.scrollWidth - item.clientWidth;
         if (overflow > 0) {
-          // Duration proportional to overflow length for consistent speed
-          const duration = Math.max(1, overflow / 50);
-          textSpan.style.transition = `transform ${duration}s linear`;
-          textSpan.style.transform = `translateX(-${overflow}px)`;
+          // Animate using requestAnimationFrame for smooth continuous scroll
+          const speed = 30; // px per second
+          const startTime = performance.now();
+          const animate = (now) => {
+            const elapsed = (now - startTime) / 1000;
+            const offset = Math.min(elapsed * speed, overflow);
+            textSpan.style.transform = `translateX(-${offset}px)`;
+            if (offset < overflow) {
+              hoverAnimFrame = requestAnimationFrame(animate);
+            }
+          };
+          hoverAnimFrame = requestAnimationFrame(animate);
         }
       });
 
       item.addEventListener('mouseleave', () => {
-        textSpan.style.transition = 'transform 0.3s ease';
+        if (hoverAnimFrame) {
+          cancelAnimationFrame(hoverAnimFrame);
+          hoverAnimFrame = null;
+        }
         textSpan.style.transform = 'translateX(0)';
       });
 

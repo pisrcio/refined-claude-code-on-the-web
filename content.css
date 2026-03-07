@@ -63,31 +63,16 @@ html.dark .refined-label-disabled,
   color: #374151 !important;
   cursor: pointer !important;
   transition: background-color 0.15s ease, color 0.15s ease !important;
-  white-space: nowrap !important;
   overflow: hidden !important;
-  position: relative !important;
-}
-
-/* Gradient fade-out on the right edge */
-.bcc-toc-item::after {
-  content: '' !important;
-  position: absolute !important;
-  top: 0 !important;
-  right: 0 !important;
-  width: 40px !important;
-  height: 100% !important;
-  background: linear-gradient(to right, transparent, white) !important;
-  pointer-events: none !important;
-}
-
-.bcc-toc-item:hover::after {
-  background: linear-gradient(to right, transparent, #eff6ff) !important;
+  white-space: nowrap !important;
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 98%) !important;
+  mask-image: linear-gradient(to right, black 85%, transparent 98%) !important;
 }
 
 .bcc-toc-item-text {
   display: inline-block !important;
   white-space: nowrap !important;
-  will-change: transform !important;
+  transition: transform 0.15s ease-out !important;
 }
 
 .bcc-toc-item:hover {
@@ -101,18 +86,8 @@ html.dark .bcc-toc-item,
   color: #d1d5db !important;
 }
 
-html.dark .bcc-toc-item::after,
-[data-theme="dark"] .bcc-toc-item::after {
-  background: linear-gradient(to right, transparent, #1a1a2e) !important;
-}
-
 html.dark .bcc-toc-item:hover,
 [data-theme="dark"] .bcc-toc-item:hover {
   background-color: rgba(59, 130, 246, 0.15) !important;
   color: #93c5fd !important;
-}
-
-html.dark .bcc-toc-item:hover::after,
-[data-theme="dark"] .bcc-toc-item:hover::after {
-  background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.15)) !important;
 }
