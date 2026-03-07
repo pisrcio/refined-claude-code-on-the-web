@@ -2098,10 +2098,30 @@
 
   // Debounced version for mutation observer
   let tocDebounceTimer = null;
+  // Counter to limit debounce debug logs
+  let _tocDebugCount = 0;
   function debouncedUpdateTocSidebar() {
     if (tocDebounceTimer) clearTimeout(tocDebounceTimer);
     tocDebounceTimer = setTimeout(() => {
       if (isFeatureEnabled('tocSidebar') && tocSidebarEl) {
+        _tocDebugCount++;
+        if (_tocDebugCount <= 20 || _tocDebugCount % 50 === 0) {
+          const bgCount = document.querySelectorAll('div.bg-bg-200').length;
+          const msgs = getUserMessageElements();
+          console.log(LOG_PREFIX, `[ToC] debounce #${_tocDebugCount}: bg-bg-200=${bgCount}, userMsgs=${msgs.length}`);
+          // Log first few elements with bg- classes to discover actual class names
+          if (bgCount === 0 && _tocDebugCount <= 5) {
+            const allDivs = document.querySelectorAll('div[class*="bg-"]');
+            const sample = Array.from(allDivs).slice(0, 10).map(el => el.className.split(' ').filter(c => c.startsWith('bg-')).join(', '));
+            console.log(LOG_PREFIX, '[ToC] sample bg- classes:', sample);
+            // Also look for common message container patterns
+            const humanMsgs = document.querySelectorAll('[data-message-author-role="human"], [data-testid*="human"], [data-testid*="user"]');
+            console.log(LOG_PREFIX, '[ToC] human msg elements (data-attr):', humanMsgs.length);
+            // Check for role-based containers
+            const turnContainers = document.querySelectorAll('[data-turn], [data-message-id]');
+            console.log(LOG_PREFIX, '[ToC] turn/message-id elements:', turnContainers.length);
+          }
+        }
         updateTocSidebar();
       }
     }, 500);
