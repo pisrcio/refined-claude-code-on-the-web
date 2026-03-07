@@ -2008,14 +2008,14 @@
       const textSpan = document.createElement('span');
       textSpan.className = 'bcc-toc-item-text';
       textSpan.textContent = text;
-      textSpan.style.transition = 'transform 0.15s ease-out';
       item.appendChild(textSpan);
 
       let hoverAnimFrame = null;
       item.addEventListener('mouseenter', () => {
         const overflow = textSpan.scrollWidth - item.clientWidth;
         if (overflow > 0) {
-          // Animate using requestAnimationFrame for smooth continuous scroll
+          // Disable CSS transition so rAF controls transform directly (prevents jitter)
+          textSpan.style.transition = 'none';
           const speed = 30; // px per second
           const startTime = performance.now();
           const animate = (now) => {
@@ -2035,6 +2035,8 @@
           cancelAnimationFrame(hoverAnimFrame);
           hoverAnimFrame = null;
         }
+        // Re-enable transition for smooth return
+        textSpan.style.transition = 'transform 0.2s ease-out';
         textSpan.style.transform = 'translateX(0)';
       });
 

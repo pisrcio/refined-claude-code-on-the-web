@@ -72,7 +72,6 @@ html.dark .refined-label-disabled,
 .bcc-toc-item-text {
   display: inline-block !important;
   white-space: nowrap !important;
-  transition: transform 0.15s ease-out !important;
 }
 
 .bcc-toc-item:hover {
