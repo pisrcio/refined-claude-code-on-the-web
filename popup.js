@@ -10,7 +10,8 @@ const DEFAULT_SETTINGS = {
   projectMainBranch: {}, // { "project-name": "main" }
   scrollToTopButton: true,
   fullscreenPlanPanel: true,
-  tocSidebar: true
+  tocSidebar: true,
+  fullscreenConversation: true
 };
 
 // Predefined color palette for project colors

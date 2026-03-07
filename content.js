@@ -20,7 +20,8 @@
     projectMainBranch: {}, // { "project-name": "main" }
     scrollToTopButton: true,
     fullscreenPlanPanel: true,
-    tocSidebar: true
+    tocSidebar: true,
+    fullscreenConversation: true
   };
 
   let currentSettings = { ...DEFAULT_SETTINGS };
@@ -2081,6 +2082,49 @@
   }
 
   // ============================================
+  // Fullscreen Conversation Mode Feature
+  // ============================================
+
+  function applyFullscreenConversation() {
+    const enabled = isFeatureEnabled('fullscreenConversation');
+
+    // Target the conversation message containers with max-w-3xl
+    const containers = document.querySelectorAll('div.max-w-3xl.w-full');
+    containers.forEach(container => {
+      if (enabled) {
+        container.classList.remove('max-w-3xl');
+        if (!container.dataset.bccFullscreen) {
+          container.dataset.bccFullscreen = 'true';
+        }
+      } else {
+        if (container.dataset.bccFullscreen) {
+          container.classList.add('max-w-3xl');
+          delete container.dataset.bccFullscreen;
+        }
+      }
+    });
+
+    // Also handle containers that were already processed (re-check on DOM changes)
+    const processed = document.querySelectorAll('[data-bcc-fullscreen="true"]');
+    processed.forEach(container => {
+      if (!enabled) {
+        container.classList.add('max-w-3xl');
+        delete container.dataset.bccFullscreen;
+      } else {
+        container.classList.remove('max-w-3xl');
+      }
+    });
+  }
+
+  let fullscreenConversationDebounceTimer = null;
+  function debouncedApplyFullscreenConversation() {
+    if (fullscreenConversationDebounceTimer) clearTimeout(fullscreenConversationDebounceTimer);
+    fullscreenConversationDebounceTimer = setTimeout(() => {
+      applyFullscreenConversation();
+    }, 200);
+  }
+
+  // ============================================
   // Initialization
   // ============================================
 
@@ -2112,6 +2156,8 @@
         applyFullscreenPlanPanel();
         // Initialize ToC sidebar
         initTocSidebar();
+        // Apply fullscreen conversation mode
+        applyFullscreenConversation();
       } catch (e) {
         console.error(LOG_PREFIX, 'Error injecting UI:', e);
       }
@@ -2149,6 +2195,8 @@
 
       // Update ToC sidebar when messages change
       debouncedUpdateTocSidebar();
+      // Re-apply fullscreen conversation mode on DOM changes
+      debouncedApplyFullscreenConversation();
     });
 
     observer.observe(document.body, {

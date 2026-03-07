@@ -34,20 +34,27 @@ html.dark .refined-label-disabled,
 /* ToC Sidebar Styles */
 .bcc-toc-sidebar {
   position: fixed !important;
-  right: 16px !important;
-  top: 52px !important;
+  right: 12px !important;
+  top: 60px !important;
   width: 240px !important;
-  max-height: calc(100vh - 68px) !important;
-  z-index: 10 !important;
+  max-height: calc(100vh - 80px) !important;
+  z-index: 1000 !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: 8px !important;
+  padding: 8px 0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
   transition: opacity 0.2s ease !important;
   opacity: 0.5 !important;
 }
 
 .bcc-toc-sidebar:hover {
   opacity: 1 !important;
+  overflow-y: auto !important;
 }
 
 .bcc-toc-list {
@@ -80,6 +87,28 @@ html.dark .refined-label-disabled,
 }
 
 /* Dark mode support for ToC sidebar */
+@media (prefers-color-scheme: dark) {
+  .bcc-toc-sidebar {
+    background-color: rgba(31, 41, 55, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  }
+  .bcc-toc-item {
+    color: #d1d5db !important;
+  }
+  .bcc-toc-item:hover {
+    background-color: rgba(59, 130, 246, 0.15) !important;
+    color: #93c5fd !important;
+  }
+}
+
+html.dark .bcc-toc-sidebar,
+[data-theme="dark"] .bcc-toc-sidebar {
+  background-color: rgba(31, 41, 55, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
 html.dark .bcc-toc-item,
 [data-theme="dark"] .bcc-toc-item {
   color: #d1d5db !important;
