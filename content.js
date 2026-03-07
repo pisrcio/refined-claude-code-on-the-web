@@ -1945,13 +1945,20 @@
     return Array.from(all).filter(el => {
       // Exclude elements that contain the refined label
       if (el.querySelector('.refined-label')) return false;
+      // Exclude elements that contain the Claude Code link (top nav bar)
+      if (el.querySelector('a[href="/code"]')) return false;
       // Exclude elements inside fixed/sticky top bars (position: fixed/sticky ancestors)
       let parent = el.parentElement;
       while (parent && parent !== document.body) {
         const pos = getComputedStyle(parent).position;
         if (pos === 'fixed' || pos === 'sticky') return false;
+        // Exclude if inside a nav-like header area
+        if (parent.querySelector('a[href="/code"]')) return false;
         parent = parent.parentElement;
       }
+      // Exclude elements near the very top of the page (likely nav bar)
+      const rect = el.getBoundingClientRect();
+      if (rect.top < 50 && rect.height < 60) return false;
       return true;
     });
   }
@@ -1977,6 +1984,10 @@
 
     tocSidebarEl = document.createElement('div');
     tocSidebarEl.className = 'bcc-toc-sidebar';
+    // If fullscreen conversation is active, start collapsed
+    if (isFeatureEnabled('fullscreenConversation')) {
+      tocSidebarEl.classList.add('bcc-toc-collapsed');
+    }
     tocSidebarEl.innerHTML = '<div class="bcc-toc-list"></div>';
 
     document.body.appendChild(tocSidebarEl);
@@ -2114,6 +2125,15 @@
         container.classList.remove('max-w-3xl');
       }
     });
+
+    // Collapse/expand ToC sidebar based on fullscreen mode
+    if (tocSidebarEl) {
+      if (enabled) {
+        tocSidebarEl.classList.add('bcc-toc-collapsed');
+      } else {
+        tocSidebarEl.classList.remove('bcc-toc-collapsed');
+      }
+    }
   }
 
   let fullscreenConversationDebounceTimer = null;

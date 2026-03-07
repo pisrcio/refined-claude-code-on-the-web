@@ -34,33 +34,67 @@ html.dark .refined-label-disabled,
 /* ToC Sidebar Styles */
 .bcc-toc-sidebar {
   position: fixed !important;
-  right: 12px !important;
+  right: 0 !important;
   top: 60px !important;
   width: 240px !important;
   max-height: calc(100vh - 80px) !important;
-  z-index: 1000 !important;
+  z-index: 50 !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
   background-color: rgba(255, 255, 255, 0.85) !important;
   backdrop-filter: blur(8px) !important;
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  border-radius: 8px !important;
+  border-radius: 8px 0 0 8px !important;
   padding: 8px 0 !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
-  transition: opacity 0.2s ease !important;
+  transition: width 0.25s ease, opacity 0.2s ease !important;
   opacity: 0.5 !important;
 }
 
 .bcc-toc-sidebar:hover {
   opacity: 1 !important;
-  overflow-y: auto !important;
+}
+
+/* Collapsed state: thin bar on the right edge, expands on hover */
+.bcc-toc-sidebar.bcc-toc-collapsed {
+  width: 6px !important;
+  padding: 0 !important;
+  border-radius: 4px 0 0 4px !important;
+  background-color: rgba(99, 102, 241, 0.3) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  opacity: 0.6 !important;
+  cursor: pointer !important;
+}
+
+.bcc-toc-sidebar.bcc-toc-collapsed .bcc-toc-list {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.bcc-toc-sidebar.bcc-toc-collapsed:hover {
+  width: 260px !important;
+  padding: 8px 0 !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: 8px 0 0 8px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+  opacity: 1 !important;
+}
+
+.bcc-toc-sidebar.bcc-toc-collapsed:hover .bcc-toc-list {
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
 .bcc-toc-list {
   overflow-y: auto !important;
   flex: 1 !important;
   padding: 0 !important;
+  transition: opacity 0.2s ease !important;
 }
 
 .bcc-toc-item {
@@ -93,6 +127,12 @@ html.dark .refined-label-disabled,
     border-color: rgba(255, 255, 255, 0.08) !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
   }
+  .bcc-toc-sidebar.bcc-toc-collapsed {
+    background-color: rgba(99, 102, 241, 0.3) !important;
+  }
+  .bcc-toc-sidebar.bcc-toc-collapsed:hover {
+    background-color: rgba(31, 41, 55, 0.95) !important;
+  }
   .bcc-toc-item {
     color: #d1d5db !important;
   }
@@ -107,6 +147,16 @@ html.dark .bcc-toc-sidebar,
   background-color: rgba(31, 41, 55, 0.85) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+html.dark .bcc-toc-sidebar.bcc-toc-collapsed,
+[data-theme="dark"] .bcc-toc-sidebar.bcc-toc-collapsed {
+  background-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+html.dark .bcc-toc-sidebar.bcc-toc-collapsed:hover,
+[data-theme="dark"] .bcc-toc-sidebar.bcc-toc-collapsed:hover {
+  background-color: rgba(31, 41, 55, 0.95) !important;
 }
 
 html.dark .bcc-toc-item,
