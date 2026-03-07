@@ -10,6 +10,7 @@ const DEFAULT_SETTINGS = {
   projectMainBranch: {}, // { "project-name": "main" }
   scrollToTopButton: true,
   fullscreenPlanPanel: true,
+  tocSidebar: true,
   fullscreenConversation: true
 };
 

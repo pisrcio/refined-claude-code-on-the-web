@@ -31,47 +31,98 @@ html.dark .refined-label-disabled,
   background-color: #374151 !important;
 }
 
-/* Fullscreen Conversation Mode - ToC Sidebar */
+/* ToC Sidebar Styles */
 .bcc-toc-sidebar {
   position: fixed !important;
+  right: 0 !important;
   top: 60px !important;
-  right: 12px !important;
-  width: 220px !important;
+  width: 240px !important;
   max-height: calc(100vh - 80px) !important;
-  overflow-y: hidden !important;
-  z-index: 1000 !important;
+  z-index: 50 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
   background-color: rgba(255, 255, 255, 0.85) !important;
   backdrop-filter: blur(8px) !important;
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  border-radius: 8px !important;
+  border-radius: 8px 0 0 8px !important;
   padding: 8px 0 !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
-  transition: opacity 0.2s ease !important;
-  opacity: 0.6 !important;
+  transition: width 0.25s ease, opacity 0.2s ease !important;
+  opacity: 0.5 !important;
 }
 
 .bcc-toc-sidebar:hover {
   opacity: 1 !important;
+}
+
+/* Collapsed state: visible tab on the right edge, expands on hover */
+.bcc-toc-sidebar.bcc-toc-collapsed {
+  width: 20px !important;
+  padding: 0 !important;
+  border-radius: 8px 0 0 8px !important;
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.08)) !important;
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  border-right: none !important;
+  box-shadow: -1px 0 4px rgba(0, 0, 0, 0.05) !important;
+  backdrop-filter: blur(4px) !important;
+  opacity: 0.8 !important;
+  cursor: pointer !important;
+  transition: width 0.25s ease, opacity 0.2s ease, padding 0.25s ease, background 0.25s ease !important;
+}
+
+.bcc-toc-sidebar.bcc-toc-collapsed .bcc-toc-list {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.15s ease !important;
+}
+
+.bcc-toc-sidebar.bcc-toc-collapsed:hover {
+  width: 260px !important;
+  padding: 8px 0 !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-right: none !important;
+  border-radius: 8px 0 0 8px !important;
+  box-shadow: -2px 0 16px rgba(0, 0, 0, 0.1) !important;
+  opacity: 1 !important;
+}
+
+.bcc-toc-sidebar.bcc-toc-collapsed:hover .bcc-toc-list {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transition: opacity 0.2s ease 0.1s !important;
+}
+
+.bcc-toc-list {
   overflow-y: auto !important;
+  flex: 1 !important;
+  padding: 0 !important;
+  transition: opacity 0.2s ease !important;
 }
 
 .bcc-toc-item {
-  padding: 6px 12px !important;
-  font-size: 12px !important;
-  line-height: 1.4 !important;
+  padding: 6px 14px !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
   color: #374151 !important;
   cursor: pointer !important;
-  white-space: nowrap !important;
+  transition: background-color 0.15s ease, color 0.15s ease !important;
   overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  border-left: 2px solid transparent !important;
-  transition: all 0.15s ease !important;
+  white-space: nowrap !important;
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 98%) !important;
+  mask-image: linear-gradient(to right, black 85%, transparent 98%) !important;
+}
+
+.bcc-toc-item-text {
+  display: inline-block !important;
+  white-space: nowrap !important;
 }
 
 .bcc-toc-item:hover {
-  background-color: rgba(0, 0, 0, 0.04) !important;
-  border-left-color: #6366f1 !important;
-  color: #111827 !important;
+  background-color: #eff6ff !important;
+  color: #1d4ed8 !important;
 }
 
 /* Dark mode support for ToC sidebar */
@@ -81,12 +132,19 @@ html.dark .refined-label-disabled,
     border-color: rgba(255, 255, 255, 0.08) !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
   }
+  .bcc-toc-sidebar.bcc-toc-collapsed {
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.12)) !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+  }
+  .bcc-toc-sidebar.bcc-toc-collapsed:hover {
+    background: rgba(31, 41, 55, 0.95) !important;
+  }
   .bcc-toc-item {
     color: #d1d5db !important;
   }
   .bcc-toc-item:hover {
-    background-color: rgba(255, 255, 255, 0.06) !important;
-    color: #f9fafb !important;
+    background-color: rgba(59, 130, 246, 0.15) !important;
+    color: #93c5fd !important;
   }
 }
 
@@ -97,6 +155,17 @@ html.dark .bcc-toc-sidebar,
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
 }
 
+html.dark .bcc-toc-sidebar.bcc-toc-collapsed,
+[data-theme="dark"] .bcc-toc-sidebar.bcc-toc-collapsed {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.12)) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+html.dark .bcc-toc-sidebar.bcc-toc-collapsed:hover,
+[data-theme="dark"] .bcc-toc-sidebar.bcc-toc-collapsed:hover {
+  background: rgba(31, 41, 55, 0.95) !important;
+}
+
 html.dark .bcc-toc-item,
 [data-theme="dark"] .bcc-toc-item {
   color: #d1d5db !important;
@@ -104,6 +173,6 @@ html.dark .bcc-toc-item,
 
 html.dark .bcc-toc-item:hover,
 [data-theme="dark"] .bcc-toc-item:hover {
-  background-color: rgba(255, 255, 255, 0.06) !important;
-  color: #f9fafb !important;
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  color: #93c5fd !important;
 }
