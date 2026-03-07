@@ -1933,7 +1933,6 @@
   // ============================================
 
   let tocSidebarEl = null;
-  let tocScrollReturnTimer = null;
 
   /**
    * Get all user message elements from the conversation
@@ -1944,18 +1943,13 @@
   }
 
   /**
-   * Extract a short preview text from a user message element
+   * Extract the full text from a user message element
    * @param {Element} msgEl - The user message element
-   * @returns {string} Truncated preview text
+   * @returns {string} Message text
    */
   function extractUserMessageText(msgEl) {
-    // Try to get the text from paragraphs or spans inside the message
     const textEl = msgEl.querySelector('p') || msgEl.querySelector('span') || msgEl;
     let text = (textEl.textContent || '').trim();
-    // Truncate long messages
-    if (text.length > 80) {
-      text = text.substring(0, 77) + '...';
-    }
     return text || '(empty message)';
   }
 
@@ -1969,7 +1963,7 @@
 
     tocSidebarEl = document.createElement('div');
     tocSidebarEl.className = 'bcc-toc-sidebar';
-    tocSidebarEl.innerHTML = '<div class="bcc-toc-header">Queries</div><div class="bcc-toc-list"></div>';
+    tocSidebarEl.innerHTML = '<div class="bcc-toc-list"></div>';
 
     document.body.appendChild(tocSidebarEl);
     return tocSidebarEl;
@@ -1986,7 +1980,7 @@
 
     const userMessages = getUserMessageElements();
     if (userMessages.length === 0) {
-      listEl.innerHTML = '<div class="bcc-toc-empty">No queries yet</div>';
+      listEl.innerHTML = '';
       return;
     }
 
@@ -1996,48 +1990,36 @@
       const text = extractUserMessageText(msgEl);
       const item = document.createElement('div');
       item.className = 'bcc-toc-item';
-      item.textContent = text;
-      item.title = text;
 
-      // On hover: smoothly scroll to that message
+      // Inner text span that slides on hover to reveal full text
+      const textSpan = document.createElement('span');
+      textSpan.className = 'bcc-toc-item-text';
+      textSpan.textContent = text;
+      item.appendChild(textSpan);
+
+      // On hover: calculate overflow and animate the text sliding left
       item.addEventListener('mouseenter', () => {
-        // Clear any pending return-to-top timer
-        if (tocScrollReturnTimer) {
-          clearTimeout(tocScrollReturnTimer);
-          tocScrollReturnTimer = null;
+        const overflow = textSpan.scrollWidth - item.clientWidth + 28; // 28 = padding
+        if (overflow > 0) {
+          // Duration proportional to overflow length for consistent speed
+          const duration = Math.max(1, overflow / 50);
+          textSpan.style.transition = `transform ${duration}s linear`;
+          textSpan.style.transform = `translateX(-${overflow}px)`;
         }
-        msgEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // Highlight this item
-        listEl.querySelectorAll('.bcc-toc-item').forEach(i => i.classList.remove('bcc-toc-active'));
-        item.classList.add('bcc-toc-active');
       });
 
-      // On mouse leave from individual item: set a timer to return to first message
       item.addEventListener('mouseleave', () => {
-        item.classList.remove('bcc-toc-active');
+        textSpan.style.transition = 'transform 0.3s ease';
+        textSpan.style.transform = 'translateX(0)';
+      });
+
+      // On click: scroll to the message
+      item.addEventListener('click', () => {
+        msgEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
 
       listEl.appendChild(item);
     });
-
-    // When mouse leaves the entire ToC sidebar, scroll back to first message
-    // (This is set once; re-setting is harmless)
-    tocSidebarEl.onmouseleave = () => {
-      tocScrollReturnTimer = setTimeout(() => {
-        const firstMsg = getUserMessageElements()[0];
-        if (firstMsg) {
-          firstMsg.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 300);
-    };
-
-    // Cancel return if mouse re-enters the sidebar
-    tocSidebarEl.onmouseenter = () => {
-      if (tocScrollReturnTimer) {
-        clearTimeout(tocScrollReturnTimer);
-        tocScrollReturnTimer = null;
-      }
-    };
   }
 
   /**

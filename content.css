@@ -35,100 +35,84 @@ html.dark .refined-label-disabled,
 .bcc-toc-sidebar {
   position: fixed !important;
   right: 16px !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  width: 220px !important;
-  max-height: 60vh !important;
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border: 1px solid #e5e7eb !important;
-  border-radius: 10px !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+  top: 52px !important;
+  width: 240px !important;
+  max-height: calc(100vh - 68px) !important;
   z-index: 99990 !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
-  backdrop-filter: blur(8px) !important;
   transition: opacity 0.2s ease !important;
-  opacity: 0.6 !important;
+  opacity: 0.5 !important;
 }
 
 .bcc-toc-sidebar:hover {
   opacity: 1 !important;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12) !important;
-}
-
-.bcc-toc-header {
-  padding: 10px 14px 8px !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-  color: #6b7280 !important;
-  border-bottom: 1px solid #f3f4f6 !important;
-  flex-shrink: 0 !important;
 }
 
 .bcc-toc-list {
   overflow-y: auto !important;
   flex: 1 !important;
-  padding: 4px 0 !important;
+  padding: 0 !important;
 }
 
 .bcc-toc-item {
-  padding: 8px 14px !important;
+  padding: 6px 14px !important;
   font-size: 13px !important;
-  line-height: 1.4 !important;
+  line-height: 1.5 !important;
   color: #374151 !important;
   cursor: pointer !important;
   transition: background-color 0.15s ease, color 0.15s ease !important;
   white-space: nowrap !important;
   overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  border-left: 3px solid transparent !important;
+  position: relative !important;
 }
 
-.bcc-toc-item:hover,
-.bcc-toc-item.bcc-toc-active {
+/* Gradient fade-out on the right edge */
+.bcc-toc-item::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 40px !important;
+  height: 100% !important;
+  background: linear-gradient(to right, transparent, white) !important;
+  pointer-events: none !important;
+}
+
+.bcc-toc-item:hover::after {
+  background: linear-gradient(to right, transparent, #eff6ff) !important;
+}
+
+.bcc-toc-item-text {
+  display: inline-block !important;
+  white-space: nowrap !important;
+  will-change: transform !important;
+}
+
+.bcc-toc-item:hover {
   background-color: #eff6ff !important;
   color: #1d4ed8 !important;
-  border-left-color: #3b82f6 !important;
-}
-
-.bcc-toc-empty {
-  padding: 12px 14px !important;
-  font-size: 12px !important;
-  color: #9ca3af !important;
-  font-style: italic !important;
 }
 
 /* Dark mode support for ToC sidebar */
-html.dark .bcc-toc-sidebar,
-[data-theme="dark"] .bcc-toc-sidebar {
-  background-color: rgba(31, 41, 55, 0.95) !important;
-  border-color: #374151 !important;
-}
-
-html.dark .bcc-toc-header,
-[data-theme="dark"] .bcc-toc-header {
-  color: #9ca3af !important;
-  border-bottom-color: #374151 !important;
-}
-
 html.dark .bcc-toc-item,
 [data-theme="dark"] .bcc-toc-item {
   color: #d1d5db !important;
 }
 
-html.dark .bcc-toc-item:hover,
-html.dark .bcc-toc-item.bcc-toc-active,
-[data-theme="dark"] .bcc-toc-item:hover,
-[data-theme="dark"] .bcc-toc-item.bcc-toc-active {
-  background-color: rgba(59, 130, 246, 0.15) !important;
-  color: #93c5fd !important;
-  border-left-color: #3b82f6 !important;
+html.dark .bcc-toc-item::after,
+[data-theme="dark"] .bcc-toc-item::after {
+  background: linear-gradient(to right, transparent, #1a1a2e) !important;
 }
 
-html.dark .bcc-toc-empty,
-[data-theme="dark"] .bcc-toc-empty {
-  color: #6b7280 !important;
+html.dark .bcc-toc-item:hover,
+[data-theme="dark"] .bcc-toc-item:hover {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  color: #93c5fd !important;
+}
+
+html.dark .bcc-toc-item:hover::after,
+[data-theme="dark"] .bcc-toc-item:hover::after {
+  background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.15)) !important;
 }
