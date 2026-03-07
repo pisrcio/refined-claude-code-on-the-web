@@ -38,7 +38,7 @@ html.dark .refined-label-disabled,
   top: 52px !important;
   width: 240px !important;
   max-height: calc(100vh - 68px) !important;
-  z-index: 99990 !important;
+  z-index: 10 !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
