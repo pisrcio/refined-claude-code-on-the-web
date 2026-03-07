@@ -1943,20 +1943,17 @@
     const all = document.querySelectorAll('div.bg-bg-200');
     // Filter out non-conversation elements (e.g. the top bar containing "Refined" label)
     return Array.from(all).filter(el => {
-      // Exclude elements that contain the refined label
+      // Exclude elements that directly contain the refined label or nav link
       if (el.querySelector('.refined-label')) return false;
-      // Exclude elements that contain the Claude Code link (top nav bar)
       if (el.querySelector('a[href="/code"]')) return false;
-      // Exclude elements inside fixed/sticky top bars (position: fixed/sticky ancestors)
+      // Exclude elements that are inside a fixed/sticky positioned container (nav bars)
       let parent = el.parentElement;
       while (parent && parent !== document.body) {
         const pos = getComputedStyle(parent).position;
         if (pos === 'fixed' || pos === 'sticky') return false;
-        // Exclude if inside a nav-like header area
-        if (parent.querySelector('a[href="/code"]')) return false;
         parent = parent.parentElement;
       }
-      // Exclude elements near the very top of the page (likely nav bar)
+      // Exclude small elements near the very top of the page (likely nav bar)
       const rect = el.getBoundingClientRect();
       if (rect.top < 50 && rect.height < 60) return false;
       return true;
