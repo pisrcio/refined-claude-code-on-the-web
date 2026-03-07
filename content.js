@@ -2071,7 +2071,9 @@
    * Initialize ToC sidebar feature
    */
   function initTocSidebar() {
-    if (!isFeatureEnabled('tocSidebar')) {
+    const enabled = isFeatureEnabled('tocSidebar');
+    console.log(LOG_PREFIX, '[ToC] initTocSidebar called, enabled:', enabled);
+    if (!enabled) {
       if (tocSidebarEl && document.body.contains(tocSidebarEl)) {
         tocSidebarEl.remove();
         tocSidebarEl = null;
@@ -2080,7 +2082,18 @@
     }
 
     createTocSidebar();
+    console.log(LOG_PREFIX, '[ToC] sidebar element created:', tocSidebarEl);
+    console.log(LOG_PREFIX, '[ToC] sidebar in DOM:', document.body.contains(tocSidebarEl));
+    console.log(LOG_PREFIX, '[ToC] sidebar classes:', tocSidebarEl.className);
+    console.log(LOG_PREFIX, '[ToC] sidebar computed display:', getComputedStyle(tocSidebarEl).display);
+    console.log(LOG_PREFIX, '[ToC] sidebar computed width:', getComputedStyle(tocSidebarEl).width);
+    console.log(LOG_PREFIX, '[ToC] sidebar computed right:', getComputedStyle(tocSidebarEl).right);
+    console.log(LOG_PREFIX, '[ToC] sidebar computed zIndex:', getComputedStyle(tocSidebarEl).zIndex);
     updateTocSidebar();
+    console.log(LOG_PREFIX, '[ToC] after updateTocSidebar, display:', tocSidebarEl.style.display);
+    const msgs = getUserMessageElements();
+    console.log(LOG_PREFIX, '[ToC] user messages found:', msgs.length);
+    console.log(LOG_PREFIX, '[ToC] all div.bg-bg-200 count:', document.querySelectorAll('div.bg-bg-200').length);
   }
 
   // Debounced version for mutation observer
