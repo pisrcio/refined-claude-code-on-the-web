@@ -19,7 +19,8 @@
     projectColorMap: {}, // { "project-name": "#hexcolor" }
     projectMainBranch: {}, // { "project-name": "main" }
     scrollToTopButton: true,
-    fullscreenPlanPanel: true
+    fullscreenPlanPanel: true,
+    tocSidebar: true
   };
 
   let currentSettings = { ...DEFAULT_SETTINGS };
@@ -103,6 +104,9 @@
 
     // Apply fullscreen plan panel
     applyFullscreenPlanPanel();
+
+    // Toggle ToC sidebar
+    initTocSidebar();
   }
 
   // Update Refined label appearance based on settings
@@ -1925,6 +1929,145 @@
   }
 
   // ============================================
+  // ToC Sidebar Feature
+  // ============================================
+
+  let tocSidebarEl = null;
+  let tocScrollReturnTimer = null;
+
+  /**
+   * Get all user message elements from the conversation
+   * @returns {NodeListOf<Element>} User message elements
+   */
+  function getUserMessageElements() {
+    return document.querySelectorAll('div.bg-bg-200');
+  }
+
+  /**
+   * Extract a short preview text from a user message element
+   * @param {Element} msgEl - The user message element
+   * @returns {string} Truncated preview text
+   */
+  function extractUserMessageText(msgEl) {
+    // Try to get the text from paragraphs or spans inside the message
+    const textEl = msgEl.querySelector('p') || msgEl.querySelector('span') || msgEl;
+    let text = (textEl.textContent || '').trim();
+    // Truncate long messages
+    if (text.length > 80) {
+      text = text.substring(0, 77) + '...';
+    }
+    return text || '(empty message)';
+  }
+
+  /**
+   * Create the ToC sidebar element
+   */
+  function createTocSidebar() {
+    if (tocSidebarEl && document.body.contains(tocSidebarEl)) {
+      return tocSidebarEl;
+    }
+
+    tocSidebarEl = document.createElement('div');
+    tocSidebarEl.className = 'bcc-toc-sidebar';
+    tocSidebarEl.innerHTML = '<div class="bcc-toc-header">Queries</div><div class="bcc-toc-list"></div>';
+
+    document.body.appendChild(tocSidebarEl);
+    return tocSidebarEl;
+  }
+
+  /**
+   * Update the ToC sidebar with current user messages
+   */
+  function updateTocSidebar() {
+    if (!tocSidebarEl) return;
+
+    const listEl = tocSidebarEl.querySelector('.bcc-toc-list');
+    if (!listEl) return;
+
+    const userMessages = getUserMessageElements();
+    if (userMessages.length === 0) {
+      listEl.innerHTML = '<div class="bcc-toc-empty">No queries yet</div>';
+      return;
+    }
+
+    // Build new list
+    listEl.innerHTML = '';
+    userMessages.forEach((msgEl, idx) => {
+      const text = extractUserMessageText(msgEl);
+      const item = document.createElement('div');
+      item.className = 'bcc-toc-item';
+      item.textContent = text;
+      item.title = text;
+
+      // On hover: smoothly scroll to that message
+      item.addEventListener('mouseenter', () => {
+        // Clear any pending return-to-top timer
+        if (tocScrollReturnTimer) {
+          clearTimeout(tocScrollReturnTimer);
+          tocScrollReturnTimer = null;
+        }
+        msgEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Highlight this item
+        listEl.querySelectorAll('.bcc-toc-item').forEach(i => i.classList.remove('bcc-toc-active'));
+        item.classList.add('bcc-toc-active');
+      });
+
+      // On mouse leave from individual item: set a timer to return to first message
+      item.addEventListener('mouseleave', () => {
+        item.classList.remove('bcc-toc-active');
+      });
+
+      listEl.appendChild(item);
+    });
+
+    // When mouse leaves the entire ToC sidebar, scroll back to first message
+    // (This is set once; re-setting is harmless)
+    tocSidebarEl.onmouseleave = () => {
+      tocScrollReturnTimer = setTimeout(() => {
+        const firstMsg = getUserMessageElements()[0];
+        if (firstMsg) {
+          firstMsg.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300);
+    };
+
+    // Cancel return if mouse re-enters the sidebar
+    tocSidebarEl.onmouseenter = () => {
+      if (tocScrollReturnTimer) {
+        clearTimeout(tocScrollReturnTimer);
+        tocScrollReturnTimer = null;
+      }
+    };
+  }
+
+  /**
+   * Initialize ToC sidebar feature
+   */
+  function initTocSidebar() {
+    if (!isFeatureEnabled('tocSidebar')) {
+      if (tocSidebarEl && document.body.contains(tocSidebarEl)) {
+        tocSidebarEl.remove();
+        tocSidebarEl = null;
+      }
+      return;
+    }
+
+    createTocSidebar();
+    updateTocSidebar();
+  }
+
+  // Debounced version for mutation observer
+  let tocDebounceTimer = null;
+  function debouncedUpdateTocSidebar() {
+    if (tocDebounceTimer) clearTimeout(tocDebounceTimer);
+    tocDebounceTimer = setTimeout(() => {
+      if (isFeatureEnabled('tocSidebar') && tocSidebarEl) {
+        updateTocSidebar();
+      }
+    }, 500);
+  }
+
+  // ============================================
   // Initialization
   // ============================================
 
@@ -1954,6 +2097,8 @@
         initScrollToTopButton();
         // Apply fullscreen plan panel
         applyFullscreenPlanPanel();
+        // Initialize ToC sidebar
+        initTocSidebar();
       } catch (e) {
         console.error(LOG_PREFIX, 'Error injecting UI:', e);
       }
@@ -1988,6 +2133,9 @@
 
       // Re-apply fullscreen plan panel on DOM changes
       debouncedApplyFullscreenPlanPanel();
+
+      // Update ToC sidebar when messages change
+      debouncedUpdateTocSidebar();
     });
 
     observer.observe(document.body, {
