@@ -2012,8 +2012,10 @@
         listEl.innerHTML = '';
         _tocPrevTexts = [];
       }
+      tocSidebarEl.style.display = 'none';
       return;
     }
+    tocSidebarEl.style.display = '';
 
     // Extract texts and check if anything changed
     const currentTexts = userMessages.map(msgEl => extractUserMessageText(msgEl));

@@ -56,38 +56,43 @@ html.dark .refined-label-disabled,
   opacity: 1 !important;
 }
 
-/* Collapsed state: thin bar on the right edge, expands on hover */
+/* Collapsed state: visible tab on the right edge, expands on hover */
 .bcc-toc-sidebar.bcc-toc-collapsed {
-  width: 6px !important;
+  width: 20px !important;
   padding: 0 !important;
-  border-radius: 4px 0 0 4px !important;
-  background-color: rgba(99, 102, 241, 0.3) !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  opacity: 0.6 !important;
+  border-radius: 8px 0 0 8px !important;
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.08)) !important;
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  border-right: none !important;
+  box-shadow: -1px 0 4px rgba(0, 0, 0, 0.05) !important;
+  backdrop-filter: blur(4px) !important;
+  opacity: 0.8 !important;
   cursor: pointer !important;
+  transition: width 0.25s ease, opacity 0.2s ease, padding 0.25s ease, background 0.25s ease !important;
 }
 
 .bcc-toc-sidebar.bcc-toc-collapsed .bcc-toc-list {
   opacity: 0 !important;
   pointer-events: none !important;
+  transition: opacity 0.15s ease !important;
 }
 
 .bcc-toc-sidebar.bcc-toc-collapsed:hover {
   width: 260px !important;
   padding: 8px 0 !important;
-  background-color: rgba(255, 255, 255, 0.95) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(8px) !important;
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-right: none !important;
   border-radius: 8px 0 0 8px !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+  box-shadow: -2px 0 16px rgba(0, 0, 0, 0.1) !important;
   opacity: 1 !important;
 }
 
 .bcc-toc-sidebar.bcc-toc-collapsed:hover .bcc-toc-list {
   opacity: 1 !important;
   pointer-events: auto !important;
+  transition: opacity 0.2s ease 0.1s !important;
 }
 
 .bcc-toc-list {
@@ -128,10 +133,11 @@ html.dark .refined-label-disabled,
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
   }
   .bcc-toc-sidebar.bcc-toc-collapsed {
-    background-color: rgba(99, 102, 241, 0.3) !important;
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.12)) !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
   }
   .bcc-toc-sidebar.bcc-toc-collapsed:hover {
-    background-color: rgba(31, 41, 55, 0.95) !important;
+    background: rgba(31, 41, 55, 0.95) !important;
   }
   .bcc-toc-item {
     color: #d1d5db !important;
@@ -151,12 +157,13 @@ html.dark .bcc-toc-sidebar,
 
 html.dark .bcc-toc-sidebar.bcc-toc-collapsed,
 [data-theme="dark"] .bcc-toc-sidebar.bcc-toc-collapsed {
-  background-color: rgba(99, 102, 241, 0.3) !important;
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.12)) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
 }
 
 html.dark .bcc-toc-sidebar.bcc-toc-collapsed:hover,
 [data-theme="dark"] .bcc-toc-sidebar.bcc-toc-collapsed:hover {
-  background-color: rgba(31, 41, 55, 0.95) !important;
+  background: rgba(31, 41, 55, 0.95) !important;
 }
 
 html.dark .bcc-toc-item,
