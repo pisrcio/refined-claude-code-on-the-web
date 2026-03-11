@@ -2192,7 +2192,9 @@
       '#turn-form textarea',
       'section[aria-labelledby="turn-form"] div[contenteditable="true"]',
       'section[aria-labelledby="turn-form"] textarea',
+      'div[contenteditable="true"].ProseMirror',
       'div[contenteditable="true"]',
+      'textarea',
     ];
     for (const sel of selectors) {
       const el = document.querySelector(sel);
@@ -2202,10 +2204,51 @@
   }
 
   // Get the current text from the chat input
-  function getChatInputText() {
+  function getChatInputText(eventTarget) {
+    // First try the event target itself (most reliable - it's the focused element)
+    if (eventTarget) {
+      const text = (eventTarget.textContent || eventTarget.value || '').trim();
+      if (text) {
+        console.log(MODEL_LOG, 'getChatInputText: from eventTarget:', JSON.stringify(text), 'tag:', eventTarget.tagName, 'editable:', eventTarget.contentEditable);
+        return text;
+      }
+      // Check parent (input might be nested inside a contenteditable)
+      const parent = eventTarget.closest('[contenteditable="true"]');
+      if (parent) {
+        const parentText = (parent.textContent || '').trim();
+        if (parentText) {
+          console.log(MODEL_LOG, 'getChatInputText: from parent contenteditable:', JSON.stringify(parentText));
+          return parentText;
+        }
+      }
+    }
+
+    // Fallback: find the input element
     const input = findChatInput();
-    if (!input) return '';
-    return (input.textContent || input.value || '').trim();
+    if (!input) {
+      console.log(MODEL_LOG, 'getChatInputText: no input found at all');
+      return '';
+    }
+    const text = (input.textContent || input.value || '').trim();
+    console.log(MODEL_LOG, 'getChatInputText: from findChatInput:', JSON.stringify(text), 'tag:', input.tagName, 'id:', input.id, 'classes:', input.className?.substring?.(0, 60));
+    return text;
+  }
+
+  // Debug: log all contenteditable and textarea/input elements on the page
+  function debugInputElements() {
+    const editables = document.querySelectorAll('[contenteditable="true"]');
+    console.log(MODEL_LOG, 'debugInputElements: contenteditable count:', editables.length);
+    editables.forEach((el, i) => {
+      const rect = el.getBoundingClientRect();
+      console.log(MODEL_LOG, `  [${i}] tag:${el.tagName} text:${JSON.stringify((el.textContent || '').substring(0, 60))} classes:${el.className?.substring?.(0, 80)} visible:${rect.width > 0} y:${Math.round(rect.top)}`);
+    });
+
+    const textareas = document.querySelectorAll('textarea');
+    console.log(MODEL_LOG, 'debugInputElements: textarea count:', textareas.length);
+    textareas.forEach((el, i) => {
+      const rect = el.getBoundingClientRect();
+      console.log(MODEL_LOG, `  textarea[${i}] value:${JSON.stringify((el.value || '').substring(0, 60))} classes:${el.className?.substring?.(0, 80)} visible:${rect.width > 0} y:${Math.round(rect.top)}`);
+    });
   }
 
   // Clear the chat input field
@@ -2215,16 +2258,17 @@
       console.log(MODEL_LOG, 'clearChatInput: no input found');
       return;
     }
-    console.log(MODEL_LOG, 'clearChatInput: clearing', input.tagName);
+    console.log(MODEL_LOG, 'clearChatInput: clearing', input.tagName, 'text:', JSON.stringify((input.textContent || input.value || '').substring(0, 40)));
 
     if (input.tagName === 'TEXTAREA') {
       const nativeSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
       nativeSetter.call(input, '');
       input.dispatchEvent(new Event('input', { bubbles: true }));
     } else {
+      // For contenteditable, dispatch proper input event
       input.textContent = '';
       input.innerHTML = '';
-      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'deleteContentBackward' }));
     }
   }
 
@@ -2415,14 +2459,36 @@
     if (!isFeatureEnabled('modelCommands')) return;
     if (e.key !== 'Enter' || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
 
-    const text = getChatInputText();
-    console.log(MODEL_LOG, 'Enter pressed, input text:', JSON.stringify(text));
+    const target = e.target;
+    console.log(MODEL_LOG, 'Enter pressed, target tag:', target.tagName, 'target editable:', target.contentEditable, 'target classes:', target.className?.substring?.(0, 80));
+
+    const text = getChatInputText(target);
+    console.log(MODEL_LOG, 'Enter pressed, final input text:', JSON.stringify(text));
+
+    // Debug: if text is empty, dump all input elements to console
+    if (!text) {
+      debugInputElements();
+      // Also check activeElement
+      const active = document.activeElement;
+      if (active) {
+        console.log(MODEL_LOG, 'activeElement tag:', active.tagName, 'text:', JSON.stringify((active.textContent || active.value || '').substring(0, 60)), 'classes:', active.className?.substring?.(0, 80));
+      }
+    }
 
     // Match /model <name>
     const match = text.match(/^\/model\s+(opus|sonnet|haiku)\s*$/i);
-    if (!match) return;
+    if (!match) {
+      // Also try without leading slash (in case the / was consumed by the popup)
+      const match2 = text.match(/^model\s+(opus|sonnet|haiku)\s*$/i);
+      if (match2) {
+        console.log(MODEL_LOG, 'Matched without leading slash');
+      } else {
+        console.log(MODEL_LOG, 'No /model match in:', JSON.stringify(text));
+        return;
+      }
+    }
 
-    const modelKey = match[1].toLowerCase();
+    const modelKey = (match ? match[1] : text.match(/\b(opus|sonnet|haiku)\b/i)[1]).toLowerCase();
     console.log(MODEL_LOG, 'Intercepted /model command for:', modelKey);
 
     // Prevent the default submit
