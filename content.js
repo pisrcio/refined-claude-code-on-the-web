@@ -2297,6 +2297,8 @@
     let strategy2Count = 0;
     for (const el of allEls) {
       if (el.offsetWidth === 0 && el.offsetHeight === 0) continue;
+      // Skip our own injected elements (ToC sidebar, etc.)
+      if (el.classList?.contains('bcc-toc-sidebar') || el.classList?.contains('bcc-toc-list')) continue;
       const style = getComputedStyle(el);
       if (style.position !== 'fixed' && style.position !== 'absolute') continue;
       if (parseInt(style.zIndex || '0') < 1) continue;
@@ -2449,6 +2451,7 @@
 
   let modelInputListenerAttached = false;
   let trackedSlashText = '';
+  let suppressNextSubmit = false;
 
   function readProseMirrorText(el) {
     // ProseMirror puts content in <p> elements inside the contenteditable
@@ -2507,6 +2510,10 @@
           e.stopPropagation();
           e.stopImmediatePropagation();
 
+          // Set flag to also block beforeinput/submit events that ProseMirror may fire
+          suppressNextSubmit = true;
+          setTimeout(() => { suppressNextSubmit = false; }, 500);
+
           trackedSlashText = '';
           switchToModel(modelKey);
           return;
@@ -2548,8 +2555,38 @@
       }, 0);
     }, true);
 
+    // Block beforeinput events when we're suppressing a submit
+    document.addEventListener('beforeinput', (e) => {
+      if (suppressNextSubmit) {
+        console.log(MODEL_LOG, 'beforeinput BLOCKED (suppressNextSubmit), inputType:', e.inputType);
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }
+    }, true);
+
+    // Block submit events on forms
+    document.addEventListener('submit', (e) => {
+      if (suppressNextSubmit) {
+        console.log(MODEL_LOG, 'submit BLOCKED (suppressNextSubmit)');
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }
+    }, true);
+
+    // Also block keyup for the Enter key while suppressing
+    document.addEventListener('keyup', (e) => {
+      if (suppressNextSubmit && e.key === 'Enter') {
+        console.log(MODEL_LOG, 'keyup Enter BLOCKED (suppressNextSubmit)');
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }
+    }, true);
+
     modelInputListenerAttached = true;
-    console.log(MODEL_LOG, 'keydown+input listeners attached (capture phase, text tracking)');
+    console.log(MODEL_LOG, 'all listeners attached (capture phase, text tracking, submit blocking)');
   }
 
   // ---- Model Selector & Switching ----
@@ -2596,7 +2633,16 @@
   }
 
   function selectModelFromDropdown(modelKey) {
-    const regex = new RegExp('\\b' + modelKey + '\\b', 'i');
+    // Use case-insensitive startsWith match (e.g. "Haiku 4.5Fastest..." starts with "Haiku")
+    const modelKeyLower = modelKey.toLowerCase();
+    const displayName = modelKey.charAt(0).toUpperCase() + modelKey.slice(1);
+
+    function textMatchesModel(text) {
+      // Match if text starts with the model name (e.g. "Haiku 4.5...")
+      // or contains it as a word
+      const lower = text.toLowerCase().trim();
+      return lower.startsWith(modelKeyLower) || lower.includes(modelKeyLower + ' ');
+    }
 
     // Try role-based options
     const roleSelectors = '[role="option"], [role="menuitem"], [role="menuitemradio"], [role="radio"]';
@@ -2604,10 +2650,11 @@
     console.log(MODEL_LOG, 'selectFromDropdown: role-based options:', options.length);
     for (const option of options) {
       const text = (option.textContent || '').trim();
-      console.log(MODEL_LOG, 'selectFromDropdown: option text:', JSON.stringify(text.substring(0, 40)));
-      if (regex.test(text)) {
+      console.log(MODEL_LOG, 'selectFromDropdown: option text:', JSON.stringify(text.substring(0, 50)), 'matches:', textMatchesModel(text));
+      if (textMatchesModel(text)) {
+        console.log(MODEL_LOG, 'selectFromDropdown: CLICKING option:', JSON.stringify(text.substring(0, 50)));
         option.click();
-        showModelToast(`Switched to ${modelKey.charAt(0).toUpperCase() + modelKey.slice(1)}`);
+        showModelToast(`Switched to ${displayName}`);
         return true;
       }
     }
@@ -2620,24 +2667,11 @@
       const items = dropdown.querySelectorAll('div, button, li, label, span');
       for (const item of items) {
         const text = (item.textContent || '').trim();
-        if (regex.test(text) && text.length < 100) {
-          console.log(MODEL_LOG, 'selectFromDropdown: clicking item:', JSON.stringify(text.substring(0, 40)));
+        if (textMatchesModel(text) && text.length < 100) {
+          console.log(MODEL_LOG, 'selectFromDropdown: clicking fallback item:', JSON.stringify(text.substring(0, 50)));
           item.click();
-          showModelToast(`Switched to ${modelKey.charAt(0).toUpperCase() + modelKey.slice(1)}`);
+          showModelToast(`Switched to ${displayName}`);
           return true;
-        }
-      }
-    }
-
-    // Strategy 3: any visible element anywhere that contains the model name and looks clickable
-    const allClickable = document.querySelectorAll('button, [role="option"], [role="menuitem"], a, label');
-    for (const el of allClickable) {
-      const text = (el.textContent || '').trim();
-      if (regex.test(text) && text.length < 60 && el.offsetWidth > 0) {
-        const rect = el.getBoundingClientRect();
-        // Must be in a popup-like position (not the main model selector button itself)
-        if (rect.width > 0 && rect.height > 0) {
-          console.log(MODEL_LOG, 'selectFromDropdown: strategy3 candidate:', JSON.stringify(text.substring(0, 40)), 'y:', Math.round(rect.top));
         }
       }
     }
