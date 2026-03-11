@@ -2203,54 +2203,6 @@
     return null;
   }
 
-  // Get the current text from the chat input
-  function getChatInputText(eventTarget) {
-    // First try the event target itself (most reliable - it's the focused element)
-    if (eventTarget) {
-      const text = (eventTarget.textContent || eventTarget.value || '').trim();
-      if (text) {
-        console.log(MODEL_LOG, 'getChatInputText: from eventTarget:', JSON.stringify(text), 'tag:', eventTarget.tagName, 'editable:', eventTarget.contentEditable);
-        return text;
-      }
-      // Check parent (input might be nested inside a contenteditable)
-      const parent = eventTarget.closest('[contenteditable="true"]');
-      if (parent) {
-        const parentText = (parent.textContent || '').trim();
-        if (parentText) {
-          console.log(MODEL_LOG, 'getChatInputText: from parent contenteditable:', JSON.stringify(parentText));
-          return parentText;
-        }
-      }
-    }
-
-    // Fallback: find the input element
-    const input = findChatInput();
-    if (!input) {
-      console.log(MODEL_LOG, 'getChatInputText: no input found at all');
-      return '';
-    }
-    const text = (input.textContent || input.value || '').trim();
-    console.log(MODEL_LOG, 'getChatInputText: from findChatInput:', JSON.stringify(text), 'tag:', input.tagName, 'id:', input.id, 'classes:', input.className?.substring?.(0, 60));
-    return text;
-  }
-
-  // Debug: log all contenteditable and textarea/input elements on the page
-  function debugInputElements() {
-    const editables = document.querySelectorAll('[contenteditable="true"]');
-    console.log(MODEL_LOG, 'debugInputElements: contenteditable count:', editables.length);
-    editables.forEach((el, i) => {
-      const rect = el.getBoundingClientRect();
-      console.log(MODEL_LOG, `  [${i}] tag:${el.tagName} text:${JSON.stringify((el.textContent || '').substring(0, 60))} classes:${el.className?.substring?.(0, 80)} visible:${rect.width > 0} y:${Math.round(rect.top)}`);
-    });
-
-    const textareas = document.querySelectorAll('textarea');
-    console.log(MODEL_LOG, 'debugInputElements: textarea count:', textareas.length);
-    textareas.forEach((el, i) => {
-      const rect = el.getBoundingClientRect();
-      console.log(MODEL_LOG, `  textarea[${i}] value:${JSON.stringify((el.value || '').substring(0, 60))} classes:${el.className?.substring?.(0, 80)} visible:${rect.width > 0} y:${Math.round(rect.top)}`);
-    });
-  }
-
   // Clear the chat input field
   function clearChatInput() {
     const input = findChatInput();
@@ -2446,147 +2398,27 @@
   }
 
   // ---- Enter Key Interception ----
-  // ProseMirror/TipTap clears content before our keydown fires on Enter.
-  // So we track the input text on every keystroke and use the tracked text on Enter.
+  // Enter blocking happens in model-intercept.js (MAIN world, document_start).
+  // Content scripts can't block page events (isolated world), so the main world
+  // script handles stopPropagation/preventDefault and dispatches a custom event.
+  // We just listen for that event here.
 
   let modelInputListenerAttached = false;
-  let trackedSlashText = '';
-  let suppressNextSubmit = false;
-
-  function readProseMirrorText(el) {
-    // ProseMirror puts content in <p> elements inside the contenteditable
-    // Try multiple methods to read the text
-    if (!el) return '';
-
-    // Method 1: innerText (rendered text)
-    const innerText = (el.innerText || '').trim();
-    if (innerText) return innerText;
-
-    // Method 2: textContent
-    const textContent = (el.textContent || '').trim();
-    if (textContent) return textContent;
-
-    // Method 3: check <p> children
-    const p = el.querySelector('p');
-    if (p) {
-      const pText = (p.innerText || p.textContent || '').trim();
-      if (pText) return pText;
-    }
-
-    // Method 4: value (for textarea)
-    if (el.value) return el.value.trim();
-
-    return '';
-  }
 
   function attachModelInputListener() {
     if (modelInputListenerAttached) return;
 
-    // Track text on every keydown (using setTimeout to read AFTER keystroke is processed)
-    document.addEventListener('keydown', (e) => {
+    // Listen for model switch events from the main world intercept script
+    document.addEventListener('bcc-model-switch', (e) => {
       if (!isFeatureEnabled('modelCommands')) return;
-
-      const target = e.target;
-      const isEditor = target.classList?.contains('ProseMirror') ||
-                       target.contentEditable === 'true' ||
-                       target.tagName === 'TEXTAREA';
-      if (!isEditor) return;
-
-      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        // On Enter, check tracked text BEFORE it's cleared
-        console.log(MODEL_LOG, 'Enter pressed. trackedSlashText:', JSON.stringify(trackedSlashText));
-
-        // Also try reading current content (might still be there)
-        const currentText = readProseMirrorText(target);
-        console.log(MODEL_LOG, 'Enter pressed. currentText:', JSON.stringify(currentText), 'innerHTML:', JSON.stringify(target.innerHTML?.substring(0, 120)));
-
-        const textToCheck = trackedSlashText || currentText;
-        const match = textToCheck.match(/^\/model\s+(opus|sonnet|haiku)\s*$/i);
-        if (match) {
-          const modelKey = match[1].toLowerCase();
-          console.log(MODEL_LOG, '>>> INTERCEPTED /model', modelKey, '<<<');
-
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-
-          // Set flag to also block beforeinput/submit events that ProseMirror may fire
-          suppressNextSubmit = true;
-          setTimeout(() => { suppressNextSubmit = false; }, 500);
-
-          trackedSlashText = '';
-          switchToModel(modelKey);
-          return;
-        } else {
-          console.log(MODEL_LOG, 'No /model match in tracked text');
-        }
-      } else {
-        // Track text after this keystroke is processed
-        setTimeout(() => {
-          const text = readProseMirrorText(target);
-          if (text.startsWith('/')) {
-            trackedSlashText = text;
-            console.log(MODEL_LOG, 'tracked:', JSON.stringify(trackedSlashText));
-          } else if (!text) {
-            // Only clear if empty (user might be mid-typing)
-            trackedSlashText = '';
-          }
-        }, 0);
-      }
-    }, true);
-
-    // Also track via input events (catches paste, autocomplete, etc.)
-    document.addEventListener('input', (e) => {
-      if (!isFeatureEnabled('modelCommands')) return;
-      const target = e.target;
-      const isEditor = target.classList?.contains('ProseMirror') ||
-                       target.contentEditable === 'true' ||
-                       target.tagName === 'TEXTAREA';
-      if (!isEditor) return;
-
-      setTimeout(() => {
-        const text = readProseMirrorText(target);
-        if (text.startsWith('/')) {
-          trackedSlashText = text;
-          console.log(MODEL_LOG, 'tracked (input):', JSON.stringify(trackedSlashText));
-        } else if (!text) {
-          trackedSlashText = '';
-        }
-      }, 0);
-    }, true);
-
-    // Block beforeinput events when we're suppressing a submit
-    document.addEventListener('beforeinput', (e) => {
-      if (suppressNextSubmit) {
-        console.log(MODEL_LOG, 'beforeinput BLOCKED (suppressNextSubmit), inputType:', e.inputType);
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-      }
-    }, true);
-
-    // Block submit events on forms
-    document.addEventListener('submit', (e) => {
-      if (suppressNextSubmit) {
-        console.log(MODEL_LOG, 'submit BLOCKED (suppressNextSubmit)');
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-      }
-    }, true);
-
-    // Also block keyup for the Enter key while suppressing
-    document.addEventListener('keyup', (e) => {
-      if (suppressNextSubmit && e.key === 'Enter') {
-        console.log(MODEL_LOG, 'keyup Enter BLOCKED (suppressNextSubmit)');
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-      }
-    }, true);
+      const modelKey = e.detail?.model;
+      if (!modelKey) return;
+      console.log(MODEL_LOG, 'Received bcc-model-switch event for:', modelKey);
+      switchToModel(modelKey);
+    });
 
     modelInputListenerAttached = true;
-    console.log(MODEL_LOG, 'all listeners attached (capture phase, text tracking, submit blocking)');
+    console.log(MODEL_LOG, 'custom event listener attached (bcc-model-switch)');
   }
 
   // ---- Model Selector & Switching ----
