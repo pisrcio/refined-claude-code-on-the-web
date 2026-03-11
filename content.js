@@ -2444,60 +2444,112 @@
   }
 
   // ---- Enter Key Interception ----
+  // ProseMirror/TipTap clears content before our keydown fires on Enter.
+  // So we track the input text on every keystroke and use the tracked text on Enter.
 
   let modelInputListenerAttached = false;
+  let trackedSlashText = '';
+
+  function readProseMirrorText(el) {
+    // ProseMirror puts content in <p> elements inside the contenteditable
+    // Try multiple methods to read the text
+    if (!el) return '';
+
+    // Method 1: innerText (rendered text)
+    const innerText = (el.innerText || '').trim();
+    if (innerText) return innerText;
+
+    // Method 2: textContent
+    const textContent = (el.textContent || '').trim();
+    if (textContent) return textContent;
+
+    // Method 3: check <p> children
+    const p = el.querySelector('p');
+    if (p) {
+      const pText = (p.innerText || p.textContent || '').trim();
+      if (pText) return pText;
+    }
+
+    // Method 4: value (for textarea)
+    if (el.value) return el.value.trim();
+
+    return '';
+  }
 
   function attachModelInputListener() {
     if (modelInputListenerAttached) return;
-    // Use capture phase to intercept before Claude's handler
-    document.addEventListener('keydown', handleModelKeydown, true);
-    modelInputListenerAttached = true;
-    console.log(MODEL_LOG, 'keydown listener attached (capture phase)');
-  }
 
-  function handleModelKeydown(e) {
-    if (!isFeatureEnabled('modelCommands')) return;
-    if (e.key !== 'Enter' || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+    // Track text on every keydown (using setTimeout to read AFTER keystroke is processed)
+    document.addEventListener('keydown', (e) => {
+      if (!isFeatureEnabled('modelCommands')) return;
 
-    const target = e.target;
-    console.log(MODEL_LOG, 'Enter pressed, target tag:', target.tagName, 'target editable:', target.contentEditable, 'target classes:', target.className?.substring?.(0, 80));
+      const target = e.target;
+      const isEditor = target.classList?.contains('ProseMirror') ||
+                       target.contentEditable === 'true' ||
+                       target.tagName === 'TEXTAREA';
+      if (!isEditor) return;
 
-    const text = getChatInputText(target);
-    console.log(MODEL_LOG, 'Enter pressed, final input text:', JSON.stringify(text));
+      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        // On Enter, check tracked text BEFORE it's cleared
+        console.log(MODEL_LOG, 'Enter pressed. trackedSlashText:', JSON.stringify(trackedSlashText));
 
-    // Debug: if text is empty, dump all input elements to console
-    if (!text) {
-      debugInputElements();
-      // Also check activeElement
-      const active = document.activeElement;
-      if (active) {
-        console.log(MODEL_LOG, 'activeElement tag:', active.tagName, 'text:', JSON.stringify((active.textContent || active.value || '').substring(0, 60)), 'classes:', active.className?.substring?.(0, 80));
-      }
-    }
+        // Also try reading current content (might still be there)
+        const currentText = readProseMirrorText(target);
+        console.log(MODEL_LOG, 'Enter pressed. currentText:', JSON.stringify(currentText), 'innerHTML:', JSON.stringify(target.innerHTML?.substring(0, 120)));
 
-    // Match /model <name>
-    const match = text.match(/^\/model\s+(opus|sonnet|haiku)\s*$/i);
-    if (!match) {
-      // Also try without leading slash (in case the / was consumed by the popup)
-      const match2 = text.match(/^model\s+(opus|sonnet|haiku)\s*$/i);
-      if (match2) {
-        console.log(MODEL_LOG, 'Matched without leading slash');
+        const textToCheck = trackedSlashText || currentText;
+        const match = textToCheck.match(/^\/model\s+(opus|sonnet|haiku)\s*$/i);
+        if (match) {
+          const modelKey = match[1].toLowerCase();
+          console.log(MODEL_LOG, '>>> INTERCEPTED /model', modelKey, '<<<');
+
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+
+          trackedSlashText = '';
+          switchToModel(modelKey);
+          return;
+        } else {
+          console.log(MODEL_LOG, 'No /model match in tracked text');
+        }
       } else {
-        console.log(MODEL_LOG, 'No /model match in:', JSON.stringify(text));
-        return;
+        // Track text after this keystroke is processed
+        setTimeout(() => {
+          const text = readProseMirrorText(target);
+          if (text.startsWith('/')) {
+            trackedSlashText = text;
+            console.log(MODEL_LOG, 'tracked:', JSON.stringify(trackedSlashText));
+          } else if (!text) {
+            // Only clear if empty (user might be mid-typing)
+            trackedSlashText = '';
+          }
+        }, 0);
       }
-    }
+    }, true);
 
-    const modelKey = (match ? match[1] : text.match(/\b(opus|sonnet|haiku)\b/i)[1]).toLowerCase();
-    console.log(MODEL_LOG, 'Intercepted /model command for:', modelKey);
+    // Also track via input events (catches paste, autocomplete, etc.)
+    document.addEventListener('input', (e) => {
+      if (!isFeatureEnabled('modelCommands')) return;
+      const target = e.target;
+      const isEditor = target.classList?.contains('ProseMirror') ||
+                       target.contentEditable === 'true' ||
+                       target.tagName === 'TEXTAREA';
+      if (!isEditor) return;
 
-    // Prevent the default submit
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+      setTimeout(() => {
+        const text = readProseMirrorText(target);
+        if (text.startsWith('/')) {
+          trackedSlashText = text;
+          console.log(MODEL_LOG, 'tracked (input):', JSON.stringify(trackedSlashText));
+        } else if (!text) {
+          trackedSlashText = '';
+        }
+      }, 0);
+    }, true);
 
-    // Switch the model
-    switchToModel(modelKey);
+    modelInputListenerAttached = true;
+    console.log(MODEL_LOG, 'keydown+input listeners attached (capture phase, text tracking)');
   }
 
   // ---- Model Selector & Switching ----
