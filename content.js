@@ -2069,7 +2069,6 @@
    */
   function initTocSidebar() {
     const enabled = isFeatureEnabled('tocSidebar');
-    console.log(LOG_PREFIX, '[ToC] initTocSidebar called, enabled:', enabled);
     if (!enabled) {
       if (tocSidebarEl && document.body.contains(tocSidebarEl)) {
         tocSidebarEl.remove();
@@ -2079,46 +2078,15 @@
     }
 
     createTocSidebar();
-    console.log(LOG_PREFIX, '[ToC] sidebar element created:', tocSidebarEl);
-    console.log(LOG_PREFIX, '[ToC] sidebar in DOM:', document.body.contains(tocSidebarEl));
-    console.log(LOG_PREFIX, '[ToC] sidebar classes:', tocSidebarEl.className);
-    console.log(LOG_PREFIX, '[ToC] sidebar computed display:', getComputedStyle(tocSidebarEl).display);
-    console.log(LOG_PREFIX, '[ToC] sidebar computed width:', getComputedStyle(tocSidebarEl).width);
-    console.log(LOG_PREFIX, '[ToC] sidebar computed right:', getComputedStyle(tocSidebarEl).right);
-    console.log(LOG_PREFIX, '[ToC] sidebar computed zIndex:', getComputedStyle(tocSidebarEl).zIndex);
     updateTocSidebar();
-    console.log(LOG_PREFIX, '[ToC] after updateTocSidebar, display:', tocSidebarEl.style.display);
-    const msgs = getUserMessageElements();
-    console.log(LOG_PREFIX, '[ToC] user messages found:', msgs.length);
-    console.log(LOG_PREFIX, '[ToC] all div.bg-bg-200 count:', document.querySelectorAll('div.bg-bg-200').length);
   }
 
   // Debounced version for mutation observer
   let tocDebounceTimer = null;
-  // Counter to limit debounce debug logs
-  let _tocDebugCount = 0;
   function debouncedUpdateTocSidebar() {
     if (tocDebounceTimer) clearTimeout(tocDebounceTimer);
     tocDebounceTimer = setTimeout(() => {
       if (isFeatureEnabled('tocSidebar') && tocSidebarEl) {
-        _tocDebugCount++;
-        if (_tocDebugCount <= 20 || _tocDebugCount % 50 === 0) {
-          const bgCount = document.querySelectorAll('div.bg-bg-200').length;
-          const msgs = getUserMessageElements();
-          console.log(LOG_PREFIX, `[ToC] debounce #${_tocDebugCount}: bg-bg-200=${bgCount}, userMsgs=${msgs.length}`);
-          // Log first few elements with bg- classes to discover actual class names
-          if (bgCount === 0 && _tocDebugCount <= 5) {
-            const allDivs = document.querySelectorAll('div[class*="bg-"]');
-            const sample = Array.from(allDivs).slice(0, 10).map(el => el.className.split(' ').filter(c => c.startsWith('bg-')).join(', '));
-            console.log(LOG_PREFIX, '[ToC] sample bg- classes:', sample);
-            // Also look for common message container patterns
-            const humanMsgs = document.querySelectorAll('[data-message-author-role="human"], [data-testid*="human"], [data-testid*="user"]');
-            console.log(LOG_PREFIX, '[ToC] human msg elements (data-attr):', humanMsgs.length);
-            // Check for role-based containers
-            const turnContainers = document.querySelectorAll('[data-turn], [data-message-id]');
-            console.log(LOG_PREFIX, '[ToC] turn/message-id elements:', turnContainers.length);
-          }
-        }
         updateTocSidebar();
       }
     }, 500);
