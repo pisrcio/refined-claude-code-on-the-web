@@ -2181,220 +2181,41 @@
   // Model Commands (Slash Command Integration)
   // ============================================
 
-  const BCC_MODELS = [
-    { command: 'model opus', modelKey: 'opus', display: 'Opus' },
-    { command: 'model sonnet', modelKey: 'sonnet', display: 'Sonnet' },
-    { command: 'model haiku', modelKey: 'haiku', display: 'Haiku' },
-  ];
+  const MODEL_LOG = '[BCC] [Model]';
 
-  // Find the slash command popup in the DOM
-  function findSlashCommandPopup() {
-    const knownCommands = ['debug', 'compact', 'context', 'cost', 'init'];
+  const BCC_MODEL_KEYS = ['opus', 'sonnet', 'haiku'];
 
-    // Strategy 1: Check role-based and radix elements
-    const candidates = document.querySelectorAll(
-      '[role="listbox"], [role="menu"], [data-radix-popper-content-wrapper]'
-    );
-
-    for (const el of candidates) {
-      if (el.offsetWidth === 0 && el.offsetHeight === 0) continue;
-      const text = el.textContent || '';
-      const matches = knownCommands.filter(cmd => text.includes(cmd));
-      if (matches.length >= 3) return el;
+  // Find the chat input element
+  function findChatInput() {
+    const selectors = [
+      '#turn-form div[contenteditable="true"]',
+      '#turn-form textarea',
+      'section[aria-labelledby="turn-form"] div[contenteditable="true"]',
+      'section[aria-labelledby="turn-form"] textarea',
+      'div[contenteditable="true"]',
+    ];
+    for (const sel of selectors) {
+      const el = document.querySelector(sel);
+      if (el) return el;
     }
-
-    // Strategy 2: Look for fixed/absolute positioned elements with high z-index
-    const allDivs = document.querySelectorAll('body > div, body > div > div');
-    for (const el of allDivs) {
-      if (el.offsetWidth === 0 && el.offsetHeight === 0) continue;
-      const style = getComputedStyle(el);
-      if (style.position !== 'fixed' && style.position !== 'absolute') continue;
-
-      const text = el.textContent || '';
-      const matches = knownCommands.filter(cmd => text.includes(cmd));
-      if (matches.length >= 3) return el;
-    }
-
     return null;
   }
 
-  // Find the container holding command items inside the popup
-  function findCommandItemContainer(popup) {
-    // Try role="option" items first
-    const options = popup.querySelectorAll('[role="option"]');
-    if (options.length >= 3) return { container: options[0].parentElement, template: options[0] };
-
-    // Look for a container with many similar children containing command text
-    const knownCommands = ['debug', 'compact', 'context'];
-    const allDivs = popup.querySelectorAll('div');
-
-    for (const div of allDivs) {
-      if (div.children.length < 5) continue;
-      let cmdCount = 0;
-      for (const child of div.children) {
-        const text = (child.textContent || '').trim().toLowerCase();
-        if (knownCommands.includes(text)) cmdCount++;
-      }
-      if (cmdCount >= 2) return { container: div, template: div.firstElementChild };
-    }
-
-    return null;
-  }
-
-  // Get the current text in the input field (what the user typed after /)
-  function getSlashFilterText() {
-    const input = document.querySelector(
-      '#turn-form div[contenteditable="true"], ' +
-      '#turn-form textarea, ' +
-      'section[aria-labelledby="turn-form"] div[contenteditable="true"], ' +
-      'section[aria-labelledby="turn-form"] textarea'
-    );
+  // Get the current text from the chat input
+  function getChatInputText() {
+    const input = findChatInput();
     if (!input) return '';
-
-    const text = (input.textContent || input.value || '').trim();
-    if (text.startsWith('/')) {
-      return text.substring(1).toLowerCase();
-    }
-    return '';
-  }
-
-  // Inject model command items into the slash command popup
-  function injectModelCommandsIntoPopup() {
-    if (!isFeatureEnabled('modelCommands')) return;
-
-    const popup = findSlashCommandPopup();
-    if (!popup) return;
-
-    // Remove previously injected items (React may have re-rendered)
-    popup.querySelectorAll('[data-bcc-model-cmd]').forEach(el => el.remove());
-
-    const result = findCommandItemContainer(popup);
-    if (!result) return;
-
-    const { container, template } = result;
-    const filterText = getSlashFilterText();
-
-    BCC_MODELS.forEach((model) => {
-      // Filter: only show items matching what's typed
-      if (filterText && !model.command.toLowerCase().includes(filterText)) return;
-
-      // Clone the template item for consistent styling
-      const newItem = template.cloneNode(true);
-      newItem.setAttribute('data-bcc-model-cmd', model.modelKey);
-
-      // Update the text content - find the deepest text-bearing element
-      const textTargets = newItem.querySelectorAll('span, p, div');
-      let textSet = false;
-      if (textTargets.length > 0) {
-        // Find the element that has direct text (the command name)
-        for (const target of textTargets) {
-          if (target.children.length === 0 && target.textContent.trim().length > 0) {
-            target.textContent = model.command;
-            textSet = true;
-            break;
-          }
-        }
-        if (!textSet) {
-          textTargets[0].textContent = model.command;
-        }
-      } else {
-        newItem.textContent = model.command;
-      }
-
-      // Replace with a fresh clone to strip cloned event listeners
-      const cleanItem = newItem.cloneNode(true);
-      cleanItem.setAttribute('data-bcc-model-cmd', model.modelKey);
-
-      cleanItem.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        switchToModel(model.modelKey);
-      });
-
-      cleanItem.addEventListener('mouseenter', () => {
-        cleanItem.style.backgroundColor = 'var(--bg-300, #f3f4f6)';
-      });
-      cleanItem.addEventListener('mouseleave', () => {
-        cleanItem.style.backgroundColor = '';
-      });
-
-      container.appendChild(cleanItem);
-    });
-  }
-
-  // Find the model selector button at the bottom of the page
-  function findModelSelector() {
-    const modelRegex = /\b(sonnet|opus|haiku)\b/i;
-    const buttons = document.querySelectorAll('button');
-    const viewportHeight = window.innerHeight;
-
-    // Look for a button with a model name in the bottom 25% of the viewport
-    for (const btn of buttons) {
-      const text = (btn.textContent || '').trim();
-      if (!modelRegex.test(text)) continue;
-      if (text.length > 80) continue; // skip if too long (not a selector)
-
-      const rect = btn.getBoundingClientRect();
-      if (rect.top > viewportHeight * 0.75) {
-        return btn;
-      }
-    }
-
-    // Fallback: look for any element with model name near footer/bottom areas
-    const footerAreas = document.querySelectorAll('footer, [class*="bottom"], [class*="footer"]');
-    for (const area of footerAreas) {
-      const btns = area.querySelectorAll('button');
-      for (const btn of btns) {
-        if (modelRegex.test(btn.textContent || '')) return btn;
-      }
-    }
-
-    return null;
-  }
-
-  // Select the desired model from the open dropdown
-  function selectModelFromDropdown(modelKey) {
-    const regex = new RegExp('\\b' + modelKey + '\\b', 'i');
-
-    // Try role-based options
-    const roleSelectors = '[role="option"], [role="menuitem"], [role="menuitemradio"], [role="radio"]';
-    const options = document.querySelectorAll(roleSelectors);
-    for (const option of options) {
-      if (regex.test(option.textContent)) {
-        option.click();
-        showModelToast(`Switched to ${modelKey.charAt(0).toUpperCase() + modelKey.slice(1)}`);
-        return true;
-      }
-    }
-
-    // Fallback: look in floating/popup containers
-    const dropdowns = document.querySelectorAll(
-      '[data-radix-popper-content-wrapper], [role="listbox"], [role="menu"]'
-    );
-    for (const dropdown of dropdowns) {
-      const items = dropdown.querySelectorAll('div, button, li, label');
-      for (const item of items) {
-        const text = (item.textContent || '').trim();
-        if (regex.test(text) && text.length < 100) {
-          item.click();
-          showModelToast(`Switched to ${modelKey.charAt(0).toUpperCase() + modelKey.slice(1)}`);
-          return true;
-        }
-      }
-    }
-
-    return false;
+    return (input.textContent || input.value || '').trim();
   }
 
   // Clear the chat input field
   function clearChatInput() {
-    const input = document.querySelector(
-      '#turn-form div[contenteditable="true"], ' +
-      '#turn-form textarea, ' +
-      'section[aria-labelledby="turn-form"] div[contenteditable="true"], ' +
-      'section[aria-labelledby="turn-form"] textarea'
-    );
-    if (!input) return;
+    const input = findChatInput();
+    if (!input) {
+      console.log(MODEL_LOG, 'clearChatInput: no input found');
+      return;
+    }
+    console.log(MODEL_LOG, 'clearChatInput: clearing', input.tagName);
 
     if (input.tagName === 'TEXTAREA') {
       const nativeSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
@@ -2407,9 +2228,308 @@
     }
   }
 
-  // Switch to the specified model
+  // ---- Slash Command Popup Detection & Injection ----
+
+  // Find the slash command popup in the DOM
+  function findSlashCommandPopup() {
+    const knownCommands = ['debug', 'compact', 'context', 'cost', 'init', 'simplify', 'batch'];
+
+    // Strategy 1: role-based and radix elements
+    const candidates = document.querySelectorAll(
+      '[role="listbox"], [role="menu"], [data-radix-popper-content-wrapper]'
+    );
+    console.log(MODEL_LOG, 'findPopup: strategy1 candidates:', candidates.length);
+
+    for (const el of candidates) {
+      if (el.offsetWidth === 0 && el.offsetHeight === 0) continue;
+      const text = el.textContent || '';
+      const matches = knownCommands.filter(cmd => text.includes(cmd));
+      console.log(MODEL_LOG, 'findPopup: strategy1 candidate matches:', matches.length, 'tag:', el.tagName, 'role:', el.getAttribute('role'), 'classes:', el.className?.substring?.(0, 80));
+      if (matches.length >= 3) return el;
+    }
+
+    // Strategy 2: positioned elements anywhere in the DOM
+    const allEls = document.querySelectorAll('div');
+    let strategy2Count = 0;
+    for (const el of allEls) {
+      if (el.offsetWidth === 0 && el.offsetHeight === 0) continue;
+      const style = getComputedStyle(el);
+      if (style.position !== 'fixed' && style.position !== 'absolute') continue;
+      if (parseInt(style.zIndex || '0') < 1) continue;
+
+      const text = el.textContent || '';
+      const matches = knownCommands.filter(cmd => text.includes(cmd));
+      if (matches.length >= 2) {
+        strategy2Count++;
+        console.log(MODEL_LOG, 'findPopup: strategy2 candidate matches:', matches.length, 'zIndex:', style.zIndex, 'tag:', el.tagName, 'classes:', el.className?.substring?.(0, 80), 'children:', el.children.length);
+      }
+      if (matches.length >= 3) return el;
+    }
+
+    // Strategy 3: look for any visible element tree containing many known commands
+    // Check all elements that might be popup containers
+    const possiblePopups = document.querySelectorAll('[class*="popover"], [class*="popup"], [class*="dropdown"], [class*="menu"], [class*="command"], [class*="slash"]');
+    console.log(MODEL_LOG, 'findPopup: strategy3 candidates:', possiblePopups.length);
+    for (const el of possiblePopups) {
+      if (el.offsetWidth === 0 && el.offsetHeight === 0) continue;
+      const text = el.textContent || '';
+      const matches = knownCommands.filter(cmd => text.includes(cmd));
+      if (matches.length >= 3) {
+        console.log(MODEL_LOG, 'findPopup: strategy3 found!', el.tagName, el.className?.substring?.(0, 80));
+        return el;
+      }
+    }
+
+    console.log(MODEL_LOG, 'findPopup: no popup found (strategy2 near-misses:', strategy2Count, ')');
+    return null;
+  }
+
+  // Find the item container and a template item inside the popup
+  function findCommandItemContainer(popup) {
+    // Try role="option" items
+    const options = popup.querySelectorAll('[role="option"]');
+    console.log(MODEL_LOG, 'findContainer: role=option count:', options.length);
+    if (options.length >= 3) return { container: options[0].parentElement, template: options[0] };
+
+    // Look for a container with many similar children
+    const knownCommands = ['debug', 'compact', 'context', 'cost', 'init', 'simplify'];
+    const allDivs = popup.querySelectorAll('div');
+
+    for (const div of allDivs) {
+      if (div.children.length < 3) continue;
+      let cmdCount = 0;
+      for (const child of div.children) {
+        const text = (child.textContent || '').trim().toLowerCase();
+        for (const cmd of knownCommands) {
+          if (text === cmd || text.startsWith(cmd)) {
+            cmdCount++;
+            break;
+          }
+        }
+      }
+      if (cmdCount >= 2) {
+        console.log(MODEL_LOG, 'findContainer: found container with', div.children.length, 'children,', cmdCount, 'command matches');
+        return { container: div, template: div.children[0] };
+      }
+    }
+
+    // Fallback: try any list-like container (ul, ol)
+    const lists = popup.querySelectorAll('ul, ol');
+    for (const list of lists) {
+      if (list.children.length >= 3) {
+        console.log(MODEL_LOG, 'findContainer: fallback list with', list.children.length, 'items');
+        return { container: list, template: list.children[0] };
+      }
+    }
+
+    // Log the popup structure for debugging
+    console.log(MODEL_LOG, 'findContainer: FAILED. Popup innerHTML (first 500):', popup.innerHTML.substring(0, 500));
+    return null;
+  }
+
+  // Inject a single "model" item into the slash command popup
+  function injectModelCommandsIntoPopup() {
+    if (!isFeatureEnabled('modelCommands')) return;
+
+    const popup = findSlashCommandPopup();
+    if (!popup) return;
+
+    // Don't re-inject if already present and popup hasn't changed
+    const existing = popup.querySelector('[data-bcc-model-cmd]');
+    if (existing) return;
+
+    const result = findCommandItemContainer(popup);
+    if (!result) return;
+
+    const { container, template } = result;
+    console.log(MODEL_LOG, 'inject: template tag:', template.tagName, 'template classes:', template.className?.substring?.(0, 80), 'template text:', template.textContent?.substring?.(0, 40));
+
+    // Clone the template and modify it
+    const newItem = template.cloneNode(true);
+    newItem.setAttribute('data-bcc-model-cmd', 'model');
+
+    // Update text - find the deepest leaf text node
+    const walker = document.createTreeWalker(newItem, NodeFilter.SHOW_TEXT, null, false);
+    let firstTextNode = null;
+    while (walker.nextNode()) {
+      if (walker.currentNode.textContent.trim().length > 0) {
+        firstTextNode = walker.currentNode;
+        break;
+      }
+    }
+    if (firstTextNode) {
+      console.log(MODEL_LOG, 'inject: replacing text node:', JSON.stringify(firstTextNode.textContent), '-> "model"');
+      firstTextNode.textContent = 'model';
+    } else {
+      console.log(MODEL_LOG, 'inject: no text node found, setting textContent');
+      newItem.textContent = 'model';
+    }
+
+    // Strip cloned event listeners
+    const cleanItem = newItem.cloneNode(true);
+    cleanItem.setAttribute('data-bcc-model-cmd', 'model');
+
+    cleanItem.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log(MODEL_LOG, 'popup item clicked: model');
+      // Set the input to "/model " so user can type the model name
+      const input = findChatInput();
+      if (input) {
+        if (input.tagName === 'TEXTAREA') {
+          const nativeSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+          nativeSetter.call(input, '/model ');
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        } else {
+          input.textContent = '/model ';
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          // Move cursor to end
+          const range = document.createRange();
+          const sel = window.getSelection();
+          range.selectNodeContents(input);
+          range.collapse(false);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+        input.focus();
+      }
+    });
+
+    container.appendChild(cleanItem);
+    console.log(MODEL_LOG, 'inject: successfully added "model" item to popup');
+  }
+
+  // ---- Enter Key Interception ----
+
+  let modelInputListenerAttached = false;
+
+  function attachModelInputListener() {
+    if (modelInputListenerAttached) return;
+    // Use capture phase to intercept before Claude's handler
+    document.addEventListener('keydown', handleModelKeydown, true);
+    modelInputListenerAttached = true;
+    console.log(MODEL_LOG, 'keydown listener attached (capture phase)');
+  }
+
+  function handleModelKeydown(e) {
+    if (!isFeatureEnabled('modelCommands')) return;
+    if (e.key !== 'Enter' || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+
+    const text = getChatInputText();
+    console.log(MODEL_LOG, 'Enter pressed, input text:', JSON.stringify(text));
+
+    // Match /model <name>
+    const match = text.match(/^\/model\s+(opus|sonnet|haiku)\s*$/i);
+    if (!match) return;
+
+    const modelKey = match[1].toLowerCase();
+    console.log(MODEL_LOG, 'Intercepted /model command for:', modelKey);
+
+    // Prevent the default submit
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    // Switch the model
+    switchToModel(modelKey);
+  }
+
+  // ---- Model Selector & Switching ----
+
+  function findModelSelector() {
+    const modelRegex = /\b(sonnet|opus|haiku)\b/i;
+    const allButtons = document.querySelectorAll('button');
+    const viewportHeight = window.innerHeight;
+
+    console.log(MODEL_LOG, 'findModelSelector: scanning', allButtons.length, 'buttons');
+
+    let bestCandidate = null;
+    let bestY = 0;
+
+    for (const btn of allButtons) {
+      const text = (btn.textContent || '').trim();
+      if (!modelRegex.test(text)) continue;
+      if (text.length > 80) continue;
+
+      const rect = btn.getBoundingClientRect();
+      console.log(MODEL_LOG, 'findModelSelector: candidate button text:', JSON.stringify(text.substring(0, 40)), 'y:', Math.round(rect.top), 'visible:', rect.width > 0);
+
+      // Prefer buttons in the lower part of the viewport (model selector area)
+      if (rect.top > viewportHeight * 0.5 && rect.top > bestY && rect.width > 0) {
+        bestCandidate = btn;
+        bestY = rect.top;
+      }
+    }
+
+    if (bestCandidate) {
+      console.log(MODEL_LOG, 'findModelSelector: best candidate text:', JSON.stringify(bestCandidate.textContent?.trim().substring(0, 40)), 'y:', Math.round(bestY));
+    } else {
+      console.log(MODEL_LOG, 'findModelSelector: no candidate found');
+      // Debug: log all buttons with their positions
+      for (const btn of allButtons) {
+        const rect = btn.getBoundingClientRect();
+        if (rect.top > viewportHeight * 0.5 && rect.width > 0) {
+          console.log(MODEL_LOG, 'findModelSelector: bottom-half button:', JSON.stringify((btn.textContent || '').trim().substring(0, 60)), 'y:', Math.round(rect.top));
+        }
+      }
+    }
+
+    return bestCandidate;
+  }
+
+  function selectModelFromDropdown(modelKey) {
+    const regex = new RegExp('\\b' + modelKey + '\\b', 'i');
+
+    // Try role-based options
+    const roleSelectors = '[role="option"], [role="menuitem"], [role="menuitemradio"], [role="radio"]';
+    const options = document.querySelectorAll(roleSelectors);
+    console.log(MODEL_LOG, 'selectFromDropdown: role-based options:', options.length);
+    for (const option of options) {
+      const text = (option.textContent || '').trim();
+      console.log(MODEL_LOG, 'selectFromDropdown: option text:', JSON.stringify(text.substring(0, 40)));
+      if (regex.test(text)) {
+        option.click();
+        showModelToast(`Switched to ${modelKey.charAt(0).toUpperCase() + modelKey.slice(1)}`);
+        return true;
+      }
+    }
+
+    // Fallback: look in floating/popup containers
+    const dropdownSelectors = '[data-radix-popper-content-wrapper], [role="listbox"], [role="menu"]';
+    const dropdowns = document.querySelectorAll(dropdownSelectors);
+    console.log(MODEL_LOG, 'selectFromDropdown: dropdown containers:', dropdowns.length);
+    for (const dropdown of dropdowns) {
+      const items = dropdown.querySelectorAll('div, button, li, label, span');
+      for (const item of items) {
+        const text = (item.textContent || '').trim();
+        if (regex.test(text) && text.length < 100) {
+          console.log(MODEL_LOG, 'selectFromDropdown: clicking item:', JSON.stringify(text.substring(0, 40)));
+          item.click();
+          showModelToast(`Switched to ${modelKey.charAt(0).toUpperCase() + modelKey.slice(1)}`);
+          return true;
+        }
+      }
+    }
+
+    // Strategy 3: any visible element anywhere that contains the model name and looks clickable
+    const allClickable = document.querySelectorAll('button, [role="option"], [role="menuitem"], a, label');
+    for (const el of allClickable) {
+      const text = (el.textContent || '').trim();
+      if (regex.test(text) && text.length < 60 && el.offsetWidth > 0) {
+        const rect = el.getBoundingClientRect();
+        // Must be in a popup-like position (not the main model selector button itself)
+        if (rect.width > 0 && rect.height > 0) {
+          console.log(MODEL_LOG, 'selectFromDropdown: strategy3 candidate:', JSON.stringify(text.substring(0, 40)), 'y:', Math.round(rect.top));
+        }
+      }
+    }
+
+    console.log(MODEL_LOG, 'selectFromDropdown: FAILED for', modelKey);
+    return false;
+  }
+
   function switchToModel(modelKey) {
-    console.log(LOG_PREFIX, 'Switching to model:', modelKey);
+    console.log(MODEL_LOG, '=== switchToModel:', modelKey, '===');
 
     // Clear the input field first
     clearChatInput();
@@ -2417,35 +2537,36 @@
     // Find the model selector button
     const modelSelector = findModelSelector();
     if (!modelSelector) {
-      console.log(LOG_PREFIX, 'Model selector button not found');
       showModelToast('Could not find model selector', true);
       return;
     }
 
     // Click to open the model dropdown
+    console.log(MODEL_LOG, 'clicking model selector');
     modelSelector.click();
 
     // Wait for dropdown to appear, then select the model
     let attempts = 0;
-    const maxAttempts = 5;
+    const maxAttempts = 8;
 
     function trySelect() {
       attempts++;
+      console.log(MODEL_LOG, 'trySelect attempt', attempts);
       const success = selectModelFromDropdown(modelKey);
       if (!success && attempts < maxAttempts) {
-        setTimeout(trySelect, 150);
+        setTimeout(trySelect, 200);
       } else if (!success) {
-        console.log(LOG_PREFIX, 'Could not find model option:', modelKey);
         showModelToast(`Could not find ${modelKey} option`, true);
-        // Click elsewhere to close the dropdown
+        // Close the dropdown
         document.body.click();
       }
     }
 
-    setTimeout(trySelect, 200);
+    setTimeout(trySelect, 300);
   }
 
-  // Show a toast notification for model switching
+  // ---- Toast ----
+
   function showModelToast(message, isError) {
     const existing = document.getElementById('bcc-model-toast');
     if (existing) existing.remove();
@@ -2477,7 +2598,8 @@
     }, 2000);
   }
 
-  // Debounced injection into slash command popup
+  // ---- Debounced Popup Injection ----
+
   let modelCommandDebounceTimer = null;
   function debouncedInjectModelCommands() {
     if (modelCommandDebounceTimer) clearTimeout(modelCommandDebounceTimer);
@@ -2542,6 +2664,12 @@
     // Watch for merge branch button (only if enabled)
     if (isFeatureEnabled('mergeBranch')) {
       watchForMergeBranchButton();
+    }
+
+    // Attach model command Enter key listener (if enabled)
+    if (isFeatureEnabled('modelCommands')) {
+      attachModelInputListener();
+      console.log(MODEL_LOG, 'Model commands feature initialized');
     }
 
     // Watch for DOM changes (SPA navigation)
