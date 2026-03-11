@@ -11,7 +11,8 @@ const DEFAULT_SETTINGS = {
   scrollToTopButton: true,
   fullscreenPlanPanel: true,
   tocSidebar: true,
-  fullscreenConversation: true
+  fullscreenConversation: true,
+  modelCommands: true
 };
 
 // Predefined color palette for project colors
