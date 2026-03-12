@@ -1689,10 +1689,10 @@
 
     const sessionData = getSessionData(sessionEl);
 
-    // Create the indicator (same size as button: h-6 w-6 = 24x24, with 14x14 icon inside)
+    // Create the indicator (sized to match text-xs line height to avoid row height changes)
     const indicator = document.createElement('span');
-    indicator.className = 'bcc-blocked-indicator inline-flex items-center justify-center h-6 w-6';
-    indicator.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"></path></svg>`;
+    indicator.className = 'bcc-blocked-indicator inline-flex items-center justify-center';
+    indicator.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"></path></svg>`;
     indicator.title = 'Session is blocked - hover to see reason';
 
     // Hide indicator on hover (when buttons become visible)
@@ -1700,7 +1700,7 @@
 
     // Check if currently hovering (indicator should be hidden if so)
     const isCurrentlyHovering = groupEl && groupEl.matches(':hover');
-    indicator.style.cssText = `color: #ef4444; display: ${isCurrentlyHovering ? 'none' : 'inline-flex'}; position: relative;`;
+    indicator.style.cssText = `color: #ef4444; display: ${isCurrentlyHovering ? 'none' : 'inline-flex'}; flex-shrink: 0; width: 14px; height: 14px; align-items: center; justify-content: center;`;
 
     if (groupEl) {
       groupEl.addEventListener('mouseenter', () => {
