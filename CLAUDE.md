@@ -50,23 +50,24 @@ Sessions are rendered in a virtualized list in the sidebar. Each session item ha
 ```
 div[data-index="N"]                    <- Session wrapper (N = 0, 1, 2, ...)
   └── div.group                        <- Hover state container
-      └── div.cursor-pointer           <- Clickable row (bg-bg-300 if selected)
-          ├── div.flex-1               <- Content area
-          │   └── div.flex-col
-          │       ├── span.font-base.text-text-100.leading-relaxed  <- Title
-          │       └── span.text-xs.text-text-500                    <- Metadata (repo, date, diff)
-          └── div.flex-shrink-0        <- Buttons area
-              └── div.relative
-                  └── div.group-hover:opacity-100  <- Buttons container (hidden until hover)
-                      ├── span[data-state] > button  <- Delete button
-                      └── div > button               <- Archive button
+      └── div.group.relative.grid.grid-cols-[16px_1fr]  <- Grid row (bg-bg-300 if selected)
+          ├── div (icon area)           <- Status icon (spinner, dot, etc.)
+          ├── div.flex.items-center.gap-2.min-w-0  <- Content area
+          │   ├── span.truncate.text-xs.text-text-100  <- Title
+          │   └── span (screen reader)
+          └── div.absolute.right-0.top-0.bottom-0.opacity-0.group-hover:opacity-100
+              <- Buttons overlay (hidden until hover, gradient background)
+              ├── button               <- Archive button
+              └── button               <- (other action buttons)
 ```
 
 **Reliable selectors:**
 - All sessions: `document.querySelectorAll('[data-index]')`
-- Session title: `sessionEl.querySelector('span.font-base.text-text-100.leading-relaxed')`
-- Selected session: Look for `.cursor-pointer` with `bg-bg-300` class
+- Session title: `sessionEl.querySelector('span.truncate.text-text-100')` or `sessionEl.querySelector('span.text-text-100')`
+- Selected session: Look for `.cursor-pointer` or grid row with `bg-bg-300` class
 - Running session: Has `.code-spinner-animate` element
+- Content area: `sessionEl.querySelector('div.flex.items-center.gap-2.min-w-0')`
+- Buttons overlay: `sessionEl.querySelector('.group-hover\\:opacity-100')` or `sessionEl.querySelector('div.absolute.opacity-0')`
 
 ### Finding Session Action Buttons
 
