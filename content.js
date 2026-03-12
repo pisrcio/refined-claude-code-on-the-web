@@ -860,7 +860,7 @@
    * Structure of a session item in the sidebar:
    * - Wrapper: div[data-index="N"] (N = 0, 1, 2, ...)
    * - Inside: div.group > div.cursor-pointer > ...
-   * - Title: span.font-base.text-text-100.leading-relaxed
+   * - Title: span.text-text-100 (may also have .truncate, .text-xs, .font-base, .leading-relaxed)
    * - Buttons container: div.group-hover:opacity-100 (appears on hover)
    * - Delete button: contains trash icon SVG (viewBox="0 0 256 256")
    * - Archive button: contains archive/box icon SVG (viewBox="0 0 20 20")
@@ -894,7 +894,8 @@
     const index = parseInt(sessionEl.getAttribute('data-index'), 10);
 
     // Find the title span
-    const titleSpan = sessionEl.querySelector('span.font-base.text-text-100.leading-relaxed');
+    // Try new structure first (span.truncate.text-text-100), fall back to old (span.font-base.text-text-100.leading-relaxed)
+    const titleSpan = sessionEl.querySelector('span.truncate.text-text-100') || sessionEl.querySelector('span.font-base.text-text-100.leading-relaxed');
     const title = titleSpan ? titleSpan.textContent.trim() : null;
 
     // Find metadata (repo name, date, diff stats)
@@ -1035,29 +1036,31 @@
       return hoverContainer;
     }
 
-    // Method 2: Find the container with absolute positioning that shows on hover
-    // New structure: div.absolute.-right-1...opacity-0.group-hover:opacity-100
+    // Method 2: Find the absolute-positioned hover overlay (grid layout structure)
+    // New structure: div.absolute.right-0...opacity-0.group-hover:opacity-100
+    const absoluteHoverOverlay = sessionEl.querySelector('div.absolute.opacity-0');
+    if (absoluteHoverOverlay) {
+      return absoluteHoverOverlay;
+    }
+
+    // Method 3: Find via flex-shrink-0 (older structure)
     const absoluteHoverContainer = sessionEl.querySelector('.flex-shrink-0 .absolute');
     if (absoluteHoverContainer) {
       return absoluteHoverContainer;
     }
 
-    // Method 3: Try to find via the relative container in flex-shrink-0
     const relativeContainer = sessionEl.querySelector('.flex-shrink-0 .relative');
     if (relativeContainer) {
-      // Look for the first div child that might be the buttons container
       const firstDiv = relativeContainer.querySelector('div');
       if (firstDiv) {
         return firstDiv;
       }
-      // Or return the relative container itself
       return relativeContainer;
     }
 
     // Method 4: Find any button in the session and get its parent container
     const anyButton = sessionEl.querySelector('button');
     if (anyButton) {
-      // The button's immediate parent is likely the buttons container
       return anyButton.parentElement;
     }
 
@@ -1072,20 +1075,26 @@
   function findIndicatorContainer(sessionEl) {
     if (!sessionEl) return null;
 
-    // Method 1: New structure - div.relative.flex.items-center inside flex-shrink-0
-    // The indicator should be a sibling of the hover container, not inside it
+    // Method 1: Grid layout structure - find the content area (flex row with title)
+    // The indicator should be inside the content flex row, not as a grid child
+    const contentFlex = sessionEl.querySelector('div.flex.items-center.gap-2.min-w-0');
+    if (contentFlex) {
+      return contentFlex;
+    }
+
+    // Method 2: New structure - div.relative.flex.items-center inside flex-shrink-0
     const relativeFlexContainer = sessionEl.querySelector('.flex-shrink-0 > .relative.flex');
     if (relativeFlexContainer) {
       return relativeFlexContainer;
     }
 
-    // Method 2: The documented structure - .flex-shrink-0 .relative
+    // Method 3: The documented structure - .flex-shrink-0 .relative
     const relativeContainer = sessionEl.querySelector('.flex-shrink-0 .relative');
     if (relativeContainer) {
       return relativeContainer;
     }
 
-    // Method 3: Find the parent of the buttons container (should be always visible)
+    // Method 4: Find the parent of the buttons container (should be always visible)
     const buttonsContainer = findButtonsContainer(sessionEl);
     if (buttonsContainer?.parentElement) {
       // Make sure we're getting a container that's not hidden on hover
@@ -1099,7 +1108,7 @@
       }
     }
 
-    // Method 4: Find flex-shrink-0 directly
+    // Method 5: Find flex-shrink-0 directly
     const flexShrink = sessionEl.querySelector('.flex-shrink-0');
     if (flexShrink) {
       return flexShrink;
@@ -1680,10 +1689,10 @@
 
     const sessionData = getSessionData(sessionEl);
 
-    // Create the indicator (same size as button: h-6 w-6 = 24x24, with 14x14 icon inside)
+    // Create the indicator (sized to match text-xs line height to avoid row height changes)
     const indicator = document.createElement('span');
-    indicator.className = 'bcc-blocked-indicator inline-flex items-center justify-center h-6 w-6';
-    indicator.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"></path></svg>`;
+    indicator.className = 'bcc-blocked-indicator inline-flex items-center justify-center';
+    indicator.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"></path></svg>`;
     indicator.title = 'Session is blocked - hover to see reason';
 
     // Hide indicator on hover (when buttons become visible)
@@ -1691,7 +1700,7 @@
 
     // Check if currently hovering (indicator should be hidden if so)
     const isCurrentlyHovering = groupEl && groupEl.matches(':hover');
-    indicator.style.cssText = `color: #ef4444; display: ${isCurrentlyHovering ? 'none' : 'inline-flex'}; position: relative;`;
+    indicator.style.cssText = `color: #ef4444; display: ${isCurrentlyHovering ? 'none' : 'inline-flex'}; flex-shrink: 0; width: 14px; height: 14px; align-items: center; justify-content: center;`;
 
     if (groupEl) {
       groupEl.addEventListener('mouseenter', () => {
