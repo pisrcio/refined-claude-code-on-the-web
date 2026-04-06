@@ -1915,16 +1915,19 @@
   // Fullscreen Plan Panel Feature
   // ============================================
 
+  const PLAN_PANEL_CONSTRAIN_CLASSES = ['max-w-3xl', 'max-w-4xl', 'max-w-5xl', 'max-w-6xl', 'mx-auto', 'px-4'];
+
   function applyFullscreenPlanPanel() {
     const enabled = isFeatureEnabled('fullscreenPlanPanel');
     // Target the plan panel container by its unique animation class
     const panels = document.querySelectorAll('[class*="animate-[planRestore"]');
     panels.forEach(panel => {
       if (enabled) {
-        panel.classList.remove('max-w-3xl');
+        panel.classList.remove(...PLAN_PANEL_CONSTRAIN_CLASSES);
       } else {
-        if (!panel.classList.contains('max-w-3xl')) {
-          panel.classList.add('max-w-3xl');
+        // Restore default constraints if not already present
+        if (!panel.classList.contains('max-w-6xl')) {
+          panel.classList.add('max-w-6xl', 'mx-auto', 'px-4');
         }
       }
     });
