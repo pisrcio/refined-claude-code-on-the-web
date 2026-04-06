@@ -1915,19 +1915,48 @@
   // Fullscreen Plan Panel Feature
   // ============================================
 
+  const PLAN_PANEL_CONSTRAIN_CLASSES = ['max-w-3xl', 'max-w-4xl', 'max-w-5xl', 'max-w-6xl', 'mx-auto', 'px-4'];
+  const PLAN_PANEL_STYLE_ID = 'bcc-fullscreen-plan-style';
+
   function applyFullscreenPlanPanel() {
     const enabled = isFeatureEnabled('fullscreenPlanPanel');
     // Target the plan panel container by its unique animation class
     const panels = document.querySelectorAll('[class*="animate-[planRestore"]');
     panels.forEach(panel => {
       if (enabled) {
-        panel.classList.remove('max-w-3xl');
+        panel.classList.remove(...PLAN_PANEL_CONSTRAIN_CLASSES);
       } else {
-        if (!panel.classList.contains('max-w-3xl')) {
-          panel.classList.add('max-w-3xl');
+        // Restore default constraints if not already present
+        if (!panel.classList.contains('max-w-6xl')) {
+          panel.classList.add('max-w-6xl', 'mx-auto', 'px-4');
         }
       }
     });
+
+    // Position #cli-button-container at the top of the screen when enabled
+    let style = document.getElementById(PLAN_PANEL_STYLE_ID);
+    if (enabled) {
+      if (!style) {
+        style = document.createElement('style');
+        style.id = PLAN_PANEL_STYLE_ID;
+        document.head.appendChild(style);
+      }
+      style.textContent = `
+        [class*="animate-[planRestore"] {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          z-index: 50 !important;
+          max-width: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+      `;
+    } else if (style) {
+      style.remove();
+    }
   }
 
   let planPanelDebounceTimer = null;
