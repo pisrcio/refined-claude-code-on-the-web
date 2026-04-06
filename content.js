@@ -1942,13 +1942,16 @@
         document.head.appendChild(style);
       }
       style.textContent = `
-        #cli-button-container {
+        [class*="animate-[planRestore"] {
           position: fixed !important;
           top: 0 !important;
           left: 0 !important;
           right: 0 !important;
           bottom: 0 !important;
           z-index: 50 !important;
+          max-width: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
         }
       `;
     } else if (style) {
