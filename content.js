@@ -1916,6 +1916,7 @@
   // ============================================
 
   const PLAN_PANEL_CONSTRAIN_CLASSES = ['max-w-3xl', 'max-w-4xl', 'max-w-5xl', 'max-w-6xl', 'mx-auto', 'px-4'];
+  const PLAN_PANEL_STYLE_ID = 'bcc-fullscreen-plan-style';
 
   function applyFullscreenPlanPanel() {
     const enabled = isFeatureEnabled('fullscreenPlanPanel');
@@ -1931,6 +1932,28 @@
         }
       }
     });
+
+    // Position #cli-button-container at the top of the screen when enabled
+    let style = document.getElementById(PLAN_PANEL_STYLE_ID);
+    if (enabled) {
+      if (!style) {
+        style = document.createElement('style');
+        style.id = PLAN_PANEL_STYLE_ID;
+        document.head.appendChild(style);
+      }
+      style.textContent = `
+        #cli-button-container {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          z-index: 50 !important;
+        }
+      `;
+    } else if (style) {
+      style.remove();
+    }
   }
 
   let planPanelDebounceTimer = null;
